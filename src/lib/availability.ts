@@ -132,3 +132,16 @@ export function groupHours(hours: number[]): Array<[number, number]> {
   ranges.push([start, prev + 1]);
   return ranges;
 }
+
+/** Sum hourly prices for [startH, endH) using day/evening boundary */
+export function computePrice(
+  pricing: { dayEndHour: number; priceDay: number; priceEvening: number },
+  startH: number,
+  endH: number
+): number {
+  let total = 0;
+  for (let h = startH; h < endH; h++) {
+    total += h >= pricing.dayEndHour ? pricing.priceEvening : pricing.priceDay;
+  }
+  return total;
+}
