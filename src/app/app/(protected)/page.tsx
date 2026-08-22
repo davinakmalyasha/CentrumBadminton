@@ -10,6 +10,7 @@ import type { Booking } from "@/lib/types";
 import StatCard from "@/components/app/StatCard";
 import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
+import OwnerMenu from "@/components/app/OwnerMenu";
 
 export const metadata = { title: "Dashboard · Centrum Manager" };
 
@@ -114,6 +115,9 @@ export default async function DashboardPage() {
           sub={nextUp ? `${nextUp.customer_name} · ${nextUp.courts?.name ?? ""}` : "Tidak ada lagi"}
         />
       </div>
+
+      {/* Owner tools */}
+      <OwnerMenu />
 
       {/* Agenda */}
       <div>
