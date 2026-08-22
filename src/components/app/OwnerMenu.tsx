@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRole } from "./RoleContext";
 
 const OWNER_LINKS = [
+  { href: "/app/ai", label: "AI Asisten", icon: "🤖" },
   { href: "/app/laporan", label: "Laporan", icon: "📊" },
   { href: "/app/pengeluaran", label: "Pengeluaran", icon: "🧾" },
   { href: "/app/series", label: "Langganan", icon: "🔁" },

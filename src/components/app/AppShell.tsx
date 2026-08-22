@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/app/(protected)/actions";
+import NotificationWatcher from "./NotificationWatcher";
 
 const tabs: Array<{
   href: string;
@@ -58,6 +59,8 @@ export default function AppShell({
       </header>
 
       <main className="mx-auto max-w-3xl px-4 pb-28 pt-4">{children}</main>
+
+      <NotificationWatcher />
 
       {/* Bottom tab bar — mobile app feel */}
       <nav className="fixed inset-x-0 bottom-0 z-30 border-t border-sky-brand-200/70 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur">

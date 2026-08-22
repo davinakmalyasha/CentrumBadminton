@@ -11,6 +11,7 @@ import StatCard from "@/components/app/StatCard";
 import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
 import OwnerMenu from "@/components/app/OwnerMenu";
+import DailyReportNudge from "@/components/app/DailyReportNudge";
 
 export const metadata = { title: "Dashboard · Centrum Manager" };
 
@@ -115,6 +116,9 @@ export default async function DashboardPage() {
           sub={nextUp ? `${nextUp.customer_name} · ${nextUp.courts?.name ?? ""}` : "Tidak ada lagi"}
         />
       </div>
+
+      {/* Daily closing nudge (after 20:00 WIB) */}
+      <DailyReportNudge />
 
       {/* Owner tools */}
       <OwnerMenu />
