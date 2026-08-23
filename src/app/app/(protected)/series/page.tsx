@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
 import SeriesForm from "@/components/app/SeriesForm";
 import SeriesControls from "@/components/app/SeriesControls";
@@ -21,7 +21,7 @@ type SeriesRow = {
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
 
 export default async function SeriesPage() {
-  const supabase = await createClient();
+  const supabase = await requireOwnerPage();
   const today = todayISO();
 
   const [seriesRes, upcomingRes, courtsRes] = await Promise.all([

@@ -6,6 +6,7 @@ import {
   addDaysISO,
   buildSlots,
   formatIDR,
+  formatK,
   groupHours,
   hourLabel,
   type BusyInterval,
@@ -287,7 +288,7 @@ export default function AvailabilityBoard({
                           {hourLabel(s.hour)}
                         </span>
                         <span className="mt-1 block text-[9px] font-medium opacity-70">
-                          {s.isEvening ? "50rb" : "40rb"}
+                          {formatK(s.price)}
                         </span>
                       </button>
                     );

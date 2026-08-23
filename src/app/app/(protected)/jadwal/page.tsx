@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import {
   addDaysISO,
@@ -7,6 +8,7 @@ import {
 } from "@/lib/availability";
 import type { Booking } from "@/lib/types";
 import TimelineGrid, { type Block } from "@/components/app/TimelineGrid";
+import ScheduleRealtime from "@/components/app/ScheduleRealtime";
 
 type Row = Booking & { courts: { name: string } | null };
 
@@ -77,36 +79,36 @@ export default async function JadwalPage({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <a
+        <Link
           href={`/app/jadwal?date=${addDaysISO(date, -1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
           aria-label="Hari sebelumnya"
         >
           ‹
-        </a>
+        </Link>
         <div className="text-center">
           <h1 className="text-base font-black text-navy-900">📅 Jadwal</h1>
           <p className="text-xs font-semibold capitalize text-navy-700/60">
             {date === today ? "Hari ini" : dayLabel}
           </p>
         </div>
-        <a
+        <Link
           href={`/app/jadwal?date=${addDaysISO(date, 1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
           aria-label="Hari berikutnya"
         >
           ›
-        </a>
+        </Link>
       </div>
 
       {date !== today && (
         <div className="flex justify-center">
-          <a
+          <Link
             href={`/app/jadwal`}
             className="rounded-full border border-sky-brand-200 bg-white px-3 py-1 text-[11px] font-bold text-sky-brand-600"
           >
             ⟲ Kembali ke hari ini
-          </a>
+          </Link>
         </div>
       )}
 
@@ -115,6 +117,8 @@ export default async function JadwalPage({
           ✅ Booking berhasil dibuat
         </div>
       )}
+
+      <ScheduleRealtime dateISO={date} />
 
       <TimelineGrid
         courts={courts}

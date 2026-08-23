@@ -1,7 +1,8 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/guard";
 import { addMonths, currentMonthKey } from "@/lib/months";
 import {
   NewCourtForm,
+  NewStaffForm,
   PricingRuleForm,
   RenameCourtForm,
 } from "@/components/app/SettingsForms";
@@ -28,7 +29,7 @@ type ProfileRow = {
 };
 
 export default async function PengaturanPage() {
-  const supabase = await createClient();
+  const supabase = await requireOwnerPage();
   const [courtsRes, pricingRes, profilesRes] = await Promise.all([
     supabase.from("courts").select("id,name,is_active,sort_order").order("sort_order"),
     supabase
@@ -103,10 +104,11 @@ export default async function PengaturanPage() {
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
         <h2 className="mb-1 text-sm font-extrabold text-navy-900">👥 Staf</h2>
         <p className="mb-3 text-[11px] font-medium text-navy-700/50">
-          Akun dibuat lewat Supabase Dashboard → Authentication → Add user. Di sini owner bisa
-          menonaktifkan akses.
+          Buat akun pegawai langsung dari sini, lalu bagikan email &amp; password.
+          Nonaktifkan akses kapan pun tanpa menghapus data.
         </p>
-        <ul className="space-y-2">
+        <NewStaffForm />
+        <ul className="mt-3 space-y-2">
           {profiles.map((p) => (
             <li key={p.id} className="flex items-center justify-between gap-2 rounded-xl bg-ice-100 px-3 py-2.5">
               <div className="min-w-0">

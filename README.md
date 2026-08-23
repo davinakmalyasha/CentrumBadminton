@@ -54,7 +54,8 @@ set role = 'owner'
 where id = (select id from auth.users order by created_at desc limit 1);
 ```
 
-Akun pegawai nanti dibuat oleh owner dari dalam app (Pengaturan → Kelola Pegawai, Fase 4).
+Akun **pegawai** dibuat owner dari dalam app (**Pengaturan → Staf → Buat Akun Pegawai**) —
+butuh env `SUPABASE_SERVICE_ROLE_KEY`. Hanya akun owner pertama yang perlu dibuat manual di sini.
 
 ### 4. Jalankan
 
@@ -97,5 +98,5 @@ Lalu tekan ikon 🔔 di header aplikasi dan izinkan notifikasi.
 2. **Vercel** — import repo GitHub `davinakmalyasha/CentrumBadminton`, framework auto-detect Next.js
 3. **Environment Variables** (Vercel → Settings → Environment Variables) — salin semua dari `.env.local`:
    - `NEXT_PUBLIC_SITE_URL=https://domainmu.vercel.app`
-   - Supabase URL/anon key, `GEMINI_API_KEY`, VAPID keys, `GOOGLE_PLACES_API_KEY`+`GOOGLE_PLACE_ID` (opsional)
+   - Supabase URL/anon key + `SUPABASE_SERVICE_ROLE_KEY` (buat akun pegawai), `GEMINI_API_KEY`, VAPID keys, `GOOGLE_PLACES_API_KEY`+`GOOGLE_PLACE_ID` (opsional)
 4. **Domain** (opsional): custom domain lewat Vercel Settings → Domains

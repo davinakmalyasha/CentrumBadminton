@@ -56,6 +56,12 @@ export function formatIDR(n: number): string {
   return `Rp${n.toLocaleString("id-ID")}`;
 }
 
+/** Compact thousands label for tight slot chips: 40000 → "40rb" */
+export function formatK(n: number): string {
+  if (n > 0 && n % 1000 === 0) return `${n / 1000}rb`;
+  return formatIDR(n);
+}
+
 export function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}.00`;
 }
