@@ -74,3 +74,28 @@ npm run dev        # http://localhost:3000  |  app: http://localhost:3000/app
 ## Catatan Sesi
 
 Login bersifat permanen (auto-refresh token via cookie) — tidak ada logout otomatis; keluar hanya melalui tombol **Keluar**.
+
+## PWA & Push Notification
+
+Aplikasi manajemen (`/app`) dapat di-*install* ke home screen:
+
+- **Android/Chrome**: menu titik tiga → *Install app* (atau banner install otomatis)
+- **iPhone/Safari**: Share → *Add to Home Screen* (butuh iOS 16.4+ untuk push)
+
+Push notification booking baru butuh VAPID keys:
+
+```bash
+npx web-push generate-vapid-keys
+# isi NEXT_PUBLIC_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY di .env.local
+```
+
+Lalu tekan ikon 🔔 di header aplikasi dan izinkan notifikasi.
+
+## Deploy ke Production
+
+1. **Supabase** — jalankan semua file `supabase/migrations/*.sql` + `seed.sql` di SQL Editor project production; aktifkan *Automatic RLS*; matikan *Allow new users to sign up*
+2. **Vercel** — import repo GitHub `davinakmalyasha/CentrumBadminton`, framework auto-detect Next.js
+3. **Environment Variables** (Vercel → Settings → Environment Variables) — salin semua dari `.env.local`:
+   - `NEXT_PUBLIC_SITE_URL=https://domainmu.vercel.app`
+   - Supabase URL/anon key, `GEMINI_API_KEY`, VAPID keys, `GOOGLE_PLACES_API_KEY`+`GOOGLE_PLACE_ID` (opsional)
+4. **Domain** (opsional): custom domain lewat Vercel Settings → Domains

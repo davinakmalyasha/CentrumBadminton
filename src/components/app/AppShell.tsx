@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 import { signOut } from "@/app/app/(protected)/actions";
 import NotificationWatcher from "./NotificationWatcher";
+import PushBell from "./PushBell";
 
 const tabs: Array<{
   href: string;
@@ -47,14 +48,17 @@ export default function AppShell({
               </p>
             </div>
           </div>
-          <form action={signOut}>
-            <button
-              type="submit"
-              className="rounded-lg border border-sky-brand-200 px-2.5 py-1.5 text-xs font-semibold text-navy-700 transition hover:bg-ice-100"
-            >
-              Keluar
-            </button>
-          </form>
+          <div className="flex items-center gap-1.5">
+            <PushBell />
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="rounded-lg border border-sky-brand-200 px-2.5 py-1.5 text-xs font-semibold text-navy-700 transition hover:bg-ice-100"
+              >
+                Keluar
+              </button>
+            </form>
+          </div>
         </div>
       </header>
 

@@ -1,0 +1,102 @@
+/* Centrum Badminton Arena — minimal hand-rolled service worker */
+const CACHE = "cba-v1";
+const OFFLINE_URL = "/offline";
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches
+      .open(CACHE)
+      .then((cache) => cache.add(OFFLINE_URL))
+      .catch(() => {})
+      .then(() => self.skipWaiting())
+  );
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches
+      .keys()
+      .then((keys) =>
+        Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))
+      )
+      .then(() => self.clients.claim())
+  );
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  if (req.method !== "GET") return;
+  const url = new URL(req.url);
+  if (url.origin !== location.origin) return;
+
+  // Navigations: network-first with offline fallback
+  if (req.mode === "navigate") {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          return res;
+        })
+        .catch(async () => {
+          const cached = await caches.match(req);
+          return cached || caches.match(OFFLINE_URL);
+        })
+    );
+    return;
+  }
+
+  // Static assets: cache-first
+  const isStatic =
+    url.pathname.startsWith("/_next/static/") ||
+    url.pathname.startsWith("/icons/") ||
+    /\.(png|jpg|jpeg|svg|woff2?|ico)$/.test(url.pathname);
+
+  if (isStatic) {
+    event.respondWith(
+      caches.match(req).then(
+        (cached) =>
+          cached ||
+          fetch(req).then((res) => {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+            return res;
+          })
+      )
+    );
+  }
+});
+
+/* Push notifications (VAPID) */
+self.addEventListener("push", (event) => {
+  let data = {};
+  try {
+    data = event.data ? event.data.json() : {};
+  } catch {}
+  const title = data.title || "🏸 Centrum Badminton";
+  event.waitUntil(
+    self.registration.showNotification(title, {
+      body: data.body || "",
+      icon: "/icons/icon-192.png",
+      badge: "/icons/icon-192.png",
+      data: { url: data.url || "/app" },
+      tag: data.tag,
+    })
+  );
+});
+
+self.addEventListener("notificationclick", (event) => {
+  event.notification.close();
+  const url = event.notification.data?.url || "/app";
+  event.waitUntil(
+    self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+      for (const client of list) {
+        if ("focus" in client) {
+          client.navigate(url).catch(() => {});
+          return client.focus();
+        }
+      }
+      return self.clients.openWindow(url);
+    })
+  );
+});
