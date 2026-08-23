@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/guard";
 import { formatIDR, todayISO } from "@/lib/availability";
 import { addMonths, currentMonthKey, monthEndExclusive, monthStart, formatMonthLabel } from "@/lib/months";
 import ExpenseForm from "@/components/app/ExpenseForm";
@@ -24,7 +24,7 @@ export default async function PengeluaranPage({
   const today = todayISO();
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : currentMonthKey();
 
-  const supabase = await createClient();
+  const supabase = await requireOwnerPage();
   const { data } = await supabase
     .from("expenses")
     .select("id,category,amount,note,spent_at")

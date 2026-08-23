@@ -19,6 +19,7 @@ export default function PushBell() {
   const [supported, setSupported] = useState(true);
   const [subscribed, setSubscribed] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
     const ok =
@@ -39,21 +40,25 @@ export default function PushBell() {
   async function toggle() {
     if (busy) return;
     setBusy(true);
+    setErr(null);
     try {
       const reg = await navigator.serviceWorker.ready;
 
       if (subscribed) {
         const sub = await reg.pushManager.getSubscription();
         if (sub) {
-          await removePushSubscription(sub.endpoint);
-          await sub.unsubscribe();
+          const rm = await removePushSubscription(sub.endpoint);
+          if (!rm.error) await sub.unsubscribe();
         }
         setSubscribed(false);
         return;
       }
 
       const permission = await Notification.requestPermission();
-      if (permission !== "granted") return;
+      if (permission !== "granted") {
+        setErr("Izin notifikasi ditolak di pengaturan browser.");
+        return;
+      }
 
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
@@ -63,14 +68,26 @@ export default function PushBell() {
       });
 
       const json = sub.toJSON();
-      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) return;
+      if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
+        setErr("Langganan tidak valid, coba lagi.");
+        return;
+      }
       const res = await savePushSubscription({
         endpoint: json.endpoint,
         keys: { p256dh: json.keys.p256dh, auth: json.keys.auth },
       });
-      if (!res.error) setSubscribed(true);
-    } catch {
-      // ignore — button state stays as-is
+      if (res.error) {
+        setErr(res.error);
+        return;
+      }
+      setSubscribed(true);
+    } catch (e) {
+      console.error("push toggle failed:", e);
+      setErr(
+        e instanceof Error && e.name === "NotAllowedError"
+          ? "Notifikasi diblokir browser — cek pengaturan situs."
+          : "Gagal mengaktifkan notifikasi, coba lagi."
+      );
     } finally {
       setBusy(false);
     }
@@ -88,16 +105,32 @@ export default function PushBell() {
   }
 
   return (
-    <button
-      type="button"
-      onClick={() => void toggle()}
-      disabled={busy}
-      title={subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi booking"}
-      className={`rounded-lg px-1.5 py-1 text-sm transition ${
-        subscribed ? "text-emerald-600" : "text-navy-700/50 hover:text-navy-800"
-      }`}
-    >
-      {subscribed ? "🔔" : "🔕"}
-    </button>
+    <span className="relative inline-flex items-center">
+      <button
+        type="button"
+        onClick={() => void toggle()}
+        disabled={busy}
+        title={
+          err ?? (subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi booking")
+        }
+        aria-label={err ?? undefined}
+        className={`rounded-lg px-1.5 py-1 text-sm transition ${
+          err
+            ? "text-red-500"
+            : subscribed
+              ? "text-emerald-600"
+              : "text-navy-700/50 hover:text-navy-800"
+        }`}
+      >
+        {subscribed ? "🔔" : "🔕"}
+      </button>
+      {err && (
+        <span
+          className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500"
+          title={err}
+          role="status"
+        />
+      )}
+    </span>
   );
 }

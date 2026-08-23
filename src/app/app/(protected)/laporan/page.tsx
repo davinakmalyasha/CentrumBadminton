@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/guard";
 import { formatIDR } from "@/lib/availability";
 import {
   addMonths,
@@ -22,7 +22,19 @@ export default async function LaporanPage({
   const start = monthStart(month);
   const endEx = monthEndExclusive(month);
 
-  const supabase = await createClient();
+  const supabase = await requireOwnerPage();
+  const pricingForMonth = await supabase.rpc("get_pricing_for", {
+    p_date: start,
+  });
+  const pRule = pricingForMonth.data?.[0];
+  const openHours = pRule
+    ? Math.max(
+        Number(pRule.close_time.slice(0, 2)) -
+          Number(pRule.open_time.slice(0, 2)),
+        1
+      )
+    : 16;
+
   const [paymentsRes, bookingsRes, expensesRes, courtsRes] = await Promise.all([
     supabase
       .from("payments")
@@ -86,7 +98,7 @@ export default async function LaporanPage({
 
   // Per-court utilization
   const courtCount = Math.max(courtList.length, 1);
-  const capacityHours = courtCount * 16 * nDays; // 16 open hours/day
+  const capacityHours = courtCount * openHours * nDays;
   const bookedHoursByCourt = new Map<string, number>();
   const hourTally = new Map<number, number>();
   let totalBooked = 0;
@@ -176,7 +188,7 @@ export default async function LaporanPage({
             const hrs = bookedHoursByCourt.get(c.id) ?? 0;
             const pct = Math.min(
               100,
-              Math.round((hrs / Math.max(16 * nDays, 1)) * 100)
+              Math.round((hrs / Math.max(openHours * nDays, 1)) * 100)
             );
             return (
               <li key={c.id}>

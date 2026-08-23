@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
 import BlockForm from "@/components/app/BlockForm";
 import DeleteBlockButton from "@/components/app/DeleteBlockButton";
@@ -16,7 +16,7 @@ type BlockRow = {
 };
 
 export default async function BlokirPage() {
-  const supabase = await createClient();
+  const supabase = await requireOwnerPage();
   const today = todayISO();
 
   const [courtsRes, blocksRes] = await Promise.all([

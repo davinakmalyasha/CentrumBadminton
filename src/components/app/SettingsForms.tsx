@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import {
   createPricingRule,
+  createStaff,
   upsertCourt,
   type ActionState,
 } from "@/app/app/(protected)/actions";
@@ -119,6 +120,61 @@ export function PricingRuleForm({ nextMonth }: { nextMonth: string }) {
         className="w-full rounded-xl bg-navy-800 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
       >
         {pending ? "Menyimpan…" : "💰 Simpan Aturan Harga Baru"}
+      </button>
+    </form>
+  );
+}
+
+export function NewStaffForm() {
+  const [state, formAction, pending] = useActionState(createStaff, initial);
+
+  return (
+    <form
+      action={formAction}
+      className="space-y-3 rounded-xl border border-dashed border-sky-brand-400/60 bg-sky-brand-400/5 p-3"
+    >
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="sfname" className={label}>
+            Nama lengkap
+          </label>
+          <input id="sfname" name="full_name" required placeholder="cth. Rizky" className={field} />
+        </div>
+        <div>
+          <label htmlFor="sfphone" className={label}>
+            No. WhatsApp
+          </label>
+          <input id="sfphone" name="phone" inputMode="numeric" placeholder="0812…" className={field} />
+        </div>
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label htmlFor="sfemail" className={label}>
+            Email login
+          </label>
+          <input id="sfemail" type="email" name="email" required placeholder="pegawai@centrum.id" className={field} />
+        </div>
+        <div>
+          <label htmlFor="sfpass" className={label}>
+            Password (min. 8)
+          </label>
+          <input id="sfpass" type="text" name="password" required minLength={8} autoComplete="off" className={field} />
+        </div>
+      </div>
+      {state.error && (
+        <p className="text-xs font-semibold text-red-500">⚠️ {state.error}</p>
+      )}
+      {state.ok && (
+        <p className="text-xs font-semibold text-emerald-600">
+          ✅ Akun pegawai dibuat — bagikan email &amp; password ke staf.
+        </p>
+      )}
+      <button
+        type="submit"
+        disabled={pending}
+        className="w-full rounded-xl bg-navy-800 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+      >
+        {pending ? "Membuat akun…" : "👥 Buat Akun Pegawai"}
       </button>
     </form>
   );

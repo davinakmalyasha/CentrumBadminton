@@ -11,8 +11,8 @@ interface Toast {
 /**
  * Realtime watcher — shows a toast whenever a new booking is created
  * by anyone (owner sees staff activity & vice versa).
- * True PWA push arrives in Phase 6 with the service worker; this is the
- * reliable in-app fallback.
+ * Complements PWA push (Phase 6): instant in-app fallback that works
+ * even when push is unavailable or permission is denied.
  */
 export default function NotificationWatcher() {
   const [toasts, setToasts] = useState<Toast[]>([]);

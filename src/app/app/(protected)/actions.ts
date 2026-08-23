@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { addDaysISO, computePrice } from "@/lib/availability";
 import { sendPushToAll } from "@/lib/webpush";
 
@@ -760,6 +761,61 @@ export async function toggleProfileActive(
     .update({ is_active: active })
     .eq("id", id);
   if (error) return { error: `Gagal: ${error.message}` };
+
+  revalidatePath("/app/pengaturan");
+  return { error: null, ok: true };
+}
+
+export async function createStaff(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  try {
+    await requireOwner();
+  } catch {
+    return { error: "Hanya owner." };
+  }
+
+  const admin = createAdminClient();
+  if (!admin)
+    return {
+      error:
+        "SUPABASE_SERVICE_ROLE_KEY belum diset di environment — tidak bisa membuat akun.",
+    };
+
+  const fullName = String(formData.get("full_name") ?? "").trim();
+  const phone = String(formData.get("phone") ?? "").replace(/\D/g, "");
+  const email = String(formData.get("email") ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(formData.get("password") ?? "");
+
+  if (!fullName) return { error: "Nama wajib diisi." };
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
+    return { error: "Email tidak valid." };
+  if (password.length < 8) return { error: "Password minimal 8 karakter." };
+
+  const { data, error } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName },
+  });
+
+  if (error || !data.user) {
+    const msg = (error?.message ?? "").toLowerCase();
+    if (msg.includes("already") || msg.includes("registered"))
+      return { error: "Email sudah terdaftar." };
+    return { error: `Gagal membuat akun: ${error?.message ?? "unknown"}` };
+  }
+
+  // Trigger handle_new_user created the profile as 'pegawai'; enrich it.
+  const { error: upErr } = await admin
+    .from("profiles")
+    .update({ full_name: fullName, phone: phone || null })
+    .eq("id", data.user.id);
+  if (upErr)
+    return { error: `Akun dibuat, tapi gagal menyimpan profil: ${upErr.message}` };
 
   revalidatePath("/app/pengaturan");
   return { error: null, ok: true };
