@@ -52,3 +52,44 @@ export async function removePushSubscription(endpoint: string): Promise<PushStat
   if (error) return { error: `Gagal hapus: ${error.message}` };
   return { error: null, ok: true, state: "unsubscribed" };
 }
+
+export type DeviceInfo = {
+  id: string;
+  user_agent: string | null;
+  created_at: string;
+};
+
+/** List this user's registered push devices (Pengaturan → Perangkat Saya). */
+export async function listMyDevices(): Promise<DeviceInfo[]> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("push_subscriptions")
+    .select("id,user_agent,created_at")
+    .eq("profile_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return (data ?? []) as DeviceInfo[];
+}
+
+/** Delete one of this user's registered devices by row id. */
+export async function removeDeviceById(id: string): Promise<PushState> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Belum login." };
+
+  const { error } = await supabase
+    .from("push_subscriptions")
+    .delete()
+    .eq("id", id)
+    .eq("profile_id", user.id);
+
+  if (error) return { error: `Gagal hapus: ${error.message}` };
+  return { error: null, ok: true, state: "removed" };
+}

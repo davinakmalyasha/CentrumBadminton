@@ -29,6 +29,7 @@ type PRow = {
   booking_id: string;
   amount: number;
   method: string;
+  note: string | null;
   paid_at: string;
 };
 
@@ -52,7 +53,7 @@ export default async function PembayaranPage({
       .order("start_time"),
     supabase
       .from("payments")
-      .select("id,booking_id,amount,method,paid_at")
+      .select("id,booking_id,amount,method,note,paid_at")
       .gte("paid_at", `${date}T00:00:00+07:00`)
       .lt("paid_at", `${next}T00:00:00+07:00`)
       .order("paid_at", { ascending: false }),
@@ -184,12 +185,17 @@ export default async function PembayaranPage({
               return (
                 <li
                   key={p.id}
-                  className="flex items-center justify-between px-3.5 py-2.5 text-xs font-semibold text-navy-800"
+                  className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs font-semibold text-navy-800"
                 >
-                  <span className="truncate">
+                  <span className="min-w-0 truncate">
                     {p.method === "qris" ? "📱" : "💵"} {b?.customer_name ?? "—"}
+                    {p.note && (
+                      <span className="block truncate text-[10px] font-medium text-navy-700/45">
+                        {p.note}
+                      </span>
+                    )}
                   </span>
-                  <span>{formatIDR(Number(p.amount))}</span>
+                  <span className="flex-shrink-0">{formatIDR(Number(p.amount))}</span>
                 </li>
               );
             })}

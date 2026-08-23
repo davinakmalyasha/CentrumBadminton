@@ -80,6 +80,7 @@ export async function createBooking(
   const source = String(formData.get("source") ?? "walk_in") as "whatsapp" | "walk_in";
   const notes = String(formData.get("notes") ?? "").trim() || null;
   const overrideRaw = String(formData.get("override_price") ?? "").replace(/\D/g, "");
+  const unconfirmed = String(formData.get("unconfirmed") ?? "") === "1";
 
   const fieldErrors: Record<string, string> = {};
   if (!courtId) fieldErrors.court_id = "Pilih lapangan";
@@ -130,7 +131,7 @@ export async function createBooking(
     booking_date: dateISO,
     start_time: `${String(startH).padStart(2, "0")}:00`,
     end_time: `${String(endH).padStart(2, "0")}:00`,
-    status: "confirmed",
+    status: unconfirmed ? "pending" : "confirmed",
     source,
     customer_id: customerId,
     customer_name: name,
@@ -258,6 +259,7 @@ export async function recordPayment(
   const amountRaw = String(formData.get("amount") ?? "").replace(/\D/g, "");
   const method = String(formData.get("method") ?? "cash") as "cash" | "qris";
   const amount = Number(amountRaw);
+  const note = String(formData.get("note") ?? "").trim() || null;
 
   if (!bookingId) return { error: "Booking tidak valid" };
   if (!Number.isFinite(amount) || amount <= 0)
@@ -267,6 +269,7 @@ export async function recordPayment(
     booking_id: bookingId,
     amount,
     method,
+    note,
     recorded_by: user.id,
   });
 
@@ -392,9 +395,14 @@ export async function createSeries(
   const name = String(formData.get("customer_name") ?? "").trim();
   const phoneRaw = String(formData.get("customer_phone") ?? "").replace(/\D/g, "");
   const weeks = Math.min(Math.max(Number(formData.get("weeks") ?? 8), 1), MAX_WEEKS);
+  const endDateRaw = String(formData.get("end_date") ?? "");
 
   if (!courtId) return { error: "Pilih lapangan." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(startDate)) return { error: "Tanggal mulai tidak valid." };
+  if (endDateRaw && !/^\d{4}-\d{2}-\d{2}$/.test(endDateRaw))
+    return { error: "Tanggal akhir tidak valid." };
+  if (endDateRaw && endDateRaw < startDate)
+    return { error: "Tanggal akhir tidak boleh sebelum tanggal mulai." };
   if (!Number.isFinite(startH) || !Number.isFinite(endH) || endH <= startH)
     return { error: "Jam selesai harus setelah jam mulai." };
   if (!name) return { error: "Nama pelanggan wajib diisi." };
@@ -436,6 +444,7 @@ export async function createSeries(
       start_time: `${String(startH).padStart(2, "0")}:00`,
       end_time: `${String(endH).padStart(2, "0")}:00`,
       start_date: startDate,
+      end_date: endDateRaw || null,
       status: "active",
       created_by: user.id,
     })
@@ -445,10 +454,11 @@ export async function createSeries(
   if (sErr || !series)
     return { error: `Gagal membuat langganan: ${sErr?.message ?? "?"}` };
 
-  // Generate weekly instances, skipping conflicts
+  // Generate weekly instances, skipping conflicts, capped by end_date
   let created = 0;
   for (let i = 0; i < weeks; i++) {
     const d = addDaysISO(startDate, i * 7);
+    if (endDateRaw && d > endDateRaw) break;
     const { error } = await supabase.from("bookings").insert({
       court_id: courtId,
       booking_date: d,
@@ -818,5 +828,25 @@ export async function createStaff(
     return { error: `Akun dibuat, tapi gagal menyimpan profil: ${upErr.message}` };
 
   revalidatePath("/app/pengaturan");
+  return { error: null, ok: true };
+}
+
+export async function updateCustomerNotes(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { supabase } = await requireUser();
+
+  const id = String(formData.get("customer_id") ?? "");
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+  if (!id) return { error: "Pelanggan tidak valid." };
+
+  const { error } = await supabase
+    .from("customers")
+    .update({ notes })
+    .eq("id", id);
+  if (error) return { error: `Gagal simpan catatan: ${error.message}` };
+
+  revalidatePath("/app/pelanggan");
   return { error: null, ok: true };
 }

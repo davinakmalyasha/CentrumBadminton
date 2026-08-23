@@ -78,6 +78,10 @@ as $$
   );
 $$;
 
+-- Callable by app sessions (boolean-only helpers, safe to expose)
+grant execute on function public.is_owner() to anon, authenticated;
+grant execute on function public.is_staff() to anon, authenticated;
+
 -- ------------------------------------------------------------
 -- Courts
 -- ------------------------------------------------------------

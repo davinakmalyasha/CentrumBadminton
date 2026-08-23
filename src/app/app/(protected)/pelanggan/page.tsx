@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
 export const metadata = { title: "Pelanggan · Centrum Manager" };
 
@@ -8,7 +9,7 @@ export default async function PelangganPage() {
   const [customersRes, bookingsRes] = await Promise.all([
     supabase
       .from("customers")
-      .select("id,name,phone,no_show_count,created_at")
+      .select("id,name,phone,notes,no_show_count,created_at")
       .order("name")
       .limit(200),
     supabase
@@ -23,6 +24,7 @@ export default async function PelangganPage() {
     id: string;
     name: string;
     phone: string;
+    notes: string | null;
     no_show_count: number;
   };
 
@@ -87,6 +89,7 @@ export default async function PelangganPage() {
                         }).format(new Date(`${s.last}T00:00:00+07:00`))}`
                       : ""}
                   </p>
+                  <CustomerNotesForm customerId={c.id} notes={c.notes} />
                 </div>
                 <a
                   href={wa}
