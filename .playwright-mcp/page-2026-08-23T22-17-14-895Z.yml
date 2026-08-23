@@ -1,0 +1,122 @@
+- generic [active] [ref=f12e1]:
+  - generic [ref=f12e2]:
+    - banner [ref=f12e3]:
+      - generic [ref=f12e4]:
+        - generic [ref=f12e5]:
+          - generic [ref=f12e6]: CB
+          - generic [ref=f12e7]:
+            - paragraph [ref=f12e8]: Centrum Manager
+            - paragraph [ref=f12e9]: Owner Centrum · Owner
+        - generic [ref=f12e10]:
+          - button "🔕" [ref=f12e12]
+          - button "Keluar" [ref=f12e14]
+    - main [ref=f12e15]:
+      - generic [ref=f12e42]:
+        - generic [ref=f12e43]:
+          - heading "🔁 Langganan Mingguan" [level=1] [ref=f12e44]
+          - paragraph [ref=f12e45]: Komunitas rutin — slot dibuat otomatis setiap minggu.
+        - generic [ref=f12e46]:
+          - generic [ref=f12e47]:
+            - generic [ref=f12e48]: Lapangan
+            - combobox [ref=f12e49]:
+              - option "🏸 Lapangan 1" [selected]
+              - option "🏸 Lapangan 2"
+          - generic [ref=f12e50]:
+            - generic [ref=f12e51]: Nama Komunitas / Pelanggan
+            - textbox "Nama Komunitas / Pelanggan" [ref=f12e52]:
+              - /placeholder: cth. Komunitas Sabtu
+          - generic [ref=f12e53]:
+            - generic [ref=f12e54]: No. WA (opsional)
+            - textbox "No. WA (opsional)" [ref=f12e55]:
+              - /placeholder: 08xx
+          - generic [ref=f12e56]:
+            - generic [ref=f12e57]: Mulai tanggal (hari ini = pola mingguan)
+            - textbox "Mulai tanggal (hari ini = pola mingguan)" [ref=f12e58]: 2026-08-24
+          - generic [ref=f12e59]:
+            - generic [ref=f12e60]: Berakhir tanggal (opsional — batasi durasi langganan)
+            - textbox "Berakhir tanggal (opsional — batasi durasi langganan)" [ref=f12e61]
+          - generic [ref=f12e62]:
+            - generic [ref=f12e63]:
+              - generic [ref=f12e64]: Jam main
+              - combobox "Jam main" [ref=f12e65]:
+                - option "07.00"
+                - option "08.00"
+                - option "09.00"
+                - option "10.00"
+                - option "11.00"
+                - option "12.00"
+                - option "13.00"
+                - option "14.00"
+                - option "15.00"
+                - option "16.00"
+                - option "17.00"
+                - option "18.00"
+                - option "19.00" [selected]
+                - option "20.00"
+                - option "21.00"
+                - option "22.00"
+            - generic [ref=f12e66]:
+              - generic [ref=f12e67]: Selesai
+              - combobox "Selesai" [ref=f12e68]:
+                - option "08.00"
+                - option "09.00"
+                - option "10.00"
+                - option "11.00"
+                - option "12.00"
+                - option "13.00"
+                - option "14.00"
+                - option "15.00"
+                - option "16.00"
+                - option "17.00"
+                - option "18.00"
+                - option "19.00"
+                - option "20.00"
+                - option "21.00" [selected]
+                - option "22.00"
+                - option "23.00"
+            - generic [ref=f12e69]:
+              - generic [ref=f12e70]: Minggu
+              - combobox "Minggu" [ref=f12e71]:
+                - option "4×"
+                - option "6×"
+                - option "8×" [selected]
+                - option "12×"
+          - paragraph [ref=f12e76]: ✅ Langganan dibuat — 2 jadwal mingguan dibuat
+          - button "🔁 Buat Langganan" [ref=f12e72]
+        - generic [ref=f12e73]:
+          - heading "Berjalan (1)" [level=2] [ref=f12e77]
+          - list [ref=f12e78]:
+            - listitem [ref=f12e79]:
+              - generic [ref=f12e81]:
+                - paragraph [ref=f12e82]: 👥 Komunitas Cirebon Smashactive
+                - paragraph [ref=f12e83]:
+                  - text: Senin · 19:00–21:00 · 🏸 Lapangan 1 · s.d. 7 Sep ·
+                  - generic [ref=f12e84]: 2 jadwal ke depan
+              - generic [ref=f12e86]:
+                - button "⏸ Jeda" [ref=f12e88]
+                - button "➕+8 mgg" [ref=f12e90]
+                - button "Akhiri" [ref=f12e92]
+    - navigation [ref=f12e20]:
+      - generic [ref=f12e21]:
+        - link "🏠 Beranda" [ref=f12e22] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f12e23]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f12e24] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f12e25]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f12e26] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f12e27]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f12e28] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f12e29]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f12e30] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f12e31]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f12e37] [cursor=pointer]
+  - alert [ref=f12e41]

@@ -2,6 +2,7 @@
 
 import { GoogleGenAI, Type, type FunctionDeclaration } from "@google/genai";
 import { createClient } from "@/lib/supabase/server";
+import { rateLimit } from "@/lib/ratelimit";
 import {
   getTodaySummary,
   getRangeSummary,
@@ -14,17 +15,7 @@ export interface ChatMsg {
   text: string;
 }
 
-const MODEL = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
-
-async function isOwner(): Promise<boolean> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return false;
-  const { data: flag } = await supabase.rpc("is_owner");
-  return flag === true;
-}
+const MODEL = process.env.GEMINI_MODEL ?? "gemini-3.5-flash";
 
 /* ------------------------------------------------------------------ */
 /* Tool declarations for Gemini                                        */
@@ -91,7 +82,19 @@ Aturan:
 export async function askAi(
   history: ChatMsg[]
 ): Promise<{ reply?: string; error?: string }> {
-  if (!(await isOwner())) return { error: "Hanya owner yang bisa memakai AI." };
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Hanya owner yang bisa memakai AI." };
+  const { data: flag } = await supabase.rpc("is_owner");
+  if (flag !== true) return { error: "Hanya owner yang bisa memakai AI." };
+
+  // Cost guard: 10 pertanyaan / menit / user
+  const rl = rateLimit(`ai:${user.id}`, 10, 60_000);
+  if (!rl.ok) {
+    return { error: `Lambat sedikit 🙏 Coba lagi dalam ${rl.retryAfterSec} detik.` };
+  }
 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
@@ -131,12 +134,12 @@ export async function askAi(
         return { reply: text || "(AI tidak merespons)" };
       }
 
-      // Append model's function calls
+      // Append model's function calls — preserve thoughtSignature
+      // (required by Gemini 3.x for multi-round tool use)
       contents.push({
         role: "model",
-        parts: calls.map((fc) => ({
-          functionCall: { name: fc.name ?? "", args: fc.args ?? {} },
-        })) as never,
+        parts: (res.candidates?.[0]?.content?.parts ??
+          calls.map((fc) => ({ functionCall: fc }))) as never,
       });
 
       // Execute and append responses
@@ -172,6 +175,11 @@ export async function askAi(
       return { error: "AI sedang sibuk — coba lagi sebentar ya." };
     if (/API key|API_KEY|permission/i.test(msg))
       return { error: "🔑 API key tidak valid — cek GEMINI_API_KEY." };
+    if (/404|not found|no longer available/i.test(msg))
+      return {
+        error:
+          "🤖 Model AI tidak tersedia. Set GEMINI_MODEL di env (mis. gemini-3.5-flash) lalu restart.",
+      };
     return { error: `AI error: ${msg.slice(0, 140)}` };
   }
 }
@@ -183,7 +191,9 @@ export async function askAi(
 export async function buildClosingReport(
   dateArg?: string
 ): Promise<{ text?: string; error?: string }> {
-  if (!(await isOwner())) return { error: "Hanya owner." };
+  const supabase = await createClient();
+  const { data: flag } = await supabase.rpc("is_owner");
+  if (flag !== true) return { error: "Hanya owner." };
 
   const date = /^\d{4}-\d{2}-\d{2}$/.test(dateArg ?? "") ? dateArg! : todayISO();
   const summary = (await getTodaySummary({ date })) as {

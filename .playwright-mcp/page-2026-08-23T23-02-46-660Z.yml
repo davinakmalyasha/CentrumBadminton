@@ -1,0 +1,152 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]: CB
+          - generic [ref=e7]:
+            - paragraph [ref=e8]: Centrum Manager
+            - paragraph [ref=e9]: Owner Centrum · Owner
+        - generic [ref=e10]:
+          - button "🔕" [ref=e12]
+          - button "Keluar" [ref=e14]
+    - main [ref=e15]:
+      - generic [ref=e16]:
+        - generic [ref=e17]:
+          - link "Hari sebelumnya" [ref=e18] [cursor=pointer]:
+            - /url: /app/jadwal?date=2026-08-25
+            - text: ‹
+          - generic [ref=e19]:
+            - heading "📅 Jadwal" [level=1] [ref=e20]
+            - paragraph [ref=e21]: Rabu, 26 Agu
+          - link "Hari berikutnya" [ref=e22] [cursor=pointer]:
+            - /url: /app/jadwal?date=2026-08-27
+            - text: ›
+        - link "⟲ Kembali ke hari ini" [ref=e24] [cursor=pointer]:
+          - /url: /app/jadwal
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - generic [ref=e28]: Lapangan 1
+            - generic [ref=e29]: Lapangan 2
+          - generic [ref=e30]:
+            - generic [ref=e31]:
+              - generic [ref=e32]: "07"
+              - link "+" [ref=e34] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=7
+              - link "+" [ref=e36] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=7
+            - generic [ref=e37]:
+              - generic [ref=e38]: "08"
+              - link "+" [ref=e40] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=8
+              - link "+" [ref=e42] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=8
+            - generic [ref=e43]:
+              - generic [ref=e44]: "09"
+              - link "+" [ref=e46] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=9
+              - link "+" [ref=e48] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=9
+            - generic [ref=e49]:
+              - generic [ref=e50]: "10"
+              - link "+" [ref=e52] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=10
+              - link "+" [ref=e54] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=10
+            - generic [ref=e55]:
+              - generic [ref=e56]: "11"
+              - link "+" [ref=e58] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=11
+              - link "+" [ref=e60] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=11
+            - generic [ref=e61]:
+              - generic [ref=e62]: "12"
+              - link "+" [ref=e64] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=12
+              - link "+" [ref=e66] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=12
+            - generic [ref=e67]:
+              - generic [ref=e68]: "13"
+              - link "+" [ref=e70] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=13
+              - link "+" [ref=e72] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=13
+            - generic [ref=e73]:
+              - generic [ref=e74]: "14"
+              - link "+" [ref=e76] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=14
+              - link "+" [ref=e78] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=14
+            - generic [ref=e79]:
+              - generic [ref=e80]: "15"
+              - link "+" [ref=e82] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=15
+              - link "+" [ref=e84] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=15
+            - generic [ref=e85]:
+              - generic [ref=e86]: "16"
+              - link "+" [ref=e88] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=16
+              - link "+" [ref=e90] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=16
+            - generic [ref=e91]:
+              - generic [ref=e92]: "17"
+              - link "+" [ref=e94] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=17
+              - link "+" [ref=e96] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=17
+            - generic [ref=e97]:
+              - generic [ref=e98]: "18"
+              - link "+" [ref=e100] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=18
+              - link "+" [ref=e102] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=18
+            - generic [ref=e103]:
+              - generic [ref=e104]: "19"
+              - link "+" [ref=e106] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=19
+              - link "+" [ref=e108] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=19
+            - generic [ref=e109]:
+              - generic [ref=e110]: "20"
+              - link "+" [ref=e112] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=20
+              - link "+" [ref=e114] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=20
+            - generic [ref=e115]:
+              - generic [ref=e116]: "21"
+              - link "+" [ref=e118] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=21
+              - link "+" [ref=e120] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=21
+            - generic [ref=e121]:
+              - generic [ref=e122]: "22"
+              - link "+" [ref=e124] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=a3fcb776-c24a-4411-bdd9-07a1e6fe4896&hour=22
+              - link "+" [ref=e126] [cursor=pointer]:
+                - /url: /app/booking/baru?date=2026-08-26&court=399bd694-e7ae-409d-b9b3-b0431b056ae8&hour=22
+          - generic [ref=e127]: Tap + untuk buat booking · Rp40.000/jam siang · Rp50.000/jam malam
+    - navigation [ref=e128]:
+      - generic [ref=e129]:
+        - link "🏠 Beranda" [ref=e130] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=e131]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=e132] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=e133]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=e134] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=e135]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=e136] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=e137]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=e138] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=e139]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=e145] [cursor=pointer]
+  - alert [ref=e149]

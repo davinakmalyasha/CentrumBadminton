@@ -260,6 +260,20 @@ export default function BookingForm({
         <textarea id="notes" name="notes" rows={2} className={field} />
       </div>
 
+      <label
+        htmlFor="unconfirmed"
+        className="flex cursor-pointer items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
+        title="Simpan sebagai provisional — konfirmasi nanti dari tombol Confirm di jadwal"
+      >
+        <input id="unconfirmed" name="unconfirmed" value="1" type="checkbox" className="mt-0.5 h-4 w-4 accent-amber-500" />
+        <span className="text-[11px] font-semibold leading-snug text-amber-700">
+          Simpan sebagai <b>belum konfirmasi</b> (pending)
+          <span className="block font-medium text-amber-600/70">
+            Untuk reservasi WA yang belum pasti — slot tetap terkunci, konfirmasi lewat tombol Confirm.
+          </span>
+        </span>
+      </label>
+
       {role === "owner" && (
         <div className="rounded-xl border border-dashed border-accent-400 bg-accent-500/5 p-3">
           <label htmlFor="override_price" className={label}>

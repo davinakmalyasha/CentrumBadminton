@@ -1,0 +1,59 @@
+- generic [active] [ref=e1]:
+  - button "Open Next.js Dev Tools" [ref=e66] [cursor=pointer]
+  - alert [ref=e70]: 📊 Hari Ini Senin, 24 Agu
+  - generic [ref=e85]:
+    - banner [ref=e86]:
+      - generic [ref=e87]:
+        - generic [ref=e88]:
+          - generic [ref=e89]: CB
+          - generic [ref=e90]:
+            - paragraph [ref=e91]: Centrum Manager
+            - paragraph [ref=e92]: Rizky Pegawai · Pegawai
+        - generic [ref=e93]:
+          - button "🔕" [ref=e95]
+          - button "Keluar" [ref=e97]
+    - main [ref=e98]:
+      - generic [ref=e99]:
+        - heading "📊 Hari Ini Senin, 24 Agu" [level=1] [ref=e101]
+        - generic [ref=e102]:
+          - generic [ref=e103]:
+            - paragraph [ref=e104]: 💰 Pendapatan
+            - paragraph [ref=e105]: Rp0
+            - paragraph [ref=e106]: Cash Rp0 · QRIS Rp0
+          - generic [ref=e107]:
+            - paragraph [ref=e108]: 🏸 Booking aktif
+            - paragraph [ref=e109]: "0"
+            - paragraph [ref=e110]: 0 total hari ini
+          - generic [ref=e111]:
+            - paragraph [ref=e112]: 📈 Okupansi
+            - paragraph [ref=e113]: 0%
+            - paragraph [ref=e114]: 0 jam terpakai
+          - generic [ref=e115]:
+            - paragraph [ref=e116]: ⏭️ Berikutnya
+            - paragraph [ref=e117]: —
+            - paragraph [ref=e118]: Tidak ada lagi
+        - generic [ref=e119]:
+          - heading "Agenda Lapangan" [level=2] [ref=e120]
+          - paragraph [ref=e122]: Belum ada booking hari ini 🌴
+    - navigation [ref=e123]:
+      - generic [ref=e124]:
+        - link "🏠 Beranda" [ref=e125] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=e126]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=e127] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=e128]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=e129] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=e130]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=e131] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=e132]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=e133] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=e134]: 👥
+          - text: Pelanggan

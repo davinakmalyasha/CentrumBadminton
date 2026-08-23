@@ -53,6 +53,13 @@ export default function SeriesForm({
         <input id="sdate" type="date" name="start_date" defaultValue={today} required className={field} />
       </div>
 
+      <div>
+        <label htmlFor="senddate" className={label}>
+          Berakhir tanggal (opsional — batasi durasi langganan)
+        </label>
+        <input id="senddate" type="date" name="end_date" min={today} className={field} />
+      </div>
+
       <div className="grid grid-cols-3 gap-2">
         <div>
           <label htmlFor="sstart" className={label}>

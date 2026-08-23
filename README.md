@@ -71,6 +71,7 @@ npm run dev        # http://localhost:3000  |  app: http://localhost:3000/app
 | `npm run build` | Production build |
 | `npm start` | Serve production build |
 | `npm run lint` | ESLint |
+| `npm test` | Unit tests (Vitest — logika harga, slot, bulan) |
 
 ## Catatan Sesi
 
@@ -90,7 +91,14 @@ npx web-push generate-vapid-keys
 # isi NEXT_PUBLIC_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY di .env.local
 ```
 
-Lalu tekan ikon 🔔 di header aplikasi dan izinkan notifikasi.
+Lalu tekan ikon 🔕 di header aplikasi dan izinkan notifikasi. Perangkat yang
+terdaftar bisa dilihat/dihapus di **Pengaturan → Perangkat Saya**.
+
+### Catatan model Gemini
+
+Default model: `gemini-3.5-flash` (model lama seperti `gemini-2.5-flash` sudah
+dimatikan Google). Jika suatu saat model retired, set `GEMINI_MODEL` di env
+(mis. `gemini-3.6-flash`) lalu redeploy.
 
 ## Deploy ke Production
 

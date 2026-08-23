@@ -1,5 +1,6 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { addMonths, currentMonthKey } from "@/lib/months";
+import { listMyDevices } from "@/app/app/(protected)/push-actions";
 import {
   NewCourtForm,
   NewStaffForm,
@@ -7,6 +8,7 @@ import {
   RenameCourtForm,
 } from "@/components/app/SettingsForms";
 import { ToggleCourtActiveButton, ToggleStaffActiveButton } from "@/components/app/SettingsControls";
+import DeviceList from "@/components/app/DeviceList";
 
 export const metadata = { title: "Pengaturan · Centrum Manager" };
 
@@ -47,6 +49,7 @@ export default async function PengaturanPage() {
   const rules = (pricingRes.data ?? []) as PriceRow[];
   const profiles = (profilesRes.data ?? []) as ProfileRow[];
   const activeRule = rules[0];
+  const devices = await listMyDevices();
 
   return (
     <div className="space-y-5">
@@ -130,6 +133,15 @@ export default async function PengaturanPage() {
             </li>
           ))}
         </ul>
+      </section>
+
+      {/* Push devices */}
+      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
+        <h2 className="mb-1 text-sm font-extrabold text-navy-900">🔔 Perangkat Saya</h2>
+        <p className="mb-3 text-[11px] font-medium text-navy-700/50">
+          Perangkat yang menerima notifikasi booking untuk akun ini.
+        </p>
+        <DeviceList initialDevices={devices} />
       </section>
     </div>
   );

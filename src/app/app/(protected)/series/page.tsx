@@ -14,6 +14,7 @@ type SeriesRow = {
   start_time: string;
   end_time: string;
   start_date: string;
+  end_date: string | null;
   status: string;
   courts: { name: string } | null;
 };
@@ -100,7 +101,15 @@ export default async function SeriesPage() {
                       </p>
                       <p className="mt-0.5 text-[11px] font-semibold text-navy-700/60">
                         {DAY_NAMES[s.weekday]} · {String(s.start_time).slice(0, 5)}–
-                        {String(s.end_time).slice(0, 5)} · 🏸 {s.courts?.name ?? ""} ·{" "}
+                        {String(s.end_time).slice(0, 5)} · 🏸 {s.courts?.name ?? ""}
+                        {s.end_date
+                          ? ` · s.d. ${new Intl.DateTimeFormat("id-ID", {
+                              day: "numeric",
+                              month: "short",
+                              timeZone: "Asia/Jakarta",
+                            }).format(new Date(`${s.end_date}T00:00:00+07:00`))}`
+                          : ""}{" "}
+                        ·{" "}
                         <span className="font-bold text-sky-brand-600">
                           {count} jadwal ke depan
                         </span>

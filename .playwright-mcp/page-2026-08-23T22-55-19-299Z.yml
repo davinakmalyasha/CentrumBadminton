@@ -1,0 +1,120 @@
+- generic [active] [ref=f16e1]:
+  - generic [ref=f16e2]:
+    - banner [ref=f16e3]:
+      - generic [ref=f16e4]:
+        - generic [ref=f16e5]:
+          - generic [ref=f16e6]: CB
+          - generic [ref=f16e7]:
+            - paragraph [ref=f16e8]: Centrum Manager
+            - paragraph [ref=f16e9]: Owner Centrum · Owner
+        - generic [ref=f16e10]:
+          - button "🔕" [ref=f16e12]
+          - button "Keluar" [ref=f16e14]
+    - main [ref=f16e15]:
+      - generic [ref=f16e16]:
+        - generic [ref=f16e17]:
+          - link "‹" [ref=f16e18] [cursor=pointer]:
+            - /url: /app/laporan?month=2026-07
+          - generic [ref=f16e19]:
+            - heading "📊 Laporan" [level=1] [ref=f16e20]
+            - paragraph [ref=f16e21]: Agustus 2026
+          - link "›" [ref=f16e22] [cursor=pointer]:
+            - /url: /app/laporan?month=2026-09
+        - generic [ref=f16e23]:
+          - generic [ref=f16e24]:
+            - generic [ref=f16e25]:
+              - paragraph [ref=f16e26]: Pendapatan kotor
+              - paragraph [ref=f16e27]: Rp50.000
+            - link "⬇️ CSV" [ref=f16e28] [cursor=pointer]:
+              - /url: /api/reports/export?month=2026-08
+          - generic [ref=f16e29]:
+            - generic [ref=f16e30]:
+              - paragraph [ref=f16e31]: Cash
+              - paragraph [ref=f16e32]: Rp50.000
+            - generic [ref=f16e33]:
+              - paragraph [ref=f16e34]: QRIS
+              - paragraph [ref=f16e35]: Rp0
+            - generic [ref=f16e36]:
+              - paragraph [ref=f16e37]: Beban
+              - paragraph [ref=f16e38]: −Rp0
+          - generic [ref=f16e39]:
+            - generic [ref=f16e40]: Laba bersih
+            - generic [ref=f16e41]: Rp50.000
+        - generic [ref=f16e42]:
+          - generic [ref=f16e43]:
+            - heading "📈 Okupansi" [level=2] [ref=f16e44]
+            - generic [ref=f16e45]: 0%
+          - list [ref=f16e46]:
+            - listitem [ref=f16e47]:
+              - generic [ref=f16e48]:
+                - generic [ref=f16e49]: 🏸 Lapangan 1
+                - generic [ref=f16e50]: 4 jam · 1%
+            - listitem [ref=f16e53]:
+              - generic [ref=f16e54]:
+                - generic [ref=f16e55]: 🏸 Lapangan 2
+                - generic [ref=f16e56]: 0 jam · 0%
+        - generic [ref=f16e58]:
+          - heading "🔥 Jam Terpopuler" [level=2] [ref=f16e59]
+          - generic [ref=f16e60]:
+            - generic [ref=f16e61]: 20.00 · 1×
+            - generic [ref=f16e62]: 19.00 · 1×
+        - generic [ref=f16e63]:
+          - heading "💰 Pendapatan Harian" [level=2] [ref=f16e64]
+          - generic [ref=f16e65]:
+            - generic [ref=f16e66]: "1"
+            - generic [ref=f16e69]: "2"
+            - generic [ref=f16e72]: "3"
+            - generic [ref=f16e75]: "4"
+            - generic [ref=f16e78]: "5"
+            - generic [ref=f16e81]: "6"
+            - generic [ref=f16e84]: "7"
+            - generic [ref=f16e87]: "8"
+            - generic [ref=f16e90]: "9"
+            - generic [ref=f16e93]: "10"
+            - generic [ref=f16e96]: "11"
+            - generic [ref=f16e99]: "12"
+            - generic [ref=f16e102]: "13"
+            - generic [ref=f16e105]: "14"
+            - generic [ref=f16e108]: "15"
+            - generic [ref=f16e111]: "16"
+            - generic [ref=f16e114]: "17"
+            - generic [ref=f16e117]: "18"
+            - generic [ref=f16e120]: "19"
+            - generic [ref=f16e123]: "20"
+            - generic [ref=f16e126]: "21"
+            - generic [ref=f16e129]: "22"
+            - generic [ref=f16e132]: "23"
+            - generic [ref=f16e135]:
+              - generic [ref=f16e136]: "24"
+              - generic [ref=f16e139]: Rp50.000
+            - generic [ref=f16e140]: "25"
+            - generic [ref=f16e143]: "26"
+            - generic [ref=f16e146]: "27"
+            - generic [ref=f16e149]: "28"
+            - generic [ref=f16e152]: "29"
+            - generic [ref=f16e155]: "30"
+            - generic [ref=f16e158]: "31"
+    - navigation [ref=f16e161]:
+      - generic [ref=f16e162]:
+        - link "🏠 Beranda" [ref=f16e163] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f16e164]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f16e165] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f16e166]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f16e167] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f16e168]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f16e169] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f16e170]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f16e171] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f16e172]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f16e178] [cursor=pointer]
+  - alert [ref=f16e182]

@@ -61,6 +61,13 @@ export default function PaymentForm({
         </button>
       </div>
 
+      <input
+        name="note"
+        placeholder="Catatan (opsional — cth. DP via transfer)"
+        maxLength={120}
+        className="mt-1.5 w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-1.5 text-[11px] text-navy-800 placeholder:text-navy-700/35 focus:border-sky-brand-400 focus:outline-none"
+      />
+
       {state.error && (
         <p className="mt-1.5 text-[11px] font-semibold text-red-500">{state.error}</p>
       )}

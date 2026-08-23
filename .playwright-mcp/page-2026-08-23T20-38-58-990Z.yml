@@ -1,0 +1,73 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]: CB
+          - generic [ref=e7]:
+            - paragraph [ref=e8]: Centrum Manager
+            - paragraph [ref=e9]: Owner Centrum · Owner
+        - generic [ref=e10]:
+          - button "🔕" [ref=e12]
+          - button "Keluar" [ref=e14]
+    - main [ref=e15]:
+      - generic [ref=e16]:
+        - heading "📊 Hari Ini Senin, 24 Agu" [level=1] [ref=e18]
+        - generic [ref=e19]:
+          - generic [ref=e20]:
+            - paragraph [ref=e21]: 💰 Pendapatan
+            - paragraph [ref=e22]: Rp0
+            - paragraph [ref=e23]: Cash Rp0 · QRIS Rp0
+          - generic [ref=e24]:
+            - paragraph [ref=e25]: 🏸 Booking aktif
+            - paragraph [ref=e26]: "0"
+            - paragraph [ref=e27]: 0 total hari ini
+          - generic [ref=e28]:
+            - paragraph [ref=e29]: 📈 Okupansi
+            - paragraph [ref=e30]: 0%
+            - paragraph [ref=e31]: 0 jam terpakai
+          - generic [ref=e32]:
+            - paragraph [ref=e33]: ⏭️ Berikutnya
+            - paragraph [ref=e34]: —
+            - paragraph [ref=e35]: Tidak ada lagi
+        - generic [ref=e36]:
+          - paragraph [ref=e37]: 💎 Menu Owner
+          - generic [ref=e38]:
+            - link "🤖 AI Asisten" [ref=e39] [cursor=pointer]:
+              - /url: /app/ai
+            - link "📊 Laporan" [ref=e40] [cursor=pointer]:
+              - /url: /app/laporan
+            - link "🧾 Pengeluaran" [ref=e41] [cursor=pointer]:
+              - /url: /app/pengeluaran
+            - link "🔁 Langganan" [ref=e42] [cursor=pointer]:
+              - /url: /app/series
+            - link "⛔ Blokir" [ref=e43] [cursor=pointer]:
+              - /url: /app/blokir
+            - link "⚙️ Pengaturan" [ref=e44] [cursor=pointer]:
+              - /url: /app/pengaturan
+        - generic [ref=e45]:
+          - heading "Agenda Lapangan" [level=2] [ref=e46]
+          - paragraph [ref=e48]: Belum ada booking hari ini 🌴
+    - navigation [ref=e49]:
+      - generic [ref=e50]:
+        - link "🏠 Beranda" [ref=e51] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=e52]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=e53] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=e54]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=e55] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=e56]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=e57] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=e58]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=e59] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=e60]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=e66] [cursor=pointer]

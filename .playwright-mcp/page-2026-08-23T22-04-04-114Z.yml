@@ -1,0 +1,49 @@
+- generic [active] [ref=f10e1]:
+  - generic [ref=f10e2]:
+    - banner [ref=f10e3]:
+      - generic [ref=f10e4]:
+        - generic [ref=f10e5]:
+          - generic [ref=f10e6]: CB
+          - generic [ref=f10e7]:
+            - paragraph [ref=f10e8]: Centrum Manager
+            - paragraph [ref=f10e9]: Rizky Pegawai · Pegawai
+        - generic [ref=f10e10]:
+          - button "🔕" [ref=f10e12]
+          - button "Keluar" [ref=f10e14]
+    - main [ref=f10e15]:
+      - generic [ref=f10e16]:
+        - generic [ref=f10e17]:
+          - heading "👥 Pelanggan" [level=1] [ref=f10e18]
+          - paragraph [ref=f10e19]: 1 terdaftar · dibuat otomatis dari booking
+        - list [ref=f10e20]:
+          - listitem [ref=f10e21]:
+            - generic [ref=f10e22]: B
+            - generic [ref=f10e23]:
+              - paragraph [ref=f10e24]: Budi Test
+              - paragraph [ref=f10e25]: 📞 081298765432 · 1x main · terakhir 24 Agu
+              - textbox "＋ catatan (cth. suka lapangan 2, sering telat…)" [ref=f10e27]
+            - link "💬" [ref=f10e28] [cursor=pointer]:
+              - /url: https://wa.me/6281298765432
+    - navigation [ref=f10e29]:
+      - generic [ref=f10e30]:
+        - link "🏠 Beranda" [ref=f10e31] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f10e32]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f10e33] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f10e34]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f10e35] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f10e36]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f10e37] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f10e38]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f10e39] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f10e40]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f10e46] [cursor=pointer]

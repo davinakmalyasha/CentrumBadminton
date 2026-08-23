@@ -1,0 +1,322 @@
+- generic [active] [ref=e1]:
+  - banner [ref=e2]:
+    - generic [ref=e3]:
+      - link "CB Centrum Badminton Arena" [ref=e4] [cursor=pointer]:
+        - /url: "#top"
+        - generic [ref=e5]: CB
+        - generic [ref=e6]:
+          - generic [ref=e7]: Centrum
+          - generic [ref=e8]: Badminton Arena
+      - navigation [ref=e9]:
+        - link "Booking" [ref=e10] [cursor=pointer]:
+          - /url: "#jadwal"
+        - link "Harga" [ref=e11] [cursor=pointer]:
+          - /url: "#harga"
+        - link "Fasilitas" [ref=e12] [cursor=pointer]:
+          - /url: "#fasilitas"
+        - link "Lokasi" [ref=e13] [cursor=pointer]:
+          - /url: "#lokasi"
+        - link "Ulasan" [ref=e14] [cursor=pointer]:
+          - /url: "#ulasan"
+      - generic [ref=e15]:
+        - generic "Language" [ref=e16]:
+          - button "ID" [ref=e17]
+          - button "EN" [ref=e18]
+        - link "Centrum · WA" [ref=e19] [cursor=pointer]:
+          - /url: https://wa.me/628159408136?text=Halo%20Centrum%20Badminton%20Arena!%20Saya%20mau%20tanya-tanya%20soal%20booking.
+  - main [ref=e20]:
+    - generic [ref=e22]:
+      - generic [ref=e23]:
+        - generic [ref=e24]: Tutup · buka 07.00
+        - heading "Ayo Main Badminton" [level=1] [ref=e26]
+        - paragraph [ref=e27]: 2 lapangan indoor berlantai vinyl interlock di Cirebon. Cek jadwal, pilih jam, langsung booking lewat WhatsApp.
+        - generic [ref=e28]:
+          - link "🏸 Cek Jadwal & Booking" [ref=e29] [cursor=pointer]:
+            - /url: "#jadwal"
+          - link "💬 Chat WhatsApp" [ref=e30] [cursor=pointer]:
+            - /url: https://wa.me/628159408136?text=Halo%20Centrum%20Badminton%20Arena!%20Saya%20mau%20tanya-tanya%20soal%20booking.
+        - generic [ref=e31]:
+          - generic [ref=e32]:
+            - generic [ref=e33]:
+              - text: ★★★★★
+              - generic [ref=e34]: ★★★★★
+            - generic [ref=e35]: "4.7"
+            - generic [ref=e36]: · 59 ulasan di Google
+          - generic [ref=e38]: 🏸 2 Lapangan
+      - generic [ref=e40]:
+        - generic [ref=e42]:
+          - generic [ref=e43]: 🏸
+          - paragraph [ref=e44]: Centrum Badminton Arena
+          - paragraph [ref=e45]: Cirebon · Indoor · 2 Courts
+        - generic [ref=e46]:
+          - paragraph [ref=e47]: 07–17
+          - paragraph [ref=e48]: Rp40rb
+        - generic [ref=e49]:
+          - paragraph [ref=e50]: 17–23
+          - paragraph [ref=e51]: Rp50rb
+    - generic [ref=e53]:
+      - generic [ref=e54]:
+        - heading "📅 Jadwal Lapangan" [level=2] [ref=e55]
+        - paragraph [ref=e56]: Pilih tanggal, klik slot yang tersedia, lalu booking via WhatsApp.
+      - generic [ref=e57]:
+        - button "Hari ini 24" [ref=e58]:
+          - generic [ref=e59]: Hari ini
+          - generic [ref=e60]: "24"
+        - button "Besok 25" [ref=e61]:
+          - generic [ref=e62]: Besok
+          - generic [ref=e63]: "25"
+        - button "Rab 26" [ref=e64]:
+          - generic [ref=e65]: Rab
+          - generic [ref=e66]: "26"
+        - button "Kam 27" [ref=e67]:
+          - generic [ref=e68]: Kam
+          - generic [ref=e69]: "27"
+        - button "Jum 28" [ref=e70]:
+          - generic [ref=e71]: Jum
+          - generic [ref=e72]: "28"
+        - button "Sab 29" [ref=e73]:
+          - generic [ref=e74]: Sab
+          - generic [ref=e75]: "29"
+        - button "Min 30" [ref=e76]:
+          - generic [ref=e77]: Min
+          - generic [ref=e78]: "30"
+        - button "Sen 31" [ref=e79]:
+          - generic [ref=e80]: Sen
+          - generic [ref=e81]: "31"
+        - button "Sel 1" [ref=e82]:
+          - generic [ref=e83]: Sel
+          - generic [ref=e84]: "1"
+        - button "Rab 2" [ref=e85]:
+          - generic [ref=e86]: Rab
+          - generic [ref=e87]: "2"
+        - button "Kam 3" [ref=e88]:
+          - generic [ref=e89]: Kam
+          - generic [ref=e90]: "3"
+        - button "Jum 4" [ref=e91]:
+          - generic [ref=e92]: Jum
+          - generic [ref=e93]: "4"
+        - button "Sab 5" [ref=e94]:
+          - generic [ref=e95]: Sab
+          - generic [ref=e96]: "5"
+        - button "Min 6" [ref=e97]:
+          - generic [ref=e98]: Min
+          - generic [ref=e99]: "6"
+      - generic [ref=e100]:
+        - generic [ref=e101]: Tersedia
+        - generic [ref=e103]: Terisi
+        - generic [ref=e105]: Sudah lewat
+        - generic [ref=e107]: · Biru = harga siang (Rp40rb/jam)
+        - generic [ref=e108]: · Kuning = harga malam (Rp50rb/jam)
+      - generic [ref=e109]:
+        - generic [ref=e110]:
+          - heading "🏸 Lapangan 1" [level=3] [ref=e112]:
+            - generic [ref=e113]: 🏸
+            - text: Lapangan 1
+          - generic [ref=e114]:
+            - button "07.00 40rb" [ref=e115] [cursor=pointer]:
+              - generic [ref=e116]: "07.00"
+              - generic [ref=e117]: 40rb
+            - button "08.00 40rb" [ref=e118] [cursor=pointer]:
+              - generic [ref=e119]: "08.00"
+              - generic [ref=e120]: 40rb
+            - button "09.00 40rb" [ref=e121] [cursor=pointer]:
+              - generic [ref=e122]: "09.00"
+              - generic [ref=e123]: 40rb
+            - button "10.00 40rb" [ref=e124] [cursor=pointer]:
+              - generic [ref=e125]: "10.00"
+              - generic [ref=e126]: 40rb
+            - button "11.00 40rb" [ref=e127] [cursor=pointer]:
+              - generic [ref=e128]: "11.00"
+              - generic [ref=e129]: 40rb
+            - button "12.00 40rb" [ref=e130] [cursor=pointer]:
+              - generic [ref=e131]: "12.00"
+              - generic [ref=e132]: 40rb
+            - button "13.00 40rb" [ref=e133] [cursor=pointer]:
+              - generic [ref=e134]: "13.00"
+              - generic [ref=e135]: 40rb
+            - button "14.00 40rb" [ref=e136] [cursor=pointer]:
+              - generic [ref=e137]: "14.00"
+              - generic [ref=e138]: 40rb
+            - button "15.00 40rb" [ref=e139] [cursor=pointer]:
+              - generic [ref=e140]: "15.00"
+              - generic [ref=e141]: 40rb
+            - button "16.00 40rb" [ref=e142] [cursor=pointer]:
+              - generic [ref=e143]: "16.00"
+              - generic [ref=e144]: 40rb
+            - button "17.00 50rb" [ref=e145] [cursor=pointer]:
+              - generic [ref=e146]: "17.00"
+              - generic [ref=e147]: 50rb
+            - button "18.00 50rb" [ref=e148] [cursor=pointer]:
+              - generic [ref=e149]: "18.00"
+              - generic [ref=e150]: 50rb
+            - button "19.00 50rb" [ref=e151] [cursor=pointer]:
+              - generic [ref=e152]: "19.00"
+              - generic [ref=e153]: 50rb
+            - button "20.00 50rb" [ref=e154] [cursor=pointer]:
+              - generic [ref=e155]: "20.00"
+              - generic [ref=e156]: 50rb
+            - button "21.00 50rb" [ref=e157] [cursor=pointer]:
+              - generic [ref=e158]: "21.00"
+              - generic [ref=e159]: 50rb
+            - button "22.00 50rb" [ref=e160] [cursor=pointer]:
+              - generic [ref=e161]: "22.00"
+              - generic [ref=e162]: 50rb
+        - generic [ref=e163]:
+          - heading "🏸 Lapangan 2" [level=3] [ref=e165]:
+            - generic [ref=e166]: 🏸
+            - text: Lapangan 2
+          - generic [ref=e167]:
+            - button "07.00 40rb" [ref=e168] [cursor=pointer]:
+              - generic [ref=e169]: "07.00"
+              - generic [ref=e170]: 40rb
+            - button "08.00 40rb" [ref=e171] [cursor=pointer]:
+              - generic [ref=e172]: "08.00"
+              - generic [ref=e173]: 40rb
+            - button "09.00 40rb" [ref=e174] [cursor=pointer]:
+              - generic [ref=e175]: "09.00"
+              - generic [ref=e176]: 40rb
+            - button "10.00 40rb" [ref=e177] [cursor=pointer]:
+              - generic [ref=e178]: "10.00"
+              - generic [ref=e179]: 40rb
+            - button "11.00 40rb" [ref=e180] [cursor=pointer]:
+              - generic [ref=e181]: "11.00"
+              - generic [ref=e182]: 40rb
+            - button "12.00 40rb" [ref=e183] [cursor=pointer]:
+              - generic [ref=e184]: "12.00"
+              - generic [ref=e185]: 40rb
+            - button "13.00 40rb" [ref=e186] [cursor=pointer]:
+              - generic [ref=e187]: "13.00"
+              - generic [ref=e188]: 40rb
+            - button "14.00 40rb" [ref=e189] [cursor=pointer]:
+              - generic [ref=e190]: "14.00"
+              - generic [ref=e191]: 40rb
+            - button "15.00 40rb" [ref=e192] [cursor=pointer]:
+              - generic [ref=e193]: "15.00"
+              - generic [ref=e194]: 40rb
+            - button "16.00 40rb" [ref=e195] [cursor=pointer]:
+              - generic [ref=e196]: "16.00"
+              - generic [ref=e197]: 40rb
+            - button "17.00 50rb" [ref=e198] [cursor=pointer]:
+              - generic [ref=e199]: "17.00"
+              - generic [ref=e200]: 50rb
+            - button "18.00 50rb" [ref=e201] [cursor=pointer]:
+              - generic [ref=e202]: "18.00"
+              - generic [ref=e203]: 50rb
+            - button "19.00 50rb" [ref=e204] [cursor=pointer]:
+              - generic [ref=e205]: "19.00"
+              - generic [ref=e206]: 50rb
+            - button "20.00 50rb" [ref=e207] [cursor=pointer]:
+              - generic [ref=e208]: "20.00"
+              - generic [ref=e209]: 50rb
+            - button "21.00 50rb" [ref=e210] [cursor=pointer]:
+              - generic [ref=e211]: "21.00"
+              - generic [ref=e212]: 50rb
+            - button "22.00 50rb" [ref=e213] [cursor=pointer]:
+              - generic [ref=e214]: "22.00"
+              - generic [ref=e215]: 50rb
+    - generic [ref=e217]:
+      - generic [ref=e218]:
+        - heading "💰 Harga Sewa" [level=2] [ref=e219]
+        - paragraph [ref=e220]: Transparan, tanpa biaya tersembunyi. Bayar tunai atau QRIS.
+      - generic [ref=e221]:
+        - generic [ref=e222]:
+          - text: ☀️
+          - paragraph [ref=e223]: Siang Hari
+          - paragraph [ref=e224]: 07.00 – 17.00 WIB
+          - paragraph [ref=e225]:
+            - generic [ref=e226]: Rp40rb
+            - generic [ref=e227]: /jam
+        - generic [ref=e228]:
+          - generic [ref=e229]: Peak
+          - text: 🌙
+          - paragraph [ref=e230]: Malam Hari
+          - paragraph [ref=e231]: 17.00 – 23.00 WIB
+          - paragraph [ref=e232]:
+            - generic [ref=e233]: Rp50rb
+            - generic [ref=e234]: /jam
+      - paragraph [ref=e235]: "💵 Pembayaran di tempat: tunai / QRIS"
+    - generic [ref=e237]:
+      - generic [ref=e238]:
+        - heading "✨ Fasilitas" [level=2] [ref=e239]
+        - paragraph [ref=e240]: Semua yang kamu butuhkan untuk fokus bermain.
+      - generic [ref=e241]:
+        - generic [ref=e242]:
+          - generic [ref=e243]: 🏸
+          - generic [ref=e244]: 2 Lapangan Vinyl Interlock
+        - generic [ref=e245]:
+          - generic [ref=e246]: 🪧
+          - generic [ref=e247]: Tempat Wasit & Score Board
+        - generic [ref=e248]:
+          - generic [ref=e249]: 💡
+          - generic [ref=e250]: Lampu Penerangan Lapangan
+        - generic [ref=e251]:
+          - generic [ref=e252]: 🏟️
+          - generic [ref=e253]: Bangunan Tertutup (Indoor)
+        - generic [ref=e254]:
+          - generic [ref=e255]: ☕
+          - generic [ref=e256]: Ruang Tunggu & Kantin
+        - generic [ref=e257]:
+          - generic [ref=e258]: 🕌
+          - generic [ref=e259]: Musholla
+        - generic [ref=e260]:
+          - generic [ref=e261]: 🚿
+          - generic [ref=e262]: Toilet Bersih
+        - generic [ref=e263]:
+          - generic [ref=e264]: 🅿️
+          - generic [ref=e265]: Lahan Parkir
+    - generic [ref=e267]:
+      - generic [ref=e268]:
+        - heading "📍 Lokasi & Jam Buka" [level=2] [ref=e269]
+        - paragraph [ref=e270]: Gampang dijangkau, parkir luas.
+      - generic [ref=e271]:
+        - generic [ref=e272]:
+          - generic [ref=e273]:
+            - generic [ref=e274]:
+              - paragraph [ref=e275]: Alamat
+              - paragraph [ref=e276]: 🏢 Jl. Pangeran Cakra Buana, Griya Cempaka Arum – Talun, Cirebon 45171 (belakang Indomaret Cempaka Arum)
+            - generic [ref=e277]:
+              - paragraph [ref=e278]: Jam Buka
+              - paragraph [ref=e279]: Setiap hari, 07.00 – 23.00 WIB
+          - link "🗺️ Buka di Google Maps" [ref=e281] [cursor=pointer]:
+            - /url: https://www.google.com/maps/dir/?api=1&destination=Centrum+Badminton+Arena+Cempaka+Arum+Cirebon
+        - iframe [ref=e283]:
+          
+    - generic [ref=e285]:
+      - heading "⭐ Kata Mereka" [level=2] [ref=e286]
+      - paragraph [ref=e287]: Rating langsung dari Google — selalu up to date.
+      - generic [ref=e288]:
+        - paragraph [ref=e289]: "4.7"
+        - generic [ref=e291]:
+          - text: ★★★★★
+          - generic [ref=e292]: ★★★★★
+        - paragraph [ref=e293]: 59 ulasan di Google · cached
+        - link "G Lihat semua ulasan" [ref=e294] [cursor=pointer]:
+          - /url: https://www.google.com/maps/search/?api=1&query=Centrum+Badminton+Arena+Cempaka+Arum+Cirebon
+          - generic [ref=e295]: G
+          - text: Lihat semua ulasan
+      - generic [ref=e296]:
+        - link "📷 @centrum_badminton_arena" [ref=e297] [cursor=pointer]:
+          - /url: https://instagram.com/centrum_badminton_arena
+        - link "👍 Facebook" [ref=e298] [cursor=pointer]:
+          - /url: https://facebook.com/Centrum%20Badminton%20Arena
+  - contentinfo [ref=e299]:
+    - generic [ref=e300]:
+      - generic [ref=e301]:
+        - generic [ref=e302]: CB
+        - generic [ref=e303]:
+          - paragraph [ref=e304]: Centrum Badminton Arena
+          - paragraph [ref=e305]: Tempat main badminton favorit warga Cirebon.
+      - navigation [ref=e306]:
+        - link "Booking" [ref=e307] [cursor=pointer]:
+          - /url: "#jadwal"
+        - link "Harga" [ref=e308] [cursor=pointer]:
+          - /url: "#harga"
+        - link "Fasilitas" [ref=e309] [cursor=pointer]:
+          - /url: "#fasilitas"
+        - link "Lokasi" [ref=e310] [cursor=pointer]:
+          - /url: "#lokasi"
+        - link "🔒 Login Pengelola" [ref=e311] [cursor=pointer]:
+          - /url: /app
+      - paragraph [ref=e312]: © 2026 Centrum Badminton Arena. Hak cipta dilindungi.
+  - button "Open Next.js Dev Tools" [ref=e318] [cursor=pointer]
+  - alert [ref=e322]

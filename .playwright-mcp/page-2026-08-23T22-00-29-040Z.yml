@@ -1,0 +1,67 @@
+- generic [active] [ref=f9e1]:
+  - generic [ref=f9e2]:
+    - banner [ref=f9e3]:
+      - generic [ref=f9e4]:
+        - generic [ref=f9e5]:
+          - generic [ref=f9e6]: CB
+          - generic [ref=f9e7]:
+            - paragraph [ref=f9e8]: Centrum Manager
+            - paragraph [ref=f9e9]: Rizky Pegawai · Pegawai
+        - generic [ref=f9e10]:
+          - button "🔕" [ref=f9e12]
+          - button "Keluar" [ref=f9e14]
+    - main [ref=f9e15]:
+      - generic [ref=f9e16]:
+        - generic [ref=f9e17]:
+          - heading "💵 Pembayaran" [level=1] [ref=f9e18]
+          - paragraph [ref=f9e19]: Senin, 24 Agu
+        - generic [ref=f9e20]:
+          - paragraph [ref=f9e21]: Total masuk hari ini
+          - paragraph [ref=f9e22]: Rp50.000
+          - generic [ref=f9e23]:
+            - generic [ref=f9e24]: 💵 Cash Rp50.000
+            - generic [ref=f9e25]: 📱 QRIS Rp0
+            - generic [ref=f9e26]: 🧾 1 transaksi
+        - generic [ref=f9e27]:
+          - heading "Tagihan Booking" [level=2] [ref=f9e28]
+          - list [ref=f9e29]:
+            - listitem [ref=f9e30]:
+              - generic [ref=f9e31]:
+                - generic [ref=f9e32]:
+                  - paragraph [ref=f9e33]: 👤 Budi TestLapangan 1
+                  - paragraph [ref=f9e34]:
+                    - text: 20:00–22:00 · Rp50.000 / Rp100.000
+                    - generic [ref=f9e35]: (sisa Rp50.000)
+                - generic [ref=f9e36]: 🟡 DP
+              - paragraph [ref=f9e67]: ✅ Pembayaran tercatat
+              - generic [ref=f9e68]: ✓ CASH Rp50.000 · 05.00
+        - generic [ref=f9e70]:
+          - heading "Riwayat Transaksi" [level=2] [ref=f9e71]
+          - list [ref=f9e72]:
+            - listitem [ref=f9e73]:
+              - generic [ref=f9e74]: 💵 Budi Test
+              - generic [ref=f9e75]: Rp50.000
+    - navigation [ref=f9e44]:
+      - generic [ref=f9e45]:
+        - link "🏠 Beranda" [ref=f9e46] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f9e47]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f9e48] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f9e49]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f9e50] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f9e51]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f9e52] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f9e53]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f9e54] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f9e55]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f9e61] [cursor=pointer]
+  - alert [ref=f9e65]

@@ -1,0 +1,59 @@
+- generic [active] [ref=f2e1]:
+  - generic [ref=f2e2]:
+    - banner [ref=f2e3]:
+      - generic [ref=f2e4]:
+        - generic [ref=f2e5]:
+          - generic [ref=f2e6]: CB
+          - generic [ref=f2e7]:
+            - paragraph [ref=f2e8]: Centrum Manager
+            - paragraph [ref=f2e9]: Rizky Pegawai · Pegawai
+        - generic [ref=f2e10]:
+          - button "🔕" [ref=f2e12]
+          - button "Keluar" [ref=f2e14]
+    - main [ref=f2e15]:
+      - generic [ref=f2e16]:
+        - heading "📊 Hari Ini Senin, 24 Agu" [level=1] [ref=f2e18]
+        - generic [ref=f2e19]:
+          - generic [ref=f2e20]:
+            - paragraph [ref=f2e21]: 💰 Pendapatan
+            - paragraph [ref=f2e22]: Rp0
+            - paragraph [ref=f2e23]: Cash Rp0 · QRIS Rp0
+          - generic [ref=f2e24]:
+            - paragraph [ref=f2e25]: 🏸 Booking aktif
+            - paragraph [ref=f2e26]: "0"
+            - paragraph [ref=f2e27]: 0 total hari ini
+          - generic [ref=f2e28]:
+            - paragraph [ref=f2e29]: 📈 Okupansi
+            - paragraph [ref=f2e30]: 0%
+            - paragraph [ref=f2e31]: 0 jam terpakai
+          - generic [ref=f2e32]:
+            - paragraph [ref=f2e33]: ⏭️ Berikutnya
+            - paragraph [ref=f2e34]: —
+            - paragraph [ref=f2e35]: Tidak ada lagi
+        - generic [ref=f2e36]:
+          - heading "Agenda Lapangan" [level=2] [ref=f2e37]
+          - paragraph [ref=f2e39]: Belum ada booking hari ini 🌴
+    - navigation [ref=f2e40]:
+      - generic [ref=f2e41]:
+        - link "🏠 Beranda" [ref=f2e42] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f2e43]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f2e44] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f2e45]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f2e46] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f2e47]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f2e48] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f2e49]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f2e50] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f2e51]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f2e57] [cursor=pointer]
+  - alert [ref=f2e61]

@@ -1,0 +1,63 @@
+- generic [active] [ref=f14e1]:
+  - generic [ref=f14e2]:
+    - banner [ref=f14e3]:
+      - generic [ref=f14e4]:
+        - generic [ref=f14e5]:
+          - generic [ref=f14e6]: CB
+          - generic [ref=f14e7]:
+            - paragraph [ref=f14e8]: Centrum Manager
+            - paragraph [ref=f14e9]: Owner Centrum · Owner
+        - generic [ref=f14e10]:
+          - button "🔕" [ref=f14e12]
+          - button "Keluar" [ref=f14e14]
+    - main [ref=f14e15]:
+      - generic [ref=f14e41]:
+        - generic [ref=f14e42]:
+          - heading "🤖 Asisten Centrum" [level=1] [ref=f14e43]
+          - paragraph [ref=f14e44]: Tanya apa saja soal usaha — dijawab dari data asli (Gemini).
+        - generic [ref=f14e45]:
+          - heading "📋 Laporan Tutup Buku" [level=2] [ref=f14e46]
+          - paragraph [ref=f14e47]: Ringkasan harian siap kirim ke WhatsApp owner/komunitas.
+          - generic [ref=f14e48]:
+            - textbox [ref=f14e49]: 2026-08-24
+            - button "Generate" [ref=f14e50]
+        - generic [ref=f14e51]:
+          - generic [ref=f14e52]:
+            - generic [ref=f14e65]: Ringkas pendapatan hari ini
+            - generic [ref=f14e67]: ⚠️ AI sedang sibuk — coba lagi sebentar ya.
+            - generic [ref=f14e69]: Berapa pendapatan hari ini?
+            - generic [ref=f14e71]: 🤖 sedang cek data…
+          - generic [ref=f14e60]:
+            - textbox "Tanya sesuatu…" [disabled] [ref=f14e61]
+            - button "➤" [disabled] [ref=f14e62]
+          - paragraph [ref=f14e63]: Ditenagai Gemini · angka dari database asli
+    - navigation [ref=f14e20]:
+      - generic [ref=f14e21]:
+        - link "🏠 Beranda" [ref=f14e22] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f14e23]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f14e24] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f14e25]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f14e26] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f14e27]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f14e28] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f14e29]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f14e30] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f14e31]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f14e74] [cursor=pointer]:
+    - generic [ref=f14e77]:
+      - text: Rendering
+      - generic [ref=f14e78]:
+        - generic [ref=f14e79]: .
+        - generic [ref=f14e80]: .
+        - generic [ref=f14e81]: .
+  - alert [ref=f14e64]

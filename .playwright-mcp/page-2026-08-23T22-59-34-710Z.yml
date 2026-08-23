@@ -1,0 +1,115 @@
+- generic [ref=e1]:
+  - generic [ref=e2]:
+    - banner [ref=e3]:
+      - generic [ref=e4]:
+        - generic [ref=e5]:
+          - generic [ref=e6]: CB
+          - generic [ref=e7]:
+            - paragraph [ref=e8]: Centrum Manager
+            - paragraph [ref=e9]: Owner Centrum · Owner
+        - generic [ref=e10]:
+          - button "🔕" [ref=e12]
+          - button "Keluar" [ref=e14]
+    - main [ref=e15]:
+      - generic [ref=e150]:
+        - heading "➕ Booking Baru" [level=1] [ref=e151]
+        - generic [ref=e152]:
+          - generic [ref=e153]:
+            - generic [ref=e154]: Lapangan
+            - generic [ref=e155]:
+              - button "🏸 Lapangan 1" [ref=e156]
+              - button "🏸 Lapangan 2" [ref=e157]
+          - generic [ref=e158]:
+            - generic [ref=e159]: Tanggal
+            - textbox "Tanggal" [ref=e160]: 2026-08-25
+          - generic [ref=e161]:
+            - generic [ref=e162]:
+              - generic [ref=e163]: Mulai
+              - combobox "Mulai" [ref=e164]:
+                - option "—"
+                - option "07.00"
+                - option "08.00"
+                - option "09.00"
+                - option "10.00" [selected]
+                - option "11.00"
+                - option "12.00"
+                - option "13.00"
+                - option "14.00"
+                - option "15.00"
+                - option "16.00"
+                - option "17.00"
+                - option "18.00"
+                - option "19.00"
+                - option "20.00"
+                - option "21.00"
+                - option "22.00"
+            - generic [ref=e165]:
+              - generic [ref=e166]: Selesai
+              - combobox "Selesai" [ref=e167]:
+                - option "—"
+                - option "11.59" [selected]
+                - option "12.59"
+                - option "13.59"
+                - option "14.59"
+                - option "15.59"
+                - option "16.59"
+                - option "17.59"
+                - option "18.59"
+                - option "19.59"
+                - option "20.59"
+                - option "21.59"
+                - option "22.59"
+          - generic [ref=e168]:
+            - generic [ref=e169]: Nama Pelanggan
+            - combobox "Nama Pelanggan" [ref=e170]: Budi Test
+            - button "👤 Budi Test" [active] [ref=e172]
+          - generic [ref=e173]:
+            - generic [ref=e174]: No. WhatsApp
+            - textbox "No. WhatsApp" [ref=e175]:
+              - /placeholder: 08xxxxxxxxxx
+              - text: "081298765432"
+          - generic [ref=e176]:
+            - generic [ref=e177]: Sumber
+            - generic [ref=e178]:
+              - button "🚶 Walk-in" [ref=e179]
+              - button "💬 WhatsApp" [ref=e180]
+          - generic [ref=e181]:
+            - generic [ref=e182]: Catatan (opsional)
+            - textbox "Catatan (opsional)" [ref=e183]
+          - generic "Simpan sebagai provisional — konfirmasi nanti dari tombol Confirm di jadwal" [ref=e184] [cursor=pointer]:
+            - checkbox "Simpan sebagai belum konfirmasi (pending) Untuk reservasi WA yang belum pasti — slot tetap terkunci, konfirmasi lewat tombol Confirm." [ref=e185]
+            - generic [ref=e186]:
+              - text: Simpan sebagai belum konfirmasi (pending)
+              - generic [ref=e187]: Untuk reservasi WA yang belum pasti — slot tetap terkunci, konfirmasi lewat tombol Confirm.
+          - generic [ref=e188]:
+            - generic [ref=e189]: 💎 Harga Manual (owner)
+            - textbox "💎 Harga Manual (owner)" [ref=e190]:
+              - /placeholder: otomatis 80000
+          - generic [ref=e191]:
+            - generic [ref=e192]: Total harga
+            - generic [ref=e193]: Rp80.000
+          - button "Simpan Booking" [ref=e194]
+    - navigation [ref=e128]:
+      - generic [ref=e129]:
+        - link "🏠 Beranda" [ref=e130] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=e131]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=e132] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=e133]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=e134] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=e135]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=e136] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=e137]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=e138] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=e139]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=e145] [cursor=pointer]
+  - alert [ref=e149]

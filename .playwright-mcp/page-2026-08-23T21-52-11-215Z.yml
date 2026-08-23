@@ -1,0 +1,100 @@
+- generic [ref=f7e1]:
+  - generic [ref=f7e2]:
+    - banner [ref=f7e3]:
+      - generic [ref=f7e4]:
+        - generic [ref=f7e5]:
+          - generic [ref=f7e6]: CB
+          - generic [ref=f7e7]:
+            - paragraph [ref=f7e8]: Centrum Manager
+            - paragraph [ref=f7e9]: Rizky Pegawai · Pegawai
+        - generic [ref=f7e10]:
+          - button "🔕" [ref=f7e12]
+          - button "Keluar" [ref=f7e14]
+    - main [ref=f7e15]:
+      - generic [ref=f7e16]:
+        - heading "➕ Booking Baru" [level=1] [ref=f7e17]
+        - generic [ref=f7e18]:
+          - generic [ref=f7e19]:
+            - generic [ref=f7e20]: Lapangan
+            - generic [ref=f7e21]:
+              - button "🏸 Lapangan 1" [ref=f7e22]
+              - button "🏸 Lapangan 2" [ref=f7e23]
+          - generic [ref=f7e24]:
+            - generic [ref=f7e25]: Tanggal
+            - textbox "Tanggal" [ref=f7e26]: 2026-08-24
+          - generic [ref=f7e27]:
+            - generic [ref=f7e28]:
+              - generic [ref=f7e29]: Mulai
+              - combobox "Mulai" [ref=f7e30]:
+                - option "—"
+                - option "07.00"
+                - option "08.00"
+                - option "09.00"
+                - option "10.00"
+                - option "11.00"
+                - option "12.00"
+                - option "13.00"
+                - option "14.00"
+                - option "15.00"
+                - option "16.00"
+                - option "17.00"
+                - option "18.00"
+                - option "19.00"
+                - option "20.00" [selected]
+                - option "21.00"
+                - option "22.00"
+            - generic [ref=f7e31]:
+              - generic [ref=f7e32]: Selesai
+              - combobox "Selesai" [ref=f7e33]:
+                - option "—"
+                - option "21.59" [selected]
+                - option "22.59"
+          - generic [ref=f7e34]:
+            - generic [ref=f7e35]: Nama Pelanggan
+            - combobox "Nama Pelanggan" [ref=f7e36]: Budi Test
+          - generic [ref=f7e37]:
+            - generic [ref=f7e38]: No. WhatsApp
+            - textbox "No. WhatsApp" [ref=f7e39]:
+              - /placeholder: 08xxxxxxxxxx
+              - text: "081298765432"
+          - generic [ref=f7e40]:
+            - generic [ref=f7e41]: Sumber
+            - generic [ref=f7e42]:
+              - button "🚶 Walk-in" [ref=f7e43]
+              - button "💬 WhatsApp" [ref=f7e44]
+          - generic [ref=f7e45]:
+            - generic [ref=f7e46]: Catatan (opsional)
+            - textbox "Catatan (opsional)" [ref=f7e47]
+          - generic "Simpan sebagai provisional — konfirmasi nanti dari tombol Confirm di jadwal" [ref=f7e48] [cursor=pointer]:
+            - checkbox "Simpan sebagai belum konfirmasi (pending) Untuk reservasi WA yang belum pasti — slot tetap terkunci, konfirmasi lewat tombol Confirm." [checked] [active] [ref=f7e49]
+            - generic [ref=f7e50]:
+              - text: Simpan sebagai belum konfirmasi (pending)
+              - generic [ref=f7e51]: Untuk reservasi WA yang belum pasti — slot tetap terkunci, konfirmasi lewat tombol Confirm.
+          - generic [ref=f7e52]:
+            - generic [ref=f7e53]: Total harga
+            - generic [ref=f7e54]: Rp100.000
+          - button "Simpan Booking" [ref=f7e55]
+    - navigation [ref=f7e56]:
+      - generic [ref=f7e57]:
+        - link "🏠 Beranda" [ref=f7e58] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f7e59]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f7e60] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f7e61]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f7e62] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f7e63]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f7e64] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f7e65]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f7e66] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f7e67]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f7e73] [cursor=pointer]
+  - alert [ref=f7e77]

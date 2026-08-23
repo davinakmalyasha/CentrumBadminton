@@ -1,0 +1,39 @@
+- generic [active] [ref=f1e1]:
+  - generic [ref=f1e2]:
+    - banner [ref=f1e3]:
+      - generic [ref=f1e4]:
+        - generic [ref=f1e5]:
+          - generic [ref=f1e6]: CB
+          - generic [ref=f1e7]:
+            - paragraph [ref=f1e8]: Centrum Manager
+            - paragraph [ref=f1e9]: Rizky Pegawai · Pegawai
+        - generic [ref=f1e10]:
+          - button "🔕" [ref=f1e12]
+          - button "Keluar" [ref=f1e14]
+    - main [ref=f1e15]:
+      - generic [ref=f1e17]:
+        - generic [ref=f1e18]: 🏸
+        - paragraph [ref=f1e19]: Memuat…
+    - navigation [ref=f1e20]:
+      - generic [ref=f1e21]:
+        - link "🏠 Beranda" [ref=f1e22] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f1e23]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f1e24] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f1e25]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f1e26] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f1e27]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f1e28] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f1e29]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f1e30] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f1e31]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f1e37] [cursor=pointer]

@@ -1,0 +1,27 @@
+- generic [ref=f4e1]:
+  - main [ref=f4e2]:
+    - generic [ref=f4e3]:
+      - generic [ref=f4e4]:
+        - generic [ref=f4e5]: CB
+        - heading "Centrum Badminton Arena" [level=1] [ref=f4e6]
+        - paragraph [ref=f4e7]: Masuk untuk mengelola booking & pembayaran
+      - generic [ref=f4e8]:
+        - generic [ref=f4e9]:
+          - generic [ref=f4e10]: Email
+          - textbox "Email" [ref=f4e11]:
+            - /placeholder: nama@email.com
+            - text: owner@centrum.dev
+        - generic [ref=f4e12]:
+          - generic [ref=f4e13]: Kata Sandi
+          - textbox "Kata Sandi" [active] [ref=f4e14]:
+            - /placeholder: ••••••••
+            - text: Centrum-Owner-2026!
+        - button "Memproses…" [disabled] [ref=f4e26]
+  - button "Open Next.js Dev Tools" [ref=f4e27] [cursor=pointer]:
+    - generic [ref=f4e30]:
+      - text: Rendering
+      - generic [ref=f4e31]:
+        - generic [ref=f4e32]: .
+        - generic [ref=f4e33]: .
+        - generic [ref=f4e34]: .
+  - alert [ref=f4e25]

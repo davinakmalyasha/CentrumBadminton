@@ -1,0 +1,122 @@
+- generic [active] [ref=f3e1]:
+  - generic [ref=f3e2]:
+    - banner [ref=f3e3]:
+      - generic [ref=f3e4]:
+        - generic [ref=f3e5]:
+          - generic [ref=f3e6]: CB
+          - generic [ref=f3e7]:
+            - paragraph [ref=f3e8]: Centrum Manager
+            - paragraph [ref=f3e9]: Owner Centrum · Owner
+        - generic [ref=f3e10]:
+          - button "🔔" [ref=f3e12]
+          - button "Keluar" [ref=f3e14]
+    - main [ref=f3e15]:
+      - generic [ref=f3e16]:
+        - heading "⚙️ Pengaturan" [level=1] [ref=f3e18]
+        - generic [ref=f3e19]:
+          - heading "🏸 Lapangan" [level=2] [ref=f3e20]
+          - list [ref=f3e21]:
+            - listitem [ref=f3e22]:
+              - generic [ref=f3e23]:
+                - textbox [ref=f3e24]: Lapangan 1
+                - button "💾" [ref=f3e25]
+              - button "✓ Aktif" [ref=f3e27]
+            - listitem [ref=f3e28]:
+              - generic [ref=f3e29]:
+                - textbox [ref=f3e30]: Lapangan 2
+                - button "💾" [ref=f3e31]
+              - button "✓ Aktif" [ref=f3e33]
+          - generic [ref=f3e34]:
+            - generic [ref=f3e35]:
+              - generic [ref=f3e36]: Tambah lapangan baru
+              - textbox "Tambah lapangan baru" [ref=f3e37]:
+                - /placeholder: cth. Lapangan 3 (VIP)
+            - button "＋" [ref=f3e38]
+        - generic [ref=f3e39]:
+          - heading "💰 Aturan Harga" [level=2] [ref=f3e40]
+          - generic [ref=f3e41]:
+            - paragraph [ref=f3e42]: Berlaku sekarang (sejak 2024-01-01)
+            - paragraph [ref=f3e43]:
+              - text: Siang Rp40.000 · Malam Rp50.000
+              - generic [ref=f3e44]: (07:00–23:00)
+          - generic [ref=f3e45]:
+            - generic [ref=f3e46]:
+              - generic [ref=f3e47]:
+                - generic [ref=f3e48]: Berlaku dari
+                - textbox "Berlaku dari" [ref=f3e49]: 2026-09-01
+              - generic [ref=f3e50]:
+                - generic [ref=f3e51]: Harga siang
+                - textbox "Harga siang" [ref=f3e52]:
+                  - /placeholder: "40000"
+              - generic [ref=f3e53]:
+                - generic [ref=f3e54]: Harga malam
+                - textbox "Harga malam" [ref=f3e55]:
+                  - /placeholder: "50000"
+            - paragraph [ref=f3e56]: Batas jam mengikuti standar 07–23, batas malam 17.00. Aturan lama otomatis digantikan sejak tanggal tersebut.
+            - button "💰 Simpan Aturan Harga Baru" [ref=f3e57]
+        - generic [ref=f3e58]:
+          - heading "👥 Staf" [level=2] [ref=f3e59]
+          - paragraph [ref=f3e60]: Buat akun pegawai langsung dari sini, lalu bagikan email & password. Nonaktifkan akses kapan pun tanpa menghapus data.
+          - generic [ref=f3e61]:
+            - generic [ref=f3e62]:
+              - generic [ref=f3e63]:
+                - generic [ref=f3e64]: Nama lengkap
+                - textbox "Nama lengkap" [ref=f3e65]:
+                  - /placeholder: cth. Rizky
+              - generic [ref=f3e66]:
+                - generic [ref=f3e67]: No. WhatsApp
+                - textbox "No. WhatsApp" [ref=f3e68]:
+                  - /placeholder: 0812…
+            - generic [ref=f3e69]:
+              - generic [ref=f3e70]:
+                - generic [ref=f3e71]: Email login
+                - textbox "Email login" [ref=f3e72]:
+                  - /placeholder: pegawai@centrum.id
+              - generic [ref=f3e73]:
+                - generic [ref=f3e74]: Password (min. 8)
+                - textbox "Password (min. 8)" [ref=f3e75]
+            - button "👥 Buat Akun Pegawai" [ref=f3e76]
+          - list [ref=f3e77]:
+            - listitem [ref=f3e78]:
+              - generic [ref=f3e79]:
+                - paragraph [ref=f3e80]: Owner Centrum owner
+                - paragraph [ref=f3e81]: —
+              - button "✓ Aktif" [ref=f3e84]
+            - listitem [ref=f3e85]:
+              - generic [ref=f3e86]:
+                - paragraph [ref=f3e87]: Rizky Pegawai pegawai
+                - paragraph [ref=f3e88]: "081234567890"
+              - button "✓ Aktif" [ref=f3e91]
+        - generic [ref=f3e92]:
+          - heading "🔔 Perangkat Saya" [level=2] [ref=f3e93]
+          - paragraph [ref=f3e94]: Perangkat yang menerima notifikasi booking untuk akun ini.
+          - list [ref=f3e95]:
+            - listitem [ref=f3e96]:
+              - generic [ref=f3e97]:
+                - paragraph [ref=f3e98]: 📱 Chrome
+                - paragraph [ref=f3e99]: terdaftar 24 Agu
+              - button "🗑" [ref=f3e100]
+    - navigation [ref=f3e101]:
+      - generic [ref=f3e102]:
+        - link "🏠 Beranda" [ref=f3e103] [cursor=pointer]:
+          - /url: /app
+          - generic [ref=f3e104]: 🏠
+          - text: Beranda
+        - link "📅 Jadwal" [ref=f3e105] [cursor=pointer]:
+          - /url: /app/jadwal
+          - generic [ref=f3e106]: 📅
+          - text: Jadwal
+        - link "➕ Booking" [ref=f3e107] [cursor=pointer]:
+          - /url: /app/booking/baru
+          - generic [ref=f3e108]: ➕
+          - text: Booking
+        - link "💵 Bayar" [ref=f3e109] [cursor=pointer]:
+          - /url: /app/pembayaran
+          - generic [ref=f3e110]: 💵
+          - text: Bayar
+        - link "👥 Pelanggan" [ref=f3e111] [cursor=pointer]:
+          - /url: /app/pelanggan
+          - generic [ref=f3e112]: 👥
+          - text: Pelanggan
+  - button "Open Next.js Dev Tools" [ref=f3e118] [cursor=pointer]
+  - alert [ref=f3e122]
