@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, computePrice } from "@/lib/availability";
+import { sendPushToAll } from "@/lib/webpush";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -145,6 +146,17 @@ export async function createBooking(
     }
     return { error: `Gagal membuat booking: ${error.message}` };
   }
+
+  // Notify other staff devices (fire-and-forget)
+  await sendPushToAll(
+    {
+      title: "🏸 Booking baru masuk",
+      body: `${name} · ${dateISO} · ${String(startH).padStart(2, "0")}.00`,
+      url: `/app/jadwal?date=${dateISO}`,
+      tag: "new-booking",
+    },
+    user.id
+  );
 
   revalidatePath("/app");
   revalidatePath("/app/jadwal");
