@@ -1,15 +1,6 @@
-"use client";
-
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useMemo,
-  useSyncExternalStore,
-  type ReactNode,
-} from "react";
-
 export type Lang = "id" | "en";
+
+export const LANG_COOKIE = "cba-lang";
 
 const dict = {
   id: {
@@ -156,49 +147,6 @@ const dict = {
 
 export type Dict = (typeof dict)["id"];
 
-/* ---- external store over localStorage (hydration-safe) ---- */
-
-const STORAGE_KEY = "cba-lang";
-let listeners: Array<() => void> = [];
-
-function subscribe(cb: () => void): () => void {
-  listeners.push(cb);
-  window.addEventListener("storage", cb);
-  return () => {
-    listeners = listeners.filter((l) => l !== cb);
-    window.removeEventListener("storage", cb);
-  };
-}
-
-function getSnapshot(): Lang {
-  return window.localStorage.getItem(STORAGE_KEY) === "en" ? "en" : "id";
-}
-
-function getServerSnapshot(): Lang {
-  return "id";
-}
-
-function writeLang(l: Lang) {
-  window.localStorage.setItem(STORAGE_KEY, l);
-  for (const fn of listeners) fn();
-}
-
-const LangContext = createContext<{
-  lang: Lang;
-  t: Dict;
-  setLang: (l: Lang) => void;
-}>({ lang: "id", t: dict.id, setLang: () => {} });
-
-export function LangProvider({ children }: { children: ReactNode }) {
-  const lang = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  const setLang = useCallback((l: Lang) => writeLang(l), []);
-
-  const value = useMemo(() => ({ lang, t: dict[lang], setLang }), [lang, setLang]);
-
-  return <LangContext.Provider value={value}>{children}</LangContext.Provider>;
-}
-
-export function useLang() {
-  return useContext(LangContext);
+export function getDict(lang: Lang): Dict {
+  return dict[lang];
 }

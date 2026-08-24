@@ -5,6 +5,23 @@ import { createClient } from "@/lib/supabase/server";
 
 export type PushState = { error: string | null; ok?: boolean; state?: string };
 
+/** Only well-known Web Push services — the server POSTs to these URLs later. */
+const PUSH_HOSTS = [
+  "fcm.googleapis.com",
+  "updates.push.services.mozilla.com",
+  "web.push.apple.com",
+  "push.service.mozilla.com",
+];
+
+function isValidPushEndpoint(endpoint: string): boolean {
+  try {
+    const url = new URL(endpoint);
+    return url.protocol === "https:" && PUSH_HOSTS.includes(url.hostname);
+  } catch {
+    return false;
+  }
+}
+
 /** Store (or refresh) this device's push subscription for the logged-in user. */
 export async function savePushSubscription(
   subscription: {
@@ -17,6 +34,16 @@ export async function savePushSubscription(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { error: "Belum login." };
+
+  if (
+    !isValidPushEndpoint(subscription.endpoint) ||
+    !subscription.keys?.p256dh ||
+    !subscription.keys?.auth ||
+    subscription.keys.p256dh.length > 256 ||
+    subscription.keys.auth.length > 64
+  ) {
+    return { error: "Langganan push tidak valid." };
+  }
 
   const h = await headers();
   const ua = h.get("user-agent") ?? null;

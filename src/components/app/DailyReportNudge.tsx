@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { ClipboardList, X } from "lucide-react";
 
 const KEY_PREFIX = "cba-closing-";
 
@@ -49,7 +50,7 @@ export default function DailyReportNudge() {
 
   return (
     <div className="flex items-center gap-3 rounded-2xl border border-accent-400/50 bg-accent-500/10 p-3.5">
-      <span className="text-xl">📋</span>
+      <ClipboardList className="h-6 w-6 flex-shrink-0 text-accent-600" strokeWidth={1.75} />
       <div className="min-w-0 flex-1">
         <p className="text-xs font-black text-navy-900">Sudah tutup buku hari ini?</p>
         <p className="text-[11px] font-medium text-navy-700/60">
@@ -68,7 +69,7 @@ export default function DailyReportNudge() {
         aria-label="Tutup"
         className="flex-shrink-0 px-1 text-navy-700/40 transition hover:text-navy-800"
       >
-        ✕
+        <X className="h-4 w-4" />
       </button>
     </div>
   );

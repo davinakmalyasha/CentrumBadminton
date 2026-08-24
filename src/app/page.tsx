@@ -7,7 +7,8 @@ import {
 } from "@/lib/availability";
 import { VENUE } from "@/lib/constants";
 import { getGoogleRating } from "@/lib/rating";
-import { LangProvider } from "@/lib/i18n";
+import { getDict } from "@/lib/i18n";
+import { getLang } from "@/lib/lang-server";
 import Navbar from "@/components/landing/Navbar";
 import Hero from "@/components/landing/Hero";
 import AvailabilityBoard from "@/components/landing/AvailabilityBoard";
@@ -33,6 +34,8 @@ const FALLBACK_PRICING: PricingInfo = {
 
 export default async function LandingPage() {
   const today = todayISO();
+  const lang = await getLang();
+  const t = getDict(lang);
 
   const supabase = await createClient();
   const [courtsRes, pricingRes, busyRes, rating] = await Promise.all([
@@ -80,26 +83,27 @@ export default async function LandingPage() {
   };
 
   return (
-    <LangProvider>
+    <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
-      <Navbar />
+      <Navbar lang={lang} />
       <main>
-        <Hero rating={rating} openNow={openNow} />
+        <Hero rating={rating} openNow={openNow} t={t} lang={lang} />
         <AvailabilityBoard
           courts={courts}
           pricing={pricing}
           initialBusy={busy}
           todayStr={today}
+          lang={lang}
         />
-        <PricingSection />
-        <FacilitiesSection />
-        <LocationSection />
-        <SocialSection rating={rating} />
+        <PricingSection t={t} />
+        <FacilitiesSection t={t} lang={lang} />
+        <LocationSection t={t} lang={lang} />
+        <SocialSection rating={rating} t={t} />
       </main>
-      <Footer />
-    </LangProvider>
+      <Footer t={t} />
+    </>
   );
 }

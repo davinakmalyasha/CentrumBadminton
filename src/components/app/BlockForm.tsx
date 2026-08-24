@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Ban } from "lucide-react";
 import { createBlock, type ActionState } from "@/app/app/(protected)/actions";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 
 const initial: ActionState = { error: null };
 
@@ -29,33 +31,35 @@ export default function BlockForm({
           <button
             type="button"
             onClick={() => setCourtId("")}
-            className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               courtId === ""
                 ? "border-accent-500 bg-accent-500/10 text-accent-600"
                 : "border-sky-brand-200 text-navy-800"
             }`}
           >
-            ⛔ Semua
+            <Ban className="h-3.5 w-3.5" />
+            Semua
           </button>
           {courts.map((c) => (
             <button
               key={c.id}
               type="button"
               onClick={() => setCourtId(c.id)}
-              className={`rounded-xl border px-3 py-2 text-xs font-bold transition ${
+              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
                 courtId === c.id
                   ? "border-accent-500 bg-accent-500/10 text-accent-600"
                   : "border-sky-brand-200 text-navy-800"
               }`}
             >
-              🏸 {c.name}
+              <Shuttlecock className="h-3.5 w-3.5" />
+              {c.name}
             </button>
           ))}
         </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        <div>
+      <div className="grid grid-cols-2 gap-2">
+        <div className="col-span-2 sm:col-span-1">
           <label htmlFor="bdate" className={label}>
             Tanggal
           </label>
@@ -100,15 +104,22 @@ export default function BlockForm({
       </div>
 
       {state.error && (
-        <p className="text-xs font-semibold text-red-500">⚠️ {state.error}</p>
+        <p className="text-xs font-semibold text-red-500">{state.error}</p>
       )}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-red-500 py-2.5 text-sm font-black text-white transition hover:bg-red-600 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-2.5 text-sm font-black text-white transition hover:bg-red-600 disabled:opacity-50"
       >
-        {pending ? "Memproses…" : "⛔ Blokir Jadwal"}
+        {pending ? (
+          "Memproses…"
+        ) : (
+          <>
+            <Ban className="h-4 w-4" />
+            Blokir Jadwal
+          </>
+        )}
       </button>
     </form>
   );

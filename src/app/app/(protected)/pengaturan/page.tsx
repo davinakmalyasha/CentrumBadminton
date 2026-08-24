@@ -1,6 +1,8 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { addMonths, currentMonthKey } from "@/lib/months";
 import { listMyDevices } from "@/app/app/(protected)/push-actions";
+import { Bell, Settings, Users, Wallet } from "lucide-react";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 import {
   NewCourtForm,
   NewStaffForm,
@@ -32,7 +34,7 @@ type ProfileRow = {
 
 export default async function PengaturanPage() {
   const supabase = await requireOwnerPage();
-  const [courtsRes, pricingRes, profilesRes] = await Promise.all([
+  const [courtsRes, pricingRes, profilesRes, devicesRes] = await Promise.all([
     supabase.from("courts").select("id,name,is_active,sort_order").order("sort_order"),
     supabase
       .from("pricing_rules")
@@ -43,23 +45,33 @@ export default async function PengaturanPage() {
       .from("profiles")
       .select("id,full_name,phone,role,is_active")
       .order("created_at"),
+    supabase
+      .from("push_subscriptions")
+      .select("id,user_agent,created_at")
+      .order("created_at", { ascending: false }),
   ]);
 
   const courts = (courtsRes.data ?? []) as CourtRow[];
   const rules = (pricingRes.data ?? []) as PriceRow[];
   const profiles = (profilesRes.data ?? []) as ProfileRow[];
   const activeRule = rules[0];
-  const devices = await listMyDevices();
+  const devices = (devicesRes.data ?? []) as Awaited<
+    ReturnType<typeof listMyDevices>
+  >;
 
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-black text-navy-900">⚙️ Pengaturan</h1>
+        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+          <Settings className="h-5 w-5" strokeWidth={1.75} /> Pengaturan
+        </h1>
       </div>
 
       {/* Courts */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-extrabold text-navy-900">🏸 Lapangan</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Shuttlecock className="h-4 w-4" /> Lapangan
+        </h2>
         <ul className="mb-3 space-y-1.5">
           {courts.map((c) => (
             <li key={c.id} className="group flex items-center gap-2 rounded-xl bg-ice-100 px-2.5 py-2">
@@ -73,7 +85,9 @@ export default async function PengaturanPage() {
 
       {/* Pricing */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-extrabold text-navy-900">💰 Aturan Harga</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Wallet className="h-4 w-4" /> Aturan Harga
+        </h2>
         <div className="mb-3 rounded-xl bg-ice-100 p-3">
           <p className="text-[10px] font-bold uppercase tracking-wide text-navy-700/50">
             Berlaku sekarang (sejak {activeRule?.valid_from ?? "—"})
@@ -105,7 +119,9 @@ export default async function PengaturanPage() {
 
       {/* Staff */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-1 text-sm font-extrabold text-navy-900">👥 Staf</h2>
+        <h2 className="mb-1 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Users className="h-4 w-4" /> Staf
+        </h2>
         <p className="mb-3 text-[11px] font-medium text-navy-700/50">
           Buat akun pegawai langsung dari sini, lalu bagikan email &amp; password.
           Nonaktifkan akses kapan pun tanpa menghapus data.
@@ -137,7 +153,9 @@ export default async function PengaturanPage() {
 
       {/* Push devices */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-1 text-sm font-extrabold text-navy-900">🔔 Perangkat Saya</h2>
+        <h2 className="mb-1 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Bell className="h-4 w-4" /> Perangkat Saya
+        </h2>
         <p className="mb-3 text-[11px] font-medium text-navy-700/50">
           Perangkat yang menerima notifikasi booking untuk akun ini.
         </p>

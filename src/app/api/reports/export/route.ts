@@ -62,7 +62,9 @@ export async function GET(request: Request) {
   const rows = (data ?? []) as Row[];
 
   const esc = (v: string | number | null | undefined) => {
-    const s = String(v ?? "");
+    let s = String(v ?? "");
+    // Neutralize spreadsheet formula injection (=, +, -, @, tab, CR)
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
   };
 

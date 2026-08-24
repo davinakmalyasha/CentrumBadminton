@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Bell, BellOff } from "lucide-react";
 import {
   savePushSubscription,
   removePushSubscription,
@@ -97,9 +98,9 @@ export default function PushBell() {
     return (
       <span
         title="Notifikasi tidak didukung di browser ini"
-        className="rounded-lg px-1.5 py-1 text-sm opacity-30"
+        className="rounded-lg px-1.5 py-1 opacity-30"
       >
-        🔔
+        <Bell className="h-4 w-4" />
       </span>
     );
   }
@@ -114,7 +115,7 @@ export default function PushBell() {
           err ?? (subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi booking")
         }
         aria-label={err ?? undefined}
-        className={`rounded-lg px-1.5 py-1 text-sm transition ${
+        className={`rounded-lg p-2 transition ${
           err
             ? "text-red-500"
             : subscribed
@@ -122,11 +123,11 @@ export default function PushBell() {
               : "text-navy-700/50 hover:text-navy-800"
         }`}
       >
-        {subscribed ? "🔔" : "🔕"}
+        {subscribed ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
       </button>
       {err && (
         <span
-          className="absolute -right-0.5 -top-0.5 h-2 w-2 rounded-full bg-red-500"
+          className="absolute right-0.5 top-0.5 h-2 w-2 rounded-full bg-red-500"
           title={err}
           role="status"
         />

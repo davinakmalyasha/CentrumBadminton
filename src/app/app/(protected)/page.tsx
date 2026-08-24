@@ -7,6 +7,17 @@ import {
   wibNowMinutes,
 } from "@/lib/availability";
 import type { Booking } from "@/lib/types";
+import {
+  ArrowUpRight,
+  BarChart3,
+  Footprints,
+  MessageCircle,
+  SkipForward,
+  TrendingUp,
+  User,
+  Wallet,
+} from "lucide-react";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 import StatCard from "@/components/app/StatCard";
 import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
@@ -77,8 +88,8 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-black text-navy-900">
-          📊 Hari Ini{" "}
+        <h1 className="flex flex-wrap items-center gap-2 text-lg font-black text-navy-900">
+          <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Hari Ini{" "}
           <span className="text-sm font-semibold text-navy-700/50">
             {new Intl.DateTimeFormat("id-ID", {
               weekday: "long",
@@ -93,20 +104,20 @@ export default async function DashboardPage() {
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
         <StatCard
-          icon="💰"
+          icon={Wallet}
           label="Pendapatan"
           value={formatIDR(cash + qris)}
           sub={`Cash ${formatIDR(cash)} · QRIS ${formatIDR(qris)}`}
         />
         <StatCard
-          icon="🏸"
+          icon={Shuttlecock}
           label="Booking aktif"
           value={activeBookings.length}
           sub={`${bookings.length} total hari ini`}
         />
-        <StatCard icon="📈" label="Okupansi" value={`${occupancy}%`} sub={`${bookedHours} jam terpakai`} />
+        <StatCard icon={TrendingUp} label="Okupansi" value={`${occupancy}%`} sub={`${bookedHours} jam terpakai`} />
         <StatCard
-          icon="⏭️"
+          icon={SkipForward}
           label="Berikutnya"
           value={
             nextUp
@@ -131,7 +142,7 @@ export default async function DashboardPage() {
         {bookings.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-8 text-center">
             <p className="text-sm font-medium text-navy-700/50">
-              Belum ada booking hari ini 🌴
+              Belum ada booking hari ini
             </p>
           </div>
         ) : (
@@ -152,7 +163,8 @@ export default async function DashboardPage() {
                       <StatusBadge status={b.status} />
                     </p>
                     <p className="mt-1 truncate text-xs font-medium text-navy-700/70">
-                      👤 {b.customer_name}
+                      <User className="mr-1 inline-block h-3.5 w-3.5 align-[-1px]" />
+                      {b.customer_name}
                       {b.customer_phone && (
                         <>
                           {" · "}
@@ -162,19 +174,42 @@ export default async function DashboardPage() {
                             rel="noopener noreferrer"
                             className="text-emerald-600 hover:underline"
                           >
-                            WA ↗
+                            WA
+                            <ArrowUpRight className="ml-0.5 inline h-3 w-3" />
                           </a>
                         </>
                       )}
                     </p>
                     <p className="mt-0.5 text-[11px] font-semibold text-navy-700/50">
-                      {formatIDR(Number(b.override_price ?? b.computed_price))} ·{" "}
-                      {b.source === "whatsapp" ? "💬 WA" : "🚶 Walk-in"} ·{" "}
-                      {b.payment_status === "paid"
-                        ? "✅ Lunas"
-                        : b.payment_status === "partial"
-                          ? "🟡 DP"
-                          : "🔴 Belum bayar"}
+                      {formatIDR(Number(b.override_price ?? b.computed_price))}{" · "}
+                      {b.source === "whatsapp" ? (
+                        <>
+                          <MessageCircle className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
+                          WA
+                        </>
+                      ) : (
+                        <>
+                          <Footprints className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
+                          Walk-in
+                        </>
+                      )}
+                      {" · "}
+                      {b.payment_status === "paid" ? (
+                        <>
+                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                          Lunas
+                        </>
+                      ) : b.payment_status === "partial" ? (
+                        <>
+                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />
+                          DP
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-red-500" />
+                          Belum bayar
+                        </>
+                      )}
                     </p>
                   </div>
                 </div>

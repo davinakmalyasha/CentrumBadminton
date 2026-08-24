@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CalendarDays, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import {
   addDaysISO,
@@ -84,10 +85,12 @@ export default async function JadwalPage({
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
           aria-label="Hari sebelumnya"
         >
-          ‹
+          <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="text-base font-black text-navy-900">📅 Jadwal</h1>
+          <h1 className="flex items-center justify-center gap-2 text-base font-black text-navy-900">
+            <CalendarDays className="h-5 w-5" strokeWidth={1.75} /> Jadwal
+          </h1>
           <p className="text-xs font-semibold capitalize text-navy-700/60">
             {date === today ? "Hari ini" : dayLabel}
           </p>
@@ -97,7 +100,7 @@ export default async function JadwalPage({
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
           aria-label="Hari berikutnya"
         >
-          ›
+          <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
 
@@ -105,16 +108,17 @@ export default async function JadwalPage({
         <div className="flex justify-center">
           <Link
             href={`/app/jadwal`}
-            className="rounded-full border border-sky-brand-200 bg-white px-3 py-1 text-[11px] font-bold text-sky-brand-600"
+            className="inline-flex items-center gap-1 rounded-full border border-sky-brand-200 bg-white px-3 py-1 text-[11px] font-bold text-sky-brand-600"
           >
-            ⟲ Kembali ke hari ini
+            <RotateCcw className="h-3.5 w-3.5" /> Kembali ke hari ini
           </Link>
         </div>
       )}
 
       {sp.created && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-          ✅ Booking berhasil dibuat
+          <Check className="mr-1 inline h-3.5 w-3.5" />
+          Booking berhasil dibuat
         </div>
       )}
 
@@ -135,14 +139,14 @@ export default async function JadwalPage({
             .map((b) => (
               <li
                 key={`agenda-${b.id}`}
-                className="flex items-center justify-between rounded-xl border border-sky-brand-200 bg-white px-3.5 py-2.5"
+                className="flex items-center justify-between gap-2 rounded-xl border border-sky-brand-200 bg-white px-3.5 py-2.5"
               >
-                <span className="text-xs font-bold text-navy-900">
+                <span className="min-w-0 truncate text-xs font-bold text-navy-900">
                   {String(b.startHour).padStart(2, "0")}.00–
                   {String(b.endHour).padStart(2, "0")}.00{" "}
                   <span className="ml-1 font-semibold text-navy-700/60">{b.label}</span>
                 </span>
-                <span className="text-[11px] font-bold text-sky-brand-600">
+                <span className="flex-shrink-0 text-[11px] font-bold text-sky-brand-600">
                   {formatIDR(b.price)}
                 </span>
               </li>

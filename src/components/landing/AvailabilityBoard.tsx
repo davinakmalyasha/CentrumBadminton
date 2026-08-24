@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CalendarDays, Check, MessageCircle, X } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   addDaysISO,
@@ -13,7 +14,8 @@ import {
   type PricingInfo,
 } from "@/lib/availability";
 import { waLink } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import { getDict, type Lang } from "@/lib/i18n";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 
 interface CourtLite {
   id: string;
@@ -27,13 +29,15 @@ export default function AvailabilityBoard({
   pricing,
   initialBusy,
   todayStr,
+  lang,
 }: {
   courts: CourtLite[];
   pricing: PricingInfo;
   initialBusy: BusyInterval[];
   todayStr: string;
+  lang: Lang;
 }) {
-  const { t, lang } = useLang();
+  const t = getDict(lang);
   const [dateISO, setDateISO] = useState(todayStr);
   const [busy, setBusy] = useState<BusyInterval[]>(initialBusy);
   const [loading, setLoading] = useState(false);
@@ -41,6 +45,11 @@ export default function AvailabilityBoard({
   const [selection, setSelection] = useState<Record<string, number[]>>({});
 
   const supabase = useMemo(() => createClient(), []);
+  const dateRef = useRef(dateISO);
+
+  useEffect(() => {
+    dateRef.current = dateISO;
+  }, [dateISO]);
 
   // Refetch busy intervals whenever the user picks a different date
   // (initial data comes server-rendered; no effect needed)
@@ -53,7 +62,9 @@ export default function AvailabilityBoard({
     [supabase]
   );
 
-  // Realtime updates — refetch current day on any booking/block change
+  // Realtime updates — refetch current day on any booking/block change.
+  // Single subscription for the component lifetime (current date read
+  // from a ref, so switching dates doesn't tear down the channel).
   useEffect(() => {
     const channel = supabase
       .channel("landing-availability")
@@ -62,7 +73,7 @@ export default function AvailabilityBoard({
         { event: "*", schema: "public", table: "bookings" },
         () => {
           setLoading(true);
-          void loadBusy(dateISO);
+          void loadBusy(dateRef.current);
         }
       )
       .on(
@@ -70,7 +81,7 @@ export default function AvailabilityBoard({
         { event: "*", schema: "public", table: "court_blocks" },
         () => {
           setLoading(true);
-          void loadBusy(dateISO);
+          void loadBusy(dateRef.current);
         }
       )
       .subscribe();
@@ -78,7 +89,7 @@ export default function AvailabilityBoard({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, dateISO, loadBusy]);
+  }, [supabase, loadBusy]);
 
   function toggle(courtId: string, hour: number) {
     setSelection((prev) => {
@@ -176,8 +187,12 @@ export default function AvailabilityBoard({
     <section id="jadwal" className="scroll-mt-20 bg-ice-100 py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-4">
         <div className="mb-8 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-navy-900 md:text-4xl">
-            📅 {t.availability.title}
+          <h2 className="flex items-center justify-center gap-3 text-2xl font-black tracking-tight text-navy-900 md:text-4xl">
+            <CalendarDays
+              className="h-5 w-5 text-sky-brand-500 md:h-6 md:w-6"
+              strokeWidth={1.75}
+            />
+            {t.availability.title}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-navy-700/70 md:text-base">
             {t.availability.subtitle}
@@ -242,14 +257,15 @@ export default function AvailabilityBoard({
               <div key={c.id} className="rounded-3xl border border-sky-brand-200 bg-white p-4 md:p-5">
                 <div className="mb-3 flex items-center justify-between">
                   <h3 className="flex items-center gap-2 text-base font-extrabold text-navy-900">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500/10 text-sm">
-                      🏸
+                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500/10">
+                      <Shuttlecock className="h-4 w-4 text-accent-500" />
                     </span>
                     {c.name}
                   </h3>
                   {sel.length > 0 && (
-                    <span className="rounded-full bg-sky-brand-400/10 px-2.5 py-1 text-xs font-bold text-sky-brand-600">
-                      ✓ {sel.length}
+                    <span className="inline-flex items-center gap-1 rounded-full bg-sky-brand-400/10 px-2.5 py-1 text-xs font-bold text-sky-brand-600">
+                      <Check className="h-3.5 w-3.5" />
+                      {sel.length}
                     </span>
                   )}
                 </div>
@@ -258,7 +274,7 @@ export default function AvailabilityBoard({
                   {slots.map((s) => {
                     const selected = sel.includes(s.hour);
                     const base =
-                      "min-w-[62px] flex-shrink-0 rounded-xl border px-2 py-2 text-center transition select-none";
+                      "min-w-[62px] flex-shrink-0 rounded-xl border px-2 py-2.5 text-center transition select-none";
                     let cls: string;
                     if (selected) {
                       cls = "border-sky-brand-600 bg-sky-brand-500 text-white shadow";
@@ -287,7 +303,7 @@ export default function AvailabilityBoard({
                         <span className="block text-xs font-bold leading-none">
                           {hourLabel(s.hour)}
                         </span>
-                        <span className="mt-1 block text-[9px] font-medium opacity-70">
+                        <span className="mt-1 block text-[10px] font-medium opacity-70">
                           {formatK(s.price)}
                         </span>
                       </button>
@@ -300,9 +316,12 @@ export default function AvailabilityBoard({
         </div>
       </div>
 
+      {/* Spacer so the sticky bar never covers the footer */}
+      {countSelected > 0 && <div className="h-24" aria-hidden="true" />}
+
       {/* Sticky booking bar */}
       {countSelected > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
           <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-navy-800/10 bg-navy-800 p-3 pl-4 shadow-2xl shadow-navy-800/30">
             <div className="min-w-0 flex-1">
               <p className="truncate text-xs font-medium text-sky-brand-200">
@@ -317,17 +336,18 @@ export default function AvailabilityBoard({
               href={waHref}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex-shrink-0 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-600/30 transition hover:bg-accent-600"
+              className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-600/30 transition hover:bg-accent-600"
             >
-              💬 {t.availability.bookWa}
+              <MessageCircle className="h-4 w-4" />
+              {t.availability.bookWa}
             </a>
             <button
               type="button"
               onClick={() => setSelection({})}
-              className="flex-shrink-0 rounded-xl px-2 py-3 text-sky-brand-200 transition hover:text-white"
+              className="flex-shrink-0 rounded-xl p-2 text-sky-brand-200 transition hover:text-white"
               aria-label="clear"
             >
-              ✕
+              <X className="h-4 w-4" />
             </button>
           </div>
         </div>

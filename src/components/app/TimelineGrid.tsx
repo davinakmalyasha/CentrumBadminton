@@ -1,7 +1,6 @@
-"use client";
-
 import Link from "next/link";
 import { formatIDR, hourLabel, type PricingInfo } from "@/lib/availability";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 
 export interface Block {
   id: string;
@@ -50,83 +49,89 @@ export default function TimelineGrid({
     { length: pricing.closeHour - pricing.openHour },
     (_, i) => pricing.openHour + i
   );
-  const ROW_H = 30; // px per hour
+  const ROW_H = 40; // px per hour — 40px keeps tap targets near 44px guideline
 
   return (
     <div className="overflow-hidden rounded-2xl border border-sky-brand-200 bg-white">
-      <div
-        className="grid border-b border-sky-brand-200 bg-ice-100"
-        style={{ gridTemplateColumns: `44px repeat(${courts.length}, minmax(0,1fr))` }}
-      >
-        <div />
-        {courts.map((c) => (
-          <div
-            key={c.id}
-            className="py-2 text-center text-[11px] font-black uppercase tracking-wide text-sky-brand-600"
-          >
-            {c.name}
-          </div>
-        ))}
-      </div>
-
-      <div className="p-2">
-        {/* Hour rows */}
-        {hours.map((h) => (
-          <div
-            key={h}
-            className="grid items-center"
-            style={{
-              gridTemplateColumns: `44px repeat(${courts.length}, minmax(0,1fr))`,
-              height: ROW_H,
-            }}
-          >
-            <div className="pr-1 text-right text-[10px] font-semibold text-navy-700/40">
-              {String(h).padStart(2, "0")}
+      <div className="overflow-x-auto">
+        <div
+          className="grid border-b border-sky-brand-200 bg-ice-100"
+          style={{
+            gridTemplateColumns: `44px repeat(${courts.length}, minmax(96px,1fr))`,
+          }}
+        >
+          <div />
+          {courts.map((c) => (
+            <div
+              key={c.id}
+              className="py-2 text-center text-[11px] font-black uppercase tracking-wide text-sky-brand-600"
+            >
+              {c.name}
             </div>
-            {courts.map((c) => {
-              const block = blocks.find(
-                (b) => b.courtId === c.id && h >= b.startHour && h < b.endHour
-              );
-              if (block && block.startHour === h) {
-                const style = STATUS_STYLE[block.status] ?? STATUS_STYLE.confirmed;
-                const spanH = (block.endHour - block.startHour) * ROW_H - 4;
-                return (
-                  <div key={c.id} className="relative" style={{ height: ROW_H }}>
-                    <div
-                      className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-2 ${style.bar}`}
-                      style={{ height: spanH }}
-                      title={`${block.label} · ${formatIDR(block.price)}`}
-                    >
-                      <p className="truncate pt-0.5 text-[10px] font-bold leading-tight">
-                        {block.label}{" "}
-                        {block.status === "checked_in" && "🏸"}
-                      </p>
+          ))}
+        </div>
+
+        <div className="p-2">
+          {/* Hour rows */}
+          {hours.map((h) => (
+            <div
+              key={h}
+              className="grid items-center"
+              style={{
+                gridTemplateColumns: `44px repeat(${courts.length}, minmax(96px,1fr))`,
+                height: ROW_H,
+              }}
+            >
+              <div className="pr-1 text-right text-[10px] font-semibold text-navy-700/40">
+                {String(h).padStart(2, "0")}
+              </div>
+              {courts.map((c) => {
+                const block = blocks.find(
+                  (b) => b.courtId === c.id && h >= b.startHour && h < b.endHour
+                );
+                if (block && block.startHour === h) {
+                  const style = STATUS_STYLE[block.status] ?? STATUS_STYLE.confirmed;
+                  const spanH = (block.endHour - block.startHour) * ROW_H - 4;
+                  return (
+                    <div key={c.id} className="relative" style={{ height: ROW_H }}>
+                      <div
+                        className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-2 ${style.bar}`}
+                        style={{ height: spanH }}
+                        title={`${block.label} · ${formatIDR(block.price)}`}
+                      >
+                        <p className="truncate pt-1 text-[10px] font-bold leading-tight">
+                          {block.label}{" "}
+                          {block.status === "checked_in" && (
+                            <Shuttlecock className="inline-block h-3 w-3 align-[-2px]" />
+                          )}
+                        </p>
+                      </div>
                     </div>
+                  );
+                }
+                if (block) {
+                  // continuation row of a multi-hour block — render spacer
+                  return <div key={c.id} style={{ height: ROW_H }} />;
+                }
+                return (
+                  <div key={c.id} style={{ height: ROW_H }}>
+                    <Link
+                      href={`/app/booking/baru?date=${dateISO}&court=${c.id}&hour=${h}`}
+                      className={`mx-0.5 flex h-full items-center justify-center rounded-md border border-dashed text-[11px] transition hover:bg-ice-200 ${
+                        h >= pricing.dayEndHour
+                          ? "border-amber-300 text-amber-500"
+                          : "border-emerald-300 text-emerald-400"
+                      }`}
+                      title={`Booking ${hourLabel(h)} · ${c.name}`}
+                    >
+                      +
+                    </Link>
                   </div>
                 );
-              }
-              if (block) {
-                // continuation row of a multi-hour block — render spacer
-                return <div key={c.id} style={{ height: ROW_H }} />;
-              }
-              return (
-                <div key={c.id} style={{ height: ROW_H }}>
-                  <Link
-                    href={`/app/booking/baru?date=${dateISO}&court=${c.id}&hour=${h}`}
-                    className={`mx-0.5 flex h-full items-center justify-center rounded-md border border-dashed text-[11px] transition hover:bg-ice-200 ${
-                      h >= pricing.dayEndHour
-                        ? "border-amber-300 text-amber-500"
-                        : "border-emerald-300 text-emerald-400"
-                    }`}
-                    title={`Booking ${hourLabel(h)} · ${c.name}`}
-                  >
-                    +
-                  </Link>
-                </div>
-              );
-            })}
-          </div>
-        ))}
+              })}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="border-t border-sky-brand-200 bg-ice-50 px-3 py-2 text-[10px] font-medium text-navy-700/60">

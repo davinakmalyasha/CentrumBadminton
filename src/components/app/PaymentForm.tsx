@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Banknote, QrCode } from "lucide-react";
 import { recordPayment, type ActionState } from "@/app/app/(protected)/actions";
 import { formatIDR } from "@/lib/availability";
 
@@ -20,7 +21,7 @@ export default function PaymentForm({
   if (state.ok) {
     return (
       <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-        ✅ Pembayaran tercatat
+        Pembayaran tercatat
       </p>
     );
   }
@@ -51,13 +52,23 @@ export default function PaymentForm({
         <button
           type="button"
           onClick={() => setMethod(method === "cash" ? "qris" : "cash")}
-          className={`rounded-xl border px-3 text-xs font-black transition ${
+          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition ${
             method === "cash"
               ? "border-navy-800 bg-navy-800 text-white"
               : "border-emerald-500 bg-emerald-500 text-white"
           }`}
         >
-          {method === "cash" ? "💵 Cash" : "📱 QRIS"}
+          {method === "cash" ? (
+            <>
+              <Banknote className="h-3.5 w-3.5" />
+              Cash
+            </>
+          ) : (
+            <>
+              <QrCode className="h-3.5 w-3.5" />
+              QRIS
+            </>
+          )}
         </button>
       </div>
 

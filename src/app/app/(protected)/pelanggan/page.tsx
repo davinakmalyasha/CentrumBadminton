@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { MessageCircle, Phone, UserX, Users } from "lucide-react";
 import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
 export const metadata = { title: "Pelanggan · Centrum Manager" };
@@ -46,7 +47,9 @@ export default async function PelangganPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-black text-navy-900">👥 Pelanggan</h1>
+        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+          <Users className="h-5 w-5" strokeWidth={1.75} /> Pelanggan
+        </h1>
         <p className="text-xs font-semibold text-navy-700/60">
           {customers.length} terdaftar · dibuat otomatis dari booking
         </p>
@@ -74,12 +77,14 @@ export default async function PelangganPage() {
                     {c.name}
                     {(c.no_show_count ?? 0) > 0 && (
                       <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 align-middle text-[9px] font-bold uppercase text-red-500">
-                        🚫 {c.no_show_count}× no-show
+                        <UserX className="mr-0.5 inline h-3 w-3" />
+                        {c.no_show_count}× no-show
                       </span>
                     )}
                   </p>
                   <p className="truncate text-[11px] font-semibold text-navy-700/50">
-                    📞 {c.phone}
+                    <Phone className="mr-1 inline h-3 w-3" />
+                    {c.phone}
                     {s?.visits ? ` · ${s.visits}x main` : ""}
                     {s?.last
                       ? ` · terakhir ${new Intl.DateTimeFormat("id-ID", {
@@ -98,7 +103,7 @@ export default async function PelangganPage() {
                   title="Chat WhatsApp"
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
                 >
-                  💬
+                  <MessageCircle className="h-4 w-4" />
                 </a>
               </li>
             );

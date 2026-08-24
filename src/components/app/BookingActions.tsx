@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Check, Flag, Trash2, UserX } from "lucide-react";
 import { updateBookingStatus, deleteBooking, type ActionState } from "@/app/app/(protected)/actions";
 import { useRole } from "./RoleContext";
 
@@ -18,7 +19,7 @@ export default function BookingActions({
   const [delState, delAction, delPending] = useActionState(deleteBooking, initial);
 
   const btn =
-    "rounded-lg px-2.5 py-1.5 text-[11px] font-bold transition disabled:opacity-50";
+    "inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-bold transition disabled:opacity-50";
 
   const err = state.error || delState.error;
 
@@ -34,7 +35,8 @@ export default function BookingActions({
             className={`${btn} bg-emerald-500 text-white hover:bg-emerald-600`}
             title={status === "pending" ? "Confirm dulu sebelum check-in" : ""}
           >
-            ✅ Check-in
+            <Check className="h-3.5 w-3.5" />
+            Check-in
           </button>
         </form>
       )}
@@ -60,7 +62,8 @@ export default function BookingActions({
             disabled={pending}
             className={`${btn} bg-navy-800 text-white hover:bg-navy-700`}
           >
-            🏁 Selesai
+            <Flag className="h-3.5 w-3.5" />
+            Selesai
           </button>
         </form>
       )}
@@ -86,7 +89,8 @@ export default function BookingActions({
               className={`${btn} border border-red-200 text-red-400 hover:bg-red-50`}
               title="Tandai no-show (menambah counter pelanggan)"
             >
-              🚫 No-show
+              <UserX className="h-3.5 w-3.5" />
+              No-show
             </button>
           </form>
         </>
@@ -100,7 +104,7 @@ export default function BookingActions({
             className={`${btn} text-navy-700/40 hover:text-red-500`}
             title="Hapus permanen (owner)"
           >
-            🗑
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </form>
       )}

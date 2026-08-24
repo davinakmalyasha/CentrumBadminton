@@ -4,8 +4,9 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { addDaysISO, computePrice } from "@/lib/availability";
+import { addDaysISO, computePrice, todayISO } from "@/lib/availability";
 import { sendPushToAll } from "@/lib/webpush";
+import { rateLimit } from "@/lib/ratelimit";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -75,22 +76,36 @@ export async function createBooking(
   const dateISO = String(formData.get("date") ?? "");
   const startH = Number(formData.get("start_hour"));
   const endH = Number(formData.get("end_hour"));
-  const name = String(formData.get("customer_name") ?? "").trim();
-  const phoneRaw = String(formData.get("customer_phone") ?? "").replace(/\D/g, "");
+  const name = String(formData.get("customer_name") ?? "").trim().slice(0, 80);
+  const phoneRaw = String(formData.get("customer_phone") ?? "")
+    .replace(/\D/g, "")
+    .slice(0, 16);
   const source = String(formData.get("source") ?? "walk_in") as "whatsapp" | "walk_in";
-  const notes = String(formData.get("notes") ?? "").trim() || null;
-  const overrideRaw = String(formData.get("override_price") ?? "").replace(/\D/g, "");
+  const notes = String(formData.get("notes") ?? "").trim().slice(0, 500) || null;
+  const overrideRaw = String(formData.get("override_price") ?? "").replace(/\D/g, "").slice(0, 9);
   const unconfirmed = String(formData.get("unconfirmed") ?? "") === "1";
+
+  // Spam guard: 30 booking / menit / user
+  if (!rateLimit(`booking:${user.id}`, 30, 60_000).ok) {
+    return { error: "Terlalu banyak booking sekaligus — coba lagi sebentar." };
+  }
 
   const fieldErrors: Record<string, string> = {};
   if (!courtId) fieldErrors.court_id = "Pilih lapangan";
   if (!/^\d{4}-\d{2}-\d{2}$/.test(dateISO)) fieldErrors.date = "Tanggal tidak valid";
-  if (!Number.isFinite(startH) || !Number.isFinite(endH) || endH <= startH)
+  if (!Number.isInteger(startH) || !Number.isInteger(endH) || endH <= startH)
     fieldErrors.end_hour = "Jam selesai harus setelah jam mulai";
   if (!name) fieldErrors.customer_name = "Nama wajib diisi";
   if (phoneRaw.length < 8) fieldErrors.customer_phone = "Nomor WhatsApp tidak valid";
   if (Object.keys(fieldErrors).length > 0)
     return { error: "Periksa kembali form.", fieldErrors };
+
+  // Date sanity: reject past dates and anything beyond ±1 year
+  const today = todayISO();
+  const maxDate = addDaysISO(today, 366);
+  if (dateISO < addDaysISO(today, -1) || dateISO > maxDate) {
+    return { error: "Tanggal di luar rentang yang diizinkan." };
+  }
 
   // Validate against operating hours
   const pricing = await getActivePricing(supabase, dateISO);
@@ -152,7 +167,7 @@ export async function createBooking(
   // Notify other staff devices (fire-and-forget)
   await sendPushToAll(
     {
-      title: "🏸 Booking baru masuk",
+      title: "Booking baru masuk",
       body: `${name} · ${dateISO} · ${String(startH).padStart(2, "0")}.00`,
       url: `/app/jadwal?date=${dateISO}`,
       tag: "new-booking",
@@ -256,14 +271,18 @@ export async function recordPayment(
   const { supabase, user } = await requireUser();
 
   const bookingId = String(formData.get("booking_id") ?? "");
-  const amountRaw = String(formData.get("amount") ?? "").replace(/\D/g, "");
+  const amountRaw = String(formData.get("amount") ?? "").replace(/\D/g, "").slice(0, 9);
   const method = String(formData.get("method") ?? "cash") as "cash" | "qris";
   const amount = Number(amountRaw);
-  const note = String(formData.get("note") ?? "").trim() || null;
+  const note = String(formData.get("note") ?? "").trim().slice(0, 200) || null;
 
   if (!bookingId) return { error: "Booking tidak valid" };
   if (!Number.isFinite(amount) || amount <= 0)
     return { error: "Nominal harus lebih dari 0." };
+  if (amount > 100_000_000) return { error: "Nominal melebihi batas maksimum." };
+  if (!rateLimit(`payment:${user.id}`, 60, 60_000).ok) {
+    return { error: "Terlalu banyak transaksi — coba lagi sebentar." };
+  }
 
   const { error } = await supabase.from("payments").insert({
     booking_id: bookingId,
@@ -601,14 +620,17 @@ export async function createExpense(
   }
   const { supabase, user } = ctx;
 
-  const category = String(formData.get("category") ?? "").trim();
-  const amount = Number(String(formData.get("amount") ?? "").replace(/\D/g, ""));
-  const note = String(formData.get("note") ?? "").trim() || null;
+  const category = String(formData.get("category") ?? "").trim().slice(0, 60);
+  const amount = Number(
+    String(formData.get("amount") ?? "").replace(/\D/g, "").slice(0, 10)
+  );
+  const note = String(formData.get("note") ?? "").trim().slice(0, 300) || null;
   const spentAt = String(formData.get("spent_at") ?? "");
 
   if (!category) return { error: "Kategori wajib diisi." };
   if (!Number.isFinite(amount) || amount <= 0)
     return { error: "Nominal harus lebih dari 0." };
+  if (amount > 1_000_000_000) return { error: "Nominal melebihi batas maksimum." };
   if (!/^\d{4}-\d{2}-\d{2}$/.test(spentAt)) return { error: "Tanggal tidak valid." };
 
   const { error } = await supabase.from("expenses").insert({

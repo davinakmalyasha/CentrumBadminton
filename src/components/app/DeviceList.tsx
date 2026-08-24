@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState, useTransition } from "react";
+import { Smartphone, Trash2 } from "lucide-react";
 import {
   listMyDevices,
   removeDeviceById,
@@ -47,7 +48,8 @@ export default function DeviceList({ initialDevices }: { initialDevices: DeviceI
   if (devices.length === 0) {
     return (
       <p className="text-[11px] font-medium text-navy-700/40">
-        Belum ada perangkat — tekan 🔕 di header untuk mengaktifkan notifikasi.
+        Belum ada perangkat — aktifkan notifikasi lewat ikon lonceng di header
+        aplikasi.
       </p>
     );
   }
@@ -60,8 +62,9 @@ export default function DeviceList({ initialDevices }: { initialDevices: DeviceI
           className="flex items-center justify-between gap-2 rounded-xl bg-ice-100 px-3 py-2"
         >
           <div className="min-w-0">
-            <p className="truncate text-xs font-bold text-navy-900">
-              📱 {deviceLabel(d.user_agent)}
+            <p className="flex items-center gap-1.5 truncate text-xs font-bold text-navy-900">
+              <Smartphone className="h-3.5 w-3.5 flex-shrink-0" />
+              {deviceLabel(d.user_agent)}
             </p>
             <p className="text-[10px] font-medium text-navy-700/40">
               terdaftar{" "}
@@ -79,7 +82,7 @@ export default function DeviceList({ initialDevices }: { initialDevices: DeviceI
             title="Hapus perangkat"
             className="flex-shrink-0 rounded-lg border border-red-200 bg-white px-2 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
           >
-            🗑
+            <Trash2 className="h-3.5 w-3.5" />
           </button>
         </li>
       ))}

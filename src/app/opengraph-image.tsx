@@ -33,7 +33,7 @@ export default function OpengraphImage() {
             color: "white",
           }}
         >
-          🏸
+          CB
         </div>
         <div style={{ fontSize: 72, fontWeight: 900, color: "#0B2545", marginTop: 32 }}>
           Centrum Badminton Arena
@@ -59,7 +59,7 @@ export default function OpengraphImage() {
           </span>
         </div>
         <div style={{ fontSize: 26, color: "#133D6F", marginTop: 36 }}>
-          ⭐ 4.7 · Buka setiap hari 07.00–23.00 WIB
+          Rating 4.7 di Google · Buka setiap hari 07.00–23.00 WIB
         </div>
       </div>
     ),

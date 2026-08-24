@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Trash2 } from "lucide-react";
 import { deletePayment, type ActionState } from "@/app/app/(protected)/actions";
 import { useRole } from "./RoleContext";
 
@@ -21,7 +22,7 @@ export default function DeletePaymentButton({ paymentId }: { paymentId: string }
         title="Hapus pembayaran (owner)"
         className="px-1.5 text-[11px] text-navy-700/40 transition hover:text-red-500"
       >
-        🗑
+        <Trash2 className="h-3.5 w-3.5" />
       </button>
     </form>
   );

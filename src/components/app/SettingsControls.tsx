@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Check, X } from "lucide-react";
 import {
   toggleProfileActive,
   toggleCourtActive,
@@ -25,13 +26,23 @@ export function ToggleCourtActiveButton({
       <button
         type="submit"
         disabled={pending}
-        className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold transition ${
+        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
           active
             ? "border-emerald-300 bg-emerald-50 text-emerald-600"
             : "border-neutral-300 bg-neutral-100 text-neutral-500"
         }`}
       >
-        {active ? "✓ Aktif" : "✕ Nonaktif"}
+        {active ? (
+          <>
+            <Check className="h-3 w-3" />
+            Aktif
+          </>
+        ) : (
+          <>
+            <X className="h-3 w-3" />
+            Nonaktif
+          </>
+        )}
       </button>
     </form>
   );
@@ -57,13 +68,23 @@ export function ToggleStaffActiveButton({
         <button
           type="submit"
           disabled={pending}
-          className={`rounded-lg border px-2.5 py-1 text-[10px] font-bold transition ${
+          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
             active
               ? "border-emerald-300 bg-emerald-50 text-emerald-600"
               : "border-red-200 bg-red-50 text-red-500"
           }`}
         >
-          {active ? "✓ Aktif" : "✕ Dinonaktifkan"}
+          {active ? (
+            <>
+              <Check className="h-3 w-3" />
+              Aktif
+            </>
+          ) : (
+            <>
+              <X className="h-3 w-3" />
+              Dinonaktifkan
+            </>
+          )}
         </button>
       </form>
     </div>

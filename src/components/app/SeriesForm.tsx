@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Repeat } from "lucide-react";
 import { createSeries, type SeriesState } from "@/app/app/(protected)/actions";
 
 const initial: SeriesState = { error: null };
@@ -26,7 +27,7 @@ export default function SeriesForm({
         <select name="court_id" required className={field}>
           {courts.map((c) => (
             <option key={c.id} value={c.id}>
-              🏸 {c.name}
+              {c.name}
             </option>
           ))}
         </select>
@@ -100,20 +101,27 @@ export default function SeriesForm({
       </div>
 
       {state.error && (
-        <p className="text-xs font-semibold text-red-500">⚠️ {state.error}</p>
+        <p className="text-xs font-semibold text-red-500">{state.error}</p>
       )}
       {state.ok && (
         <p className="text-xs font-semibold text-emerald-600">
-          ✅ Langganan dibuat — {state.info}
+          Langganan dibuat — {state.info}
         </p>
       )}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-accent-500 py-2.5 text-sm font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-accent-500 py-2.5 text-sm font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
       >
-        {pending ? "Membuat…" : "🔁 Buat Langganan"}
+        {pending ? (
+          "Membuat…"
+        ) : (
+          <>
+            <Repeat className="h-4 w-4" />
+            Buat Langganan
+          </>
+        )}
       </button>
     </form>
   );

@@ -1,18 +1,27 @@
-"use client";
-
+import { MessageCircle, Star } from "lucide-react";
 import { VENUE, waLink } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import type { Dict, Lang } from "@/lib/i18n";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 import type { RatingData } from "@/lib/rating";
 
 function Stars({ score }: { score: number }) {
   return (
-    <span className="relative inline-block text-base leading-none">
-      <span className="text-navy-800/15">★★★★★</span>
+    <span className="relative inline-block leading-none">
+      <span className="flex gap-0.5">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} className="h-4 w-4 text-navy-800/15" />
+        ))}
+      </span>
       <span
-        className="absolute inset-0 overflow-hidden whitespace-nowrap text-amber-400"
+        className="absolute inset-0 flex gap-0.5 overflow-hidden whitespace-nowrap"
         style={{ width: `${(score / 5) * 100}%` }}
       >
-        ★★★★★
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className="h-4 w-4 flex-shrink-0 fill-amber-400 text-amber-400"
+          />
+        ))}
       </span>
     </span>
   );
@@ -21,11 +30,14 @@ function Stars({ score }: { score: number }) {
 export default function Hero({
   rating,
   openNow,
+  t,
+  lang,
 }: {
   rating: RatingData;
   openNow: boolean;
+  t: Dict;
+  lang: Lang;
 }) {
-  const { t, lang } = useLang();
 
   return (
     <section id="top" className="relative overflow-hidden bg-white">
@@ -33,6 +45,11 @@ export default function Hero({
       <div
         aria-hidden
         className="pointer-events-none absolute inset-x-0 -top-32 h-[420px] bg-gradient-to-b from-ice-200 via-ice-100 to-transparent"
+      />
+      <Star
+        aria-hidden
+        className="pointer-events-none absolute -right-10 -bottom-14 h-40 w-40 fill-current text-navy-900 opacity-[0.04] md:h-64 md:w-64"
+        strokeWidth={1}
       />
       <div className="relative mx-auto grid max-w-6xl items-center gap-10 px-4 pb-16 pt-14 md:grid-cols-2 md:pb-24 md:pt-20">
         <div>
@@ -59,9 +76,10 @@ export default function Hero({
           <div className="mt-7 flex flex-wrap gap-3">
             <a
               href="#jadwal"
-              className="rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:bg-accent-600"
+              className="inline-flex items-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:bg-accent-600"
             >
-              🏸 {t.hero.ctaBook}
+              <Shuttlecock className="h-4 w-4" />
+              {t.hero.ctaBook}
             </a>
             <a
               href={waLink(
@@ -71,9 +89,10 @@ export default function Hero({
               )}
               target="_blank"
               rel="noopener noreferrer"
-              className="rounded-xl border border-sky-brand-300 bg-white px-6 py-3.5 text-sm font-bold text-navy-800 transition hover:bg-ice-100"
+              className="inline-flex items-center gap-2 rounded-xl border border-sky-brand-300 bg-white px-6 py-3.5 text-sm font-bold text-navy-800 transition hover:bg-ice-100"
             >
-              💬 {t.hero.ctaWa}
+              <MessageCircle className="h-4 w-4" />
+              {t.hero.ctaWa}
             </a>
           </div>
 
@@ -88,8 +107,9 @@ export default function Hero({
               </span>
             </div>
             <span className="hidden h-4 w-px bg-sky-brand-200 sm:block" />
-            <span className="text-sm font-medium text-navy-700/70">
-              🏸 2 {t.hero.courtsLabel}
+            <span className="flex items-center gap-1.5 text-sm font-medium text-navy-700/70">
+              <Shuttlecock className="h-3.5 w-3.5 text-sky-brand-500" />
+              2 {t.hero.courtsLabel}
             </span>
           </div>
         </div>
@@ -99,8 +119,11 @@ export default function Hero({
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-sky-brand-200 bg-gradient-to-br from-ice-100 via-white to-sky-brand-200 shadow-2xl shadow-navy-800/10">
             <div className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(to_right,#93cdff_1px,transparent_1px),linear-gradient(to_bottom,#93cdff_1px,transparent_1px)] [background-size:44px_44px]" />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-accent-500 text-6xl shadow-inner">
-                🏸
+              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-accent-500 shadow-inner">
+                <Shuttlecock
+                  className="h-16 w-16 text-white"
+                  strokeWidth={1.5}
+                />
               </div>
               <p className="text-lg font-extrabold tracking-wide text-navy-800">
                 {VENUE.name}

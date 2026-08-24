@@ -2,6 +2,16 @@ import Link from "next/link";
 import { requireOwnerPage } from "@/lib/guard";
 import { formatIDR } from "@/lib/availability";
 import {
+  BarChart3,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  Flame,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
+import Shuttlecock from "@/components/icons/Shuttlecock";
+import {
   addMonths,
   currentMonthKey,
   daysInMonth,
@@ -23,38 +33,31 @@ export default async function LaporanPage({
   const endEx = monthEndExclusive(month);
 
   const supabase = await requireOwnerPage();
-  const pricingForMonth = await supabase.rpc("get_pricing_for", {
-    p_date: start,
-  });
-  const pRule = pricingForMonth.data?.[0];
-  const openHours = pRule
-    ? Math.max(
-        Number(pRule.close_time.slice(0, 2)) -
-          Number(pRule.open_time.slice(0, 2)),
-        1
-      )
-    : 16;
 
-  const [paymentsRes, bookingsRes, expensesRes, courtsRes] = await Promise.all([
-    supabase
-      .from("payments")
-      .select("amount,method,paid_at")
-      .gte("paid_at", `${start}T00:00:00+07:00`)
-      .lt("paid_at", `${endEx}T00:00:00+07:00`),
-    supabase
-      .from("bookings")
-      .select("court_id,start_time,end_time,courts(name)")
-      .neq("status", "cancelled")
-      .neq("status", "no_show")
-      .gte("booking_date", start)
-      .lt("booking_date", endEx),
-    supabase
-      .from("expenses")
-      .select("amount")
-      .gte("spent_at", start)
-      .lt("spent_at", endEx),
-    supabase.from("courts").select("id,name").eq("is_active", true),
-  ]);
+  const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes] =
+    await Promise.all([
+      supabase.rpc("get_pricing_for", { p_date: start }),
+      supabase
+        .from("payments")
+        .select("amount,method,paid_at")
+        .gte("paid_at", `${start}T00:00:00+07:00`)
+        .lt("paid_at", `${endEx}T00:00:00+07:00`),
+      supabase
+        .from("bookings")
+        .select("court_id,start_time,end_time,courts(name)")
+        .neq("status", "cancelled")
+        .neq("status", "no_show")
+        .gte("booking_date", start)
+        .lt("booking_date", endEx),
+      supabase
+        .from("expenses")
+        .select("amount")
+        .gte("spent_at", start)
+        .lt("spent_at", endEx),
+      supabase.from("courts").select("id,name").eq("is_active", true),
+    ]);
+
+  const pRule = pricingForMonth.data?.[0];
 
   const payments = (paymentsRes.data ?? []) as Array<{
     amount: number;
@@ -69,6 +72,14 @@ export default async function LaporanPage({
   }>;
   const expenses = (expensesRes.data ?? []) as Array<{ amount: number }>;
   const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
+
+  const openHours = pRule
+    ? Math.max(
+        Number(pRule.close_time.slice(0, 2)) -
+          Number(pRule.open_time.slice(0, 2)),
+        1
+      )
+    : 16;
 
   // Totals
   let cash = 0;
@@ -125,17 +136,19 @@ export default async function LaporanPage({
           href={`/app/laporan?month=${addMonths(month, -1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
         >
-          ‹
+          <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="text-base font-black capitalize text-navy-900">📊 Laporan</h1>
+          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-navy-900">
+            <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Laporan
+          </h1>
           <p className="text-xs font-semibold text-navy-700/60">{formatMonthLabel(month)}</p>
         </div>
         <Link
           href={`/app/laporan?month=${addMonths(month, 1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
         >
-          ›
+          <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
 
@@ -150,9 +163,9 @@ export default async function LaporanPage({
           </div>
           <a
             href={`/api/reports/export?month=${month}`}
-            className="rounded-xl border border-sky-brand-300 px-3 py-2 text-xs font-bold text-sky-brand-600 transition hover:bg-ice-100"
+            className="inline-flex items-center gap-1 rounded-xl border border-sky-brand-300 px-3 py-2 text-xs font-bold text-sky-brand-600 transition hover:bg-ice-100"
           >
-            ⬇️ CSV
+            <Download className="h-3.5 w-3.5" /> CSV
           </a>
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
@@ -180,7 +193,9 @@ export default async function LaporanPage({
       {/* Utilization */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-extrabold text-navy-900">📈 Okupansi</h2>
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-navy-900">
+            <TrendingUp className="h-4 w-4" /> Okupansi
+          </h2>
           <span className="text-xs font-black text-sky-brand-600">{utilization}%</span>
         </div>
         <ul className="space-y-2">
@@ -193,7 +208,10 @@ export default async function LaporanPage({
             return (
               <li key={c.id}>
                 <div className="mb-0.5 flex justify-between text-[11px] font-semibold text-navy-700/70">
-                  <span>🏸 {c.name}</span>
+                  <span className="flex items-center gap-1">
+                    <Shuttlecock className="h-3 w-3" />
+                    {c.name}
+                  </span>
                   <span>
                     {hrs} jam · {pct}%
                   </span>
@@ -212,7 +230,9 @@ export default async function LaporanPage({
 
       {/* Peak hours */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-2 text-sm font-extrabold text-navy-900">🔥 Jam Terpopuler</h2>
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Flame className="h-4 w-4" /> Jam Terpopuler
+        </h2>
         {peakHours.length === 0 ? (
           <p className="text-xs text-navy-700/50">Belum ada data bulan ini.</p>
         ) : (
@@ -231,7 +251,9 @@ export default async function LaporanPage({
 
       {/* Daily revenue */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-3 text-sm font-extrabold text-navy-900">💰 Pendapatan Harian</h2>
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <Wallet className="h-4 w-4" /> Pendapatan Harian
+        </h2>
         <div className="space-y-1">
           {days.map(({ iso, day, value }) => (
             <div key={iso} className="flex items-center gap-2">

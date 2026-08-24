@@ -1,8 +1,12 @@
 /**
  * One-time local provisioning: creates the owner account via Supabase
  * admin API. Run with:  node --env-file=.env.local scripts/provision-owner.mjs
- * Never prints the service key; safe to delete after first run.
+ *
+ * Credentials are NOT stored in this repo. The password is generated
+ * randomly and printed ONCE — copy it immediately. Never commit it.
+ * If this account already exists, the script exits without changes.
  */
+import { randomBytes } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,8 +20,8 @@ const admin = createClient(url, key, {
   auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const email = "owner@example.com";
-const password = "REDACTED-OWNER-PASSWORD!";
+const email = process.argv[2] ?? "owner@example.com";
+const password = randomBytes(12).toString("base64url") + "!Aa1";
 
 const { data, error } = await admin.auth.admin.createUser({
   email,
@@ -28,11 +32,13 @@ const { data, error } = await admin.auth.admin.createUser({
 
 if (error) {
   if (/already|registered/i.test(error.message)) {
-    console.log("EXISTS");
+    console.log("EXISTS — nothing done.");
   } else {
     console.error("CREATE_FAILED:", error.message);
     process.exit(1);
   }
 } else {
   console.log("CREATED", data.user?.id);
+  console.log("EMAIL:", email);
+  console.log("PASSWORD (copy now, shown once):", password);
 }

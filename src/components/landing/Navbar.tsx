@@ -1,7 +1,5 @@
-"use client";
-
 import { VENUE, waLink } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import { getDict, type Lang } from "@/lib/i18n";
 import LangToggle from "./LangToggle";
 
 const links = [
@@ -12,8 +10,8 @@ const links = [
   { href: "#ulasan", key: "reviews" },
 ] as const;
 
-export default function Navbar() {
-  const { t, lang } = useLang();
+export default function Navbar({ lang }: { lang: Lang }) {
+  const t = getDict(lang);
 
   return (
     <header className="sticky top-0 z-40 border-b border-sky-brand-200/60 bg-white/85 backdrop-blur">
@@ -45,7 +43,7 @@ export default function Navbar() {
         </nav>
 
         <div className="flex items-center gap-2">
-          <LangToggle />
+          <LangToggle lang={lang} />
           <a
             href={waLink(
               lang === "id"

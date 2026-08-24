@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Bell } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Toast {
@@ -38,7 +39,7 @@ export default function NotificationWatcher() {
           }).format(new Date());
           if ((row.booking_date ?? "") < today) return;
 
-          const t = `🏸 Booking baru: ${row.customer_name ?? "Pelanggan"} · ${String(
+          const t = `Booking baru: ${row.customer_name ?? "Pelanggan"} · ${String(
             row.start_time ?? ""
           ).slice(0, 5)}`;
           const id = row.id;
@@ -64,9 +65,10 @@ export default function NotificationWatcher() {
       {toasts.map((t) => (
         <div
           key={t.id}
-          className="pointer-events-auto rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-800 shadow-lg shadow-emerald-900/10"
+          className="pointer-events-auto flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-xs font-bold text-emerald-800 shadow-lg shadow-emerald-900/10"
         >
-          🔔 {t.text}
+          <Bell className="h-4 w-4 flex-shrink-0" />
+          {t.text}
         </div>
       ))}
     </div>

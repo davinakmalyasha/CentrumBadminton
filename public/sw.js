@@ -1,6 +1,18 @@
 /* Centrum Badminton Arena — minimal hand-rolled service worker */
-const CACHE = "cba-v1";
+const CACHE = "cba-v2";
 const OFFLINE_URL = "/offline";
+const MAX_NAV_ENTRIES = 30;
+const MAX_STATIC_ENTRIES = 120;
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName);
+  const keys = await cache.keys();
+  if (keys.length <= maxEntries) return;
+  // Delete oldest entries first
+  for (const key of keys.slice(0, keys.length - maxEntries)) {
+    await cache.delete(key);
+  }
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -35,7 +47,11 @@ self.addEventListener("fetch", (event) => {
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          caches
+            .open(CACHE)
+            .then((c) => c.put(req, copy))
+            .then(() => trimCache(CACHE, MAX_NAV_ENTRIES))
+            .catch(() => {});
           return res;
         })
         .catch(async () => {
@@ -59,7 +75,11 @@ self.addEventListener("fetch", (event) => {
           cached ||
           fetch(req).then((res) => {
             const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+            caches
+              .open(CACHE)
+              .then((c) => c.put(req, copy))
+              .then(() => trimCache(CACHE, MAX_STATIC_ENTRIES))
+              .catch(() => {});
             return res;
           })
       )
@@ -73,7 +93,7 @@ self.addEventListener("push", (event) => {
   try {
     data = event.data ? event.data.json() : {};
   } catch {}
-  const title = data.title || "🏸 Centrum Badminton";
+  const title = data.title || "Centrum Badminton";
   event.waitUntil(
     self.registration.showNotification(title, {
       body: data.body || "",

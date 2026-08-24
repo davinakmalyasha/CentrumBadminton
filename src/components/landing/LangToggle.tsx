@@ -1,9 +1,24 @@
 "use client";
 
-import { useLang, type Lang } from "@/lib/i18n";
+import { useRouter } from "next/navigation";
+import type { Lang } from "@/lib/i18n";
 
-export default function LangToggle({ className = "" }: { className?: string }) {
-  const { lang, setLang } = useLang();
+const LANG_COOKIE = "cba-lang";
+
+export default function LangToggle({
+  lang,
+  className = "",
+}: {
+  lang: Lang;
+  className?: string;
+}) {
+  const router = useRouter();
+
+  function setLang(l: Lang) {
+    if (l === lang) return;
+    document.cookie = `${LANG_COOKIE}=${l}; path=/; max-age=31536000; samesite=lax`;
+    router.refresh();
+  }
 
   const btn = (l: Lang) =>
     `px-2.5 py-1 rounded-full text-xs font-semibold transition ${
