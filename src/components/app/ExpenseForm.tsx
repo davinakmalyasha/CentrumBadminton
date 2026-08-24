@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Plus } from "lucide-react";
 import { createExpense, type ActionState } from "@/app/app/(protected)/actions";
 
 const initial: ActionState = { error: null };
@@ -35,7 +36,7 @@ export default function ExpenseForm({ today }: { today: string }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
+      <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
         <div>
           <label htmlFor="edate" className="mb-1 block text-xs font-bold uppercase tracking-wide text-navy-700/60">
             Tanggal
@@ -50,14 +51,21 @@ export default function ExpenseForm({ today }: { today: string }) {
         </div>
       </div>
 
-      {state.error && <p className="text-xs font-semibold text-red-500">⚠️ {state.error}</p>}
+      {state.error && <p className="text-xs font-semibold text-red-500">{state.error}</p>}
 
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-navy-800 py-2.5 text-sm font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-navy-800 py-2.5 text-sm font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
       >
-        {pending ? "Menyimpan…" : "＋ Catat Pengeluaran"}
+        {pending ? (
+          "Menyimpan…"
+        ) : (
+          <>
+            <Plus className="h-4 w-4" />
+            Catat Pengeluaran
+          </>
+        )}
       </button>
     </form>
   );

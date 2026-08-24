@@ -1,3 +1,4 @@
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import { todayISO, type PricingInfo } from "@/lib/availability";
 import BookingForm from "@/components/app/BookingForm";
@@ -48,7 +49,9 @@ export default async function NewBookingPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="text-lg font-black text-navy-900">➕ Booking Baru</h1>
+      <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <Plus className="h-5 w-5" strokeWidth={1.75} /> Booking Baru
+      </h1>
       <BookingForm
         courts={(courtsRes.data ?? []) as Array<{ id: string; name: string }>}
         pricing={pricing}

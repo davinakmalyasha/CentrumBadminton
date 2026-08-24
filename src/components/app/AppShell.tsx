@@ -3,6 +3,14 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
+import {
+  Banknote,
+  CalendarDays,
+  Home,
+  Plus,
+  Users,
+  type LucideIcon,
+} from "lucide-react";
 import { signOut } from "@/app/app/(protected)/actions";
 import NotificationWatcher from "./NotificationWatcher";
 import PushBell from "./PushBell";
@@ -10,14 +18,14 @@ import PushBell from "./PushBell";
 const tabs: Array<{
   href: string;
   label: string;
-  icon: string;
+  icon: LucideIcon;
   accent?: boolean;
 }> = [
-  { href: "/app", label: "Beranda", icon: "🏠" },
-  { href: "/app/jadwal", label: "Jadwal", icon: "📅" },
-  { href: "/app/booking/baru", label: "Booking", icon: "➕", accent: true },
-  { href: "/app/pembayaran", label: "Bayar", icon: "💵" },
-  { href: "/app/pelanggan", label: "Pelanggan", icon: "👥" },
+  { href: "/app", label: "Beranda", icon: Home },
+  { href: "/app/jadwal", label: "Jadwal", icon: CalendarDays },
+  { href: "/app/booking/baru", label: "Booking", icon: Plus, accent: true },
+  { href: "/app/pembayaran", label: "Bayar", icon: Banknote },
+  { href: "/app/pelanggan", label: "Pelanggan", icon: Users },
 ];
 
 export default function AppShell({
@@ -33,7 +41,7 @@ export default function AppShell({
 
   return (
     <div className="min-h-svh bg-ice-100">
-      <header className="sticky top-0 z-20 border-b border-sky-brand-200/70 bg-white/90 backdrop-blur">
+      <header className="sticky top-0 z-20 border-b border-sky-brand-200/70 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2.5">
             <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-500 text-xs font-black text-white">
@@ -83,13 +91,13 @@ export default function AppShell({
                 }`}
               >
                 <span
-                  className={`flex h-9 w-9 items-center justify-center rounded-xl text-lg transition ${
+                  className={`flex h-9 w-9 items-center justify-center rounded-xl transition ${
                     tab.accent
                       ? "-mt-3 bg-accent-500 text-white shadow-lg shadow-accent-500/40"
                       : ""
                   }`}
                 >
-                  {tab.icon}
+                  <tab.icon className="h-5 w-5" strokeWidth={1.75} />
                 </span>
                 {tab.label}
               </Link>

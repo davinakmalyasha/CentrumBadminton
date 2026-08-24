@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { requireOwnerPage } from "@/lib/guard";
 import { formatIDR, todayISO } from "@/lib/availability";
 import { addMonths, currentMonthKey, monthEndExclusive, monthStart, formatMonthLabel } from "@/lib/months";
@@ -42,17 +43,19 @@ export default async function PengeluaranPage({
           href={`/app/pengeluaran?month=${addMonths(month, -1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
         >
-          ‹
+          <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="text-base font-black capitalize text-navy-900">🧾 Pengeluaran</h1>
+          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-navy-900">
+            <Receipt className="h-5 w-5" strokeWidth={1.75} /> Pengeluaran
+          </h1>
           <p className="text-xs font-semibold text-navy-700/60">{formatMonthLabel(month)}</p>
         </div>
         <Link
           href={`/app/pengeluaran?month=${addMonths(month, 1)}`}
           className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
         >
-          ›
+          <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
 

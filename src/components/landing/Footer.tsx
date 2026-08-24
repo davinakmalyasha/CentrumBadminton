@@ -1,10 +1,8 @@
-"use client";
-
+import { Lock } from "lucide-react";
 import { VENUE } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n";
 
-export default function Footer() {
-  const { t } = useLang();
+export default function Footer({ t }: { t: Dict }) {
   const year = new Date().getFullYear();
 
   return (
@@ -25,8 +23,9 @@ export default function Footer() {
           <a href="#harga" className="hover:text-navy-800">{t.nav.pricing}</a>
           <a href="#fasilitas" className="hover:text-navy-800">{t.nav.facilities}</a>
           <a href="#lokasi" className="hover:text-navy-800">{t.nav.location}</a>
-          <a href="/app" className="rounded-md border border-sky-brand-200 px-2 py-1 hover:bg-ice-100">
-            🔒 {t.footer.manageApp}
+          <a href="/app" className="inline-flex items-center gap-1.5 rounded-md border border-sky-brand-200 px-2 py-1 hover:bg-ice-100">
+            <Lock className="h-3.5 w-3.5" />
+            {t.footer.manageApp}
           </a>
         </nav>
 

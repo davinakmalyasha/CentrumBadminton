@@ -1,35 +1,55 @@
-"use client";
-
+import { Camera, Star, ThumbsUp } from "lucide-react";
 import { VENUE } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import type { Dict } from "@/lib/i18n";
 import type { RatingData } from "@/lib/rating";
 
-function Stars({ score, size = "text-3xl" }: { score: number; size?: string }) {
+function Stars({ score, size = "h-8 w-8" }: { score: number; size?: string }) {
   return (
-    <span className={`relative inline-block leading-none ${size}`}>
-      <span className="text-navy-800/15">★★★★★</span>
+    <span className="relative inline-block leading-none">
+      <span className="flex gap-1">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star key={i} className={`${size} text-navy-800/15`} />
+        ))}
+      </span>
       <span
-        className="absolute inset-0 overflow-hidden whitespace-nowrap text-amber-400"
+        className="absolute inset-0 flex gap-1 overflow-hidden whitespace-nowrap"
         style={{ width: `${(score / 5) * 100}%` }}
       >
-        ★★★★★
+        {Array.from({ length: 5 }).map((_, i) => (
+          <Star
+            key={i}
+            className={`${size} flex-shrink-0 fill-amber-400 text-amber-400`}
+          />
+        ))}
       </span>
     </span>
   );
 }
 
-export default function SocialSection({ rating }: { rating: RatingData }) {
-  const { t } = useLang();
+export default function SocialSection({
+  rating,
+  t,
+}: {
+  rating: RatingData;
+  t: Dict;
+}) {
 
   const reviewsUrl = `https://www.google.com/maps/search/?api=1&query=${VENUE.mapsQuery}`;
   const igUrl = `https://instagram.com/${VENUE.instagram}`;
   const fbUrl = `https://facebook.com/${encodeURIComponent(VENUE.facebook)}`;
 
   return (
-    <section id="ulasan" className="scroll-mt-20 bg-navy-800 py-16 md:py-24">
+    <section id="ulasan" className="relative scroll-mt-20 overflow-hidden bg-navy-800 py-16 md:py-24">
+      <Star
+        aria-hidden
+        className="pointer-events-none absolute -left-12 top-1/2 h-40 w-40 -translate-y-1/2 fill-current text-white opacity-[0.04] md:h-64 md:w-64"
+      />
       <div className="mx-auto max-w-6xl px-4 text-center">
-        <h2 className="text-2xl font-black tracking-tight text-white md:text-4xl">
-          ⭐ {t.reviews.title}
+        <h2 className="flex items-center justify-center gap-3 text-2xl font-black tracking-tight text-white md:text-4xl">
+          <Star
+            className="h-5 w-5 fill-amber-400 text-amber-400 md:h-6 md:w-6"
+          />
+          {t.reviews.title}
         </h2>
         <p className="mx-auto mt-2 max-w-xl text-sm text-sky-brand-200/80 md:text-base">
           {t.reviews.subtitle}
@@ -62,17 +82,19 @@ export default function SocialSection({ rating }: { rating: RatingData }) {
             href={igUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
           >
-            📷 @{VENUE.instagram}
+              <Camera className="h-4 w-4" />
+              @{VENUE.instagram}
           </a>
           <a
             href={fbUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
           >
-            👍 {t.reviews.followFb}
+              <ThumbsUp className="h-4 w-4" />
+            {t.reviews.followFb}
           </a>
         </div>
       </div>

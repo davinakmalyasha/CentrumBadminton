@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useEffect, useState } from "react";
+import { Check, ClipboardList } from "lucide-react";
 import { buildClosingReport } from "@/app/app/(protected)/ai/actions";
 import { todayISO } from "@/lib/availability";
 
@@ -34,8 +35,9 @@ export default function ClosingReportCard() {
 
   return (
     <section className="rounded-2xl border border-emerald-200 bg-emerald-50/60 p-4">
-      <h2 className="text-sm font-extrabold text-navy-900">
-        📋 Laporan Tutup Buku
+      <h2 className="flex items-center gap-1.5 text-sm font-extrabold text-navy-900">
+        <ClipboardList className="h-4 w-4" />
+        Laporan Tutup Buku
       </h2>
       <p className="mt-0.5 mb-3 text-[11px] font-medium text-navy-700/60">
         Ringkasan harian siap kirim ke WhatsApp owner/komunitas.
@@ -59,7 +61,7 @@ export default function ClosingReportCard() {
       </form>
 
       {state.error && (
-        <p className="mt-2 text-xs font-semibold text-red-500">⚠️ {state.error}</p>
+        <p className="mt-2 text-xs font-semibold text-red-500">{state.error}</p>
       )}
 
       {state.text && (
@@ -77,13 +79,23 @@ export default function ClosingReportCard() {
                 setCopied(false);
               }
             }}
-            className={`mt-2 w-full rounded-xl py-2.5 text-sm font-black transition ${
+            className={`mt-2 inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-sm font-black transition ${
               copied
                 ? "bg-emerald-500 text-white"
                 : "bg-accent-500 text-white hover:bg-accent-600"
             }`}
           >
-            {copied ? "✅ Tersalin!" : "📋 Copy untuk WhatsApp"}
+            {copied ? (
+              <>
+                <Check className="h-4 w-4" />
+                Tersalin!
+              </>
+            ) : (
+              <>
+                <ClipboardList className="h-4 w-4" />
+                Copy untuk WhatsApp
+              </>
+            )}
           </button>
         </>
       )}

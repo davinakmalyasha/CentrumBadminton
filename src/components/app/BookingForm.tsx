@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState } from "react";
+import { Footprints, Gem, MessageCircle, User } from "lucide-react";
 import {
   createBooking,
   type BookingFormState,
@@ -8,6 +9,7 @@ import {
 import type { PricingInfo } from "@/lib/availability";
 import { computePrice, formatIDR } from "@/lib/availability";
 import { useRole } from "./RoleContext";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 
 const initial: BookingFormState = { error: null };
 
@@ -82,13 +84,14 @@ export default function BookingForm({
               key={c.id}
               type="button"
               onClick={() => setCourtId(c.id)}
-              className={`rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
                 courtId === c.id
                   ? "border-accent-500 bg-accent-500/10 text-accent-600"
                   : "border-sky-brand-200 bg-white text-navy-800"
               }`}
             >
-              🏸 {c.name}
+              <Shuttlecock className="h-4 w-4" />
+              {c.name}
             </button>
           ))}
         </div>
@@ -189,16 +192,17 @@ export default function BookingForm({
         </datalist>
         {customers.length > 0 && (
           <div className="mt-1.5 flex gap-1.5 overflow-x-auto pb-1">
-            {customers.slice(0, 8).map((c) => (
-              <button
-                key={c.phone}
-                type="button"
-                onClick={() => pickCustomer(c.name)}
-                className="flex-shrink-0 rounded-full border border-sky-brand-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-navy-700 hover:bg-ice-100"
-              >
-                👤 {c.name}
-              </button>
-            ))}
+              {customers.slice(0, 8).map((c) => (
+                <button
+                  key={c.phone}
+                  type="button"
+                  onClick={() => pickCustomer(c.name)}
+                  className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-sky-brand-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-navy-700 hover:bg-ice-100"
+                >
+                  <User className="h-3 w-3" />
+                  {c.name}
+                </button>
+              ))}
           </div>
         )}
       </div>
@@ -231,24 +235,26 @@ export default function BookingForm({
           <button
             type="button"
             onClick={() => setSource("walk_in")}
-            className={`rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "walk_in"
                 ? "border-accent-500 bg-accent-500/10 text-accent-600"
                 : "border-sky-brand-200 bg-white text-navy-800"
             }`}
           >
-            🚶 Walk-in
+            <Footprints className="h-4 w-4" />
+            Walk-in
           </button>
           <button
             type="button"
             onClick={() => setSource("whatsapp")}
-            className={`rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "whatsapp"
                 ? "border-emerald-500 bg-emerald-50 text-emerald-600"
                 : "border-sky-brand-200 bg-white text-navy-800"
             }`}
           >
-            💬 WhatsApp
+            <MessageCircle className="h-4 w-4" />
+            WhatsApp
           </button>
         </div>
       </div>
@@ -276,8 +282,12 @@ export default function BookingForm({
 
       {role === "owner" && (
         <div className="rounded-xl border border-dashed border-accent-400 bg-accent-500/5 p-3">
-          <label htmlFor="override_price" className={label}>
-            💎 Harga Manual (owner)
+          <label
+            htmlFor="override_price"
+            className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-navy-700/60"
+          >
+            <Gem className="h-3.5 w-3.5" />
+            Harga Manual (owner)
           </label>
           <input
             id="override_price"
@@ -303,7 +313,7 @@ export default function BookingForm({
 
       {state.error && (
         <p className="rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
-          ⚠️ {state.error}
+          {state.error}
         </p>
       )}
 

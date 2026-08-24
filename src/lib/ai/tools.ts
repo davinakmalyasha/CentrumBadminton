@@ -195,7 +195,7 @@ export async function getTopCustomers(p?: { limit?: number }): Promise<ToolResul
   const limit = Math.min(Math.max(p?.limit ?? 5, 1), 20);
 
   const [customersRes, bookingsRes] = await Promise.all([
-    supabase.from("customers").select("id,name,phone,no_show_count").limit(200),
+    supabase.from("customers").select("id,name,no_show_count").limit(200),
     supabase
       .from("bookings")
       .select("customer_id,booking_date,status")
@@ -219,7 +219,6 @@ export async function getTopCustomers(p?: { limit?: number }): Promise<ToolResul
   const customers = (customersRes.data ?? []) as Array<{
     id: string;
     name: string;
-    phone: string;
     no_show_count: number;
   }>;
 
@@ -231,7 +230,6 @@ export async function getTopCustomers(p?: { limit?: number }): Promise<ToolResul
   return {
     pelanggan_teratas: top.map((c) => ({
       nama: c.name,
-      telepon: c.phone,
       kunjungan: c.visits,
       kunjungan_terakhir: c.last ?? null,
       no_show_total: c.no_show_count,

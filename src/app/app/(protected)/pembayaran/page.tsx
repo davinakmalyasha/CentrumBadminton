@@ -1,21 +1,23 @@
 import { createClient } from "@/lib/supabase/server";
 import { addDaysISO, formatIDR, todayISO } from "@/lib/availability";
 import type { Booking, PaymentStatus } from "@/lib/types";
+import { Banknote, Check, QrCode, Receipt, User } from "lucide-react";
 import PaymentForm from "@/components/app/PaymentForm";
 import DeletePaymentButton from "@/components/app/DeletePaymentButton";
 
-const PAY_BADGE: Record<PaymentStatus, { label: string; cls: string }> = {
-  unpaid: { label: "🔴 Belum bayar", cls: "bg-red-50 text-red-500 border-red-200" },
-  partial: { label: "🟡 DP", cls: "bg-amber-100 text-amber-700 border-amber-200" },
-  paid: { label: "✅ Lunas", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
+const PAY_BADGE: Record<PaymentStatus, { label: string; dot: string; cls: string }> = {
+  unpaid: { label: "Belum bayar", dot: "bg-red-500", cls: "bg-red-50 text-red-500 border-red-200" },
+  partial: { label: "DP", dot: "bg-amber-400", cls: "bg-amber-100 text-amber-700 border-amber-200" },
+  paid: { label: "Lunas", dot: "bg-emerald-500", cls: "bg-emerald-100 text-emerald-700 border-emerald-200" },
 };
 
 function PaymentBadge({ status }: { status: PaymentStatus }) {
   const m = PAY_BADGE[status] ?? PAY_BADGE.unpaid;
   return (
     <span
-      className={`inline-flex flex-shrink-0 items-center rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${m.cls}`}
+      className={`inline-flex flex-shrink-0 items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${m.cls}`}
     >
+      <span className={"inline-block h-2 w-2 rounded-full " + m.dot} />
       {m.label}
     </span>
   );
@@ -84,7 +86,9 @@ export default async function PembayaranPage({
   return (
     <div className="space-y-5">
       <div>
-        <h1 className="text-lg font-black text-navy-900">💵 Pembayaran</h1>
+        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+          <Banknote className="h-5 w-5" strokeWidth={1.75} /> Pembayaran
+        </h1>
         <p className="text-xs font-semibold capitalize text-navy-700/60">{dayLabel}</p>
       </div>
 
@@ -96,10 +100,16 @@ export default async function PembayaranPage({
         <p className="mt-1 text-3xl font-black tracking-tight">
           {formatIDR(cash + qris)}
         </p>
-        <div className="mt-2 flex gap-4 text-xs font-semibold text-sky-brand-200/80">
-          <span>💵 Cash {formatIDR(cash)}</span>
-          <span>📱 QRIS {formatIDR(qris)}</span>
-          <span className="ml-auto">🧾 {payments.length} transaksi</span>
+        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs font-semibold text-sky-brand-200/80">
+          <span className="flex items-center gap-1">
+            <Banknote className="h-3.5 w-3.5" /> Cash {formatIDR(cash)}
+          </span>
+          <span className="flex items-center gap-1">
+            <QrCode className="h-3.5 w-3.5" /> QRIS {formatIDR(qris)}
+          </span>
+          <span className="ml-auto flex items-center gap-1">
+            <Receipt className="h-3.5 w-3.5" /> {payments.length} transaksi
+          </span>
         </div>
       </div>
 
@@ -123,7 +133,8 @@ export default async function PembayaranPage({
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="text-sm font-black text-navy-900">
-                      👤 {b.customer_name}
+                      <User className="mr-1 inline-block h-3.5 w-3.5 align-[-1px]" />
+                      {b.customer_name}
                       <span className="ml-2 rounded-md bg-ice-200 px-1.5 py-0.5 align-middle text-[10px] font-bold text-sky-brand-600">
                         {b.courts?.name ?? ""}
                       </span>
@@ -154,7 +165,8 @@ export default async function PembayaranPage({
                       className="mt-1.5 flex items-center justify-between rounded-lg bg-ice-100 px-2.5 py-1.5"
                     >
                       <span className="text-[11px] font-bold text-emerald-700">
-                        ✓ {p.method.toUpperCase()} {formatIDR(Number(p.amount))}
+                        <Check className="mr-1 inline h-3 w-3" />
+                        {p.method.toUpperCase()} {formatIDR(Number(p.amount))}
                         {" · "}
                         <span className="font-medium text-navy-700/50">
                           {new Date(p.paid_at).toLocaleTimeString("id-ID", {
@@ -188,7 +200,12 @@ export default async function PembayaranPage({
                   className="flex items-center justify-between gap-2 px-3.5 py-2.5 text-xs font-semibold text-navy-800"
                 >
                   <span className="min-w-0 truncate">
-                    {p.method === "qris" ? "📱" : "💵"} {b?.customer_name ?? "—"}
+                    {p.method === "qris" ? (
+                      <QrCode className="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" />
+                    ) : (
+                      <Banknote className="mr-1 inline-block h-3.5 w-3.5 align-[-2px]" />
+                    )}
+                    {b?.customer_name ?? "—"}
                     {p.note && (
                       <span className="block truncate text-[10px] font-medium text-navy-700/45">
                         {p.note}

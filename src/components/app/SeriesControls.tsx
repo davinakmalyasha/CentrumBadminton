@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { Pause, Play, Plus } from "lucide-react";
 import {
   extendSeries,
   setSeriesStatus,
@@ -20,7 +21,7 @@ export default function SeriesControls({
   const [extState, extAction, extPending] = useActionState(extendSeries, initial);
 
   const btn =
-    "rounded-lg border px-2.5 py-1.5 text-[11px] font-bold transition disabled:opacity-50";
+    "inline-flex items-center gap-1 rounded-lg border px-2.5 py-2 text-[11px] font-bold transition disabled:opacity-50";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -29,7 +30,8 @@ export default function SeriesControls({
           <input type="hidden" name="series_id" value={seriesId} />
           <input type="hidden" name="status" value="paused" />
           <button type="submit" disabled={statusPending} className={`${btn} border-sky-brand-300 text-sky-brand-600 hover:bg-ice-100`}>
-            ⏸ Jeda
+            <Pause className="h-3.5 w-3.5" />
+            Jeda
           </button>
         </form>
       ) : (
@@ -37,7 +39,8 @@ export default function SeriesControls({
           <input type="hidden" name="series_id" value={seriesId} />
           <input type="hidden" name="status" value="active" />
           <button type="submit" disabled={statusPending} className={`${btn} border-emerald-300 text-emerald-600 hover:bg-emerald-50`}>
-            ▶️ Aktifkan
+            <Play className="h-3.5 w-3.5" />
+            Aktifkan
           </button>
         </form>
       )}
@@ -51,7 +54,8 @@ export default function SeriesControls({
               title={status === "active" ? "Tambah 8 minggu ke depan" : "Aktifkan dulu"}
               className={`${btn} border-sky-brand-300 text-sky-brand-600 hover:bg-ice-100`}
             >
-              ➕+8 mgg
+              <Plus className="h-3.5 w-3.5" />
+              +8 mgg
             </button>
           </form>
           <form action={statusAction}>
@@ -64,7 +68,7 @@ export default function SeriesControls({
         </>
       )}
       {extState.ok && extState.info && (
-        <span className="text-[10px] font-bold text-emerald-600">✅ {extState.info}</span>
+        <span className="text-[10px] font-bold text-emerald-600">{extState.info}</span>
       )}
       {extState.error && (
         <span className="text-[10px] font-semibold text-red-500">{extState.error}</span>

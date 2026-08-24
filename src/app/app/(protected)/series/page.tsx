@@ -1,5 +1,7 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
+import { Repeat, Users } from "lucide-react";
+import Shuttlecock from "@/components/icons/Shuttlecock";
 import SeriesForm from "@/components/app/SeriesForm";
 import SeriesControls from "@/components/app/SeriesControls";
 
@@ -58,7 +60,9 @@ export default async function SeriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-black text-navy-900">🔁 Langganan Mingguan</h1>
+        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+          <Repeat className="h-5 w-5" strokeWidth={1.75} /> Langganan Mingguan
+        </h1>
         <p className="text-xs font-semibold text-navy-700/60">
           Komunitas rutin — slot dibuat otomatis setiap minggu.
         </p>
@@ -86,7 +90,8 @@ export default async function SeriesPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <p className="truncate text-sm font-black text-navy-900">
-                        👥 {s.customer_name}
+                        <Users className="mr-1 inline h-3 w-3" />
+                        {s.customer_name}
                         <span
                           className={`ml-2 rounded-full px-2 py-0.5 align-middle text-[9px] font-bold uppercase ${
                             s.status === "active"
@@ -101,7 +106,9 @@ export default async function SeriesPage() {
                       </p>
                       <p className="mt-0.5 text-[11px] font-semibold text-navy-700/60">
                         {DAY_NAMES[s.weekday]} · {String(s.start_time).slice(0, 5)}–
-                        {String(s.end_time).slice(0, 5)} · 🏸 {s.courts?.name ?? ""}
+                        {String(s.end_time).slice(0, 5)} ·{" "}
+                        <Shuttlecock className="mr-1 inline h-3 w-3" />
+                        {s.courts?.name ?? ""}
                         {s.end_date
                           ? ` · s.d. ${new Intl.DateTimeFormat("id-ID", {
                               day: "numeric",

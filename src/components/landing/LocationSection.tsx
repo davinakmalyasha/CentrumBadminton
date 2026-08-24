@@ -1,17 +1,25 @@
-"use client";
-
+import { Building2, Map, MapPin } from "lucide-react";
 import { mapsDirectionsUrl, mapsEmbedUrl } from "@/lib/constants";
-import { useLang } from "@/lib/i18n";
+import type { Dict, Lang } from "@/lib/i18n";
 
-export default function LocationSection() {
-  const { t, lang } = useLang();
+export default function LocationSection({
+  t,
+  lang,
+}: {
+  t: Dict;
+  lang: Lang;
+}) {
 
   return (
     <section id="lokasi" className="scroll-mt-20 bg-white py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-4">
         <div className="mb-10 text-center">
-          <h2 className="text-2xl font-black tracking-tight text-navy-900 md:text-4xl">
-            📍 {t.location.title}
+          <h2 className="flex items-center justify-center gap-3 text-2xl font-black tracking-tight text-navy-900 md:text-4xl">
+            <MapPin
+              className="h-5 w-5 text-sky-brand-500 md:h-6 md:w-6"
+              strokeWidth={1.75}
+            />
+            {t.location.title}
           </h2>
           <p className="mx-auto mt-2 max-w-xl text-sm text-navy-700/70 md:text-base">
             {t.location.subtitle}
@@ -26,8 +34,11 @@ export default function LocationSection() {
                 <p className="text-xs font-bold uppercase tracking-widest text-sky-brand-500">
                   {t.location.addressLabel}
                 </p>
-                <p className="mt-2 text-sm leading-relaxed font-medium text-navy-800">
-                  🏢{" "}
+                <p className="mt-2 flex items-start gap-2 text-sm leading-relaxed font-medium text-navy-800">
+                  <Building2
+                    className="mt-0.5 h-4 w-4 flex-shrink-0 text-sky-brand-500"
+                    strokeWidth={1.75}
+                  />
                   {lang === "id"
                     ? "Jl. Pangeran Cakra Buana, Griya Cempaka Arum – Talun, Cirebon 45171 (belakang Indomaret Cempaka Arum)"
                     : "Jl. Pangeran Cakra Buana, Griya Cempaka Arum – Talun, Cirebon 45171 (behind Indomaret Cempaka Arum)"}
@@ -50,8 +61,8 @@ export default function LocationSection() {
               rel="noopener noreferrer"
               className="mt-8 inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:bg-accent-600"
             >
-              🗺️ {t.location.ctaMaps}
-            </a>
+              <Map className="h-4 w-4" />
+              {t.location.ctaMaps}            </a>
           </div>
 
           {/* Map embed */}

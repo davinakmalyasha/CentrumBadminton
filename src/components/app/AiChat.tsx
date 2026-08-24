@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Bot, Send } from "lucide-react";
 import { askAi, type ChatMsg } from "@/app/app/(protected)/ai/actions";
 
 const SUGGESTIONS = [
@@ -33,13 +34,13 @@ export default function AiChat() {
         ...next,
         {
           role: "model",
-          text: res.reply ?? `⚠️ ${res.error ?? "Gagal memproses."}`,
+          text: res.reply ?? `${res.error ?? "Gagal memproses."}`,
         },
       ]);
     } catch {
       setMessages([
         ...next,
-        { role: "model", text: "⚠️ Koneksi gagal — coba lagi." },
+        { role: "model", text: "Koneksi gagal — coba lagi." },
       ]);
     } finally {
       setPending(false);
@@ -53,7 +54,7 @@ export default function AiChat() {
         {messages.length === 0 && (
           <div className="rounded-2xl bg-ice-100 p-4 text-center">
             <p className="text-sm font-bold text-navy-800">
-              👋 Halo! Tanya data usaha kamu di sini.
+              Halo! Tanya data usaha kamu di sini.
             </p>
             <div className="mt-3 flex flex-wrap justify-center gap-2">
               {SUGGESTIONS.map((s) => (
@@ -90,7 +91,10 @@ export default function AiChat() {
         {pending && (
           <div className="flex justify-start">
             <div className="rounded-2xl rounded-bl-md bg-ice-100 px-3.5 py-2.5 text-sm text-navy-700/60">
-              <span className="inline-block animate-pulse">🤖 sedang cek data…</span>
+              <span className="inline-flex animate-pulse items-center gap-1.5">
+                <Bot className="h-3.5 w-3.5" />
+                sedang cek data…
+              </span>
             </div>
           </div>
         )}
@@ -115,9 +119,9 @@ export default function AiChat() {
         <button
           type="submit"
           disabled={pending || !input.trim()}
-          className="flex-shrink-0 rounded-xl bg-accent-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
+          className="inline-flex flex-shrink-0 items-center justify-center rounded-xl bg-accent-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
         >
-          ➤
+          <Send className="h-4 w-4" />
         </button>
       </form>
       <p className="px-3 pb-3 text-center text-[10px] font-medium text-navy-700/40">

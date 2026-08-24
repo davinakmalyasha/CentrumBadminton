@@ -1,5 +1,6 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
+import { Ban } from "lucide-react";
 import BlockForm from "@/components/app/BlockForm";
 import DeleteBlockButton from "@/components/app/DeleteBlockButton";
 
@@ -34,7 +35,9 @@ export default async function BlokirPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-lg font-black text-navy-900">⛔ Blokir Jadwal</h1>
+        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+          <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
+        </h1>
         <p className="text-xs font-semibold text-navy-700/60">
           Maintenance / private event — langsung hilang dari jadwal publik.
         </p>

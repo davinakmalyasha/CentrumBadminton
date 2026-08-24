@@ -32,5 +32,5 @@ const targets = [
 
 for (const [out, size] of targets) {
   await sharp(Buffer.from(svg)).resize(size, size).png().toFile(out);
-  console.log("✓", out);
+  console.log("OK", out);
 }
