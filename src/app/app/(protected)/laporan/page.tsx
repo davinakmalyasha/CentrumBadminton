@@ -7,6 +7,7 @@ import {
   ChevronRight,
   Download,
   Flame,
+  ShoppingBasket,
   TrendingUp,
   Wallet,
 } from "lucide-react";
@@ -34,7 +35,7 @@ export default async function LaporanPage({
 
   const supabase = await requireOwnerPage();
 
-  const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes] =
+  const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes, kantinItemsRes] =
     await Promise.all([
       supabase.rpc("get_pricing_for", { p_date: start }),
       supabase
@@ -55,6 +56,11 @@ export default async function LaporanPage({
         .gte("spent_at", start)
         .lt("spent_at", endEx),
       supabase.from("courts").select("id,name").eq("is_active", true),
+      supabase
+        .from("kantin_sale_items")
+        .select("qty,unit_price,unit_cost,product_name,kantin_sales!inner(created_at)")
+        .gte("kantin_sales.created_at", `${start}T00:00:00+07:00`)
+        .lt("kantin_sales.created_at", `${endEx}T00:00:00+07:00`),
     ]);
 
   const pRule = pricingForMonth.data?.[0];
@@ -72,6 +78,13 @@ export default async function LaporanPage({
   }>;
   const expenses = (expensesRes.data ?? []) as Array<{ amount: number }>;
   const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
+  const kantinItems = (kantinItemsRes.data ?? []) as unknown as Array<{
+    qty: number;
+    unit_price: number;
+    unit_cost: number;
+    product_name: string;
+    kantin_sales: { created_at: string };
+  }>;
 
   const openHours = pRule
     ? Math.max(
@@ -90,7 +103,25 @@ export default async function LaporanPage({
   }
   const gross = cash + qris;
   const expenseTotal = expenses.reduce((a, b) => a + Number(b.amount), 0);
-  const net = gross - expenseTotal;
+
+  // Kantin: revenue, COGS, profit, top products
+  const kRevenue = kantinItems.reduce((a, i) => a + i.unit_price * i.qty, 0);
+  const kCogs = kantinItems.reduce((a, i) => a + i.unit_cost * i.qty, 0);
+  const kProfit = kRevenue - kCogs;
+  const kQty = kantinItems.reduce((a, i) => a + i.qty, 0);
+  const productTally = new Map<string, { qty: number; revenue: number }>();
+  for (const i of kantinItems) {
+    const t = productTally.get(i.product_name) ?? { qty: 0, revenue: 0 };
+    t.qty += i.qty;
+    t.revenue += i.unit_price * i.qty;
+    productTally.set(i.product_name, t);
+  }
+  const kTop = [...productTally.entries()]
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+    .slice(0, 5);
+
+  // Net = court gross + kantin gross profit − beban operasional
+  const net = gross + kProfit - expenseTotal;
 
   // Daily revenue (WIB)
   const daily = new Map<string, number>();
@@ -170,12 +201,12 @@ export default async function LaporanPage({
         </div>
         <div className="mt-3 grid grid-cols-3 gap-2 text-center">
           <div className="rounded-xl bg-ice-100 py-2">
-            <p className="text-[10px] font-bold uppercase text-navy-700/50">Cash</p>
-            <p className="text-sm font-black text-navy-900">{formatIDR(cash)}</p>
+            <p className="text-[10px] font-bold uppercase text-navy-700/50">Lapangan</p>
+            <p className="text-sm font-black text-navy-900">{formatIDR(gross)}</p>
           </div>
-          <div className="rounded-xl bg-ice-100 py-2">
-            <p className="text-[10px] font-bold uppercase text-navy-700/50">QRIS</p>
-            <p className="text-sm font-black text-navy-900">{formatIDR(qris)}</p>
+          <div className="rounded-xl bg-sky-brand-400/10 py-2">
+            <p className="text-[10px] font-bold uppercase text-sky-brand-600">Kantin</p>
+            <p className="text-sm font-black text-navy-900">{formatIDR(kRevenue)}</p>
           </div>
           <div className="rounded-xl bg-red-50 py-2">
             <p className="text-[10px] font-bold uppercase text-red-400">Beban</p>
@@ -188,7 +219,59 @@ export default async function LaporanPage({
           </span>
           <span className="text-lg font-black text-emerald-700">{formatIDR(net)}</span>
         </div>
+        <p className="mt-1 text-right text-[9px] font-medium text-navy-700/40">
+          lapangan {formatIDR(gross)} + laba kantin {formatIDR(kProfit)} − beban{" "}
+          {formatIDR(expenseTotal)}
+        </p>
       </div>
+
+      {/* Kantin */}
+      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-navy-900">
+            <ShoppingBasket className="h-4 w-4" /> Kantin
+          </h2>
+          <a
+            href={`/api/reports/export?type=kantin&month=${month}`}
+            className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-brand-600"
+          >
+            <Download className="h-3 w-3" /> CSV
+          </a>
+        </div>
+        {kQty === 0 ? (
+          <p className="text-xs text-navy-700/50">Belum ada penjualan kantin bulan ini.</p>
+        ) : (
+          <div className="space-y-2">
+            <div className="grid grid-cols-3 gap-2 text-center">
+              <div className="rounded-xl bg-ice-100 py-2">
+                <p className="text-[10px] font-bold uppercase text-navy-700/50">Omzet</p>
+                <p className="text-sm font-black text-navy-900">{formatIDR(kRevenue)}</p>
+              </div>
+              <div className="rounded-xl bg-ice-100 py-2">
+                <p className="text-[10px] font-bold uppercase text-navy-700/50">Modal</p>
+                <p className="text-sm font-black text-red-500">−{formatIDR(kCogs)}</p>
+              </div>
+              <div className="rounded-xl bg-emerald-50 py-2">
+                <p className="text-[10px] font-bold uppercase text-emerald-600">Laba kotor</p>
+                <p className="text-sm font-black text-emerald-700">{formatIDR(kProfit)}</p>
+              </div>
+            </div>
+            <p className="text-[10px] font-semibold text-navy-700/40">{kQty} item terjual</p>
+            <ul className="space-y-1">
+              {kTop.map(([name, t], idx) => (
+                <li key={name} className="flex items-center gap-2 text-xs">
+                  <span className="w-4 text-center font-black text-accent-500">{idx + 1}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-navy-800">{name}</span>
+                  <span className="text-navy-700/50">{t.qty}×</span>
+                  <span className="w-20 flex-shrink-0 text-right font-bold text-navy-900">
+                    {formatIDR(t.revenue)}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
 
       {/* Utilization */}
       <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">

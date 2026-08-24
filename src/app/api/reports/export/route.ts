@@ -26,11 +26,70 @@ export async function GET(request: Request) {
 
   const url = new URL(request.url);
   const monthParam = url.searchParams.get("month") ?? "";
+  const type = url.searchParams.get("type") === "kantin" ? "kantin" : "lapangan";
   const month = /^\d{4}-\d{2}$/.test(monthParam)
     ? monthParam
     : new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" })
         .format(new Date())
         .slice(0, 7);
+
+  if (type === "kantin") {
+    const { data: kData, error: kError } = await supabase
+      .from("kantin_sale_items")
+      .select(
+        "qty,unit_price,product_name,kantin_sales(total,method,created_at,customer_name,profiles(full_name))"
+      )
+      .gte("kantin_sales.created_at", `${monthStart(month)}T00:00:00+07:00`)
+      .lt("kantin_sales.created_at", `${monthEndExclusive(month)}T00:00:00+07:00`)
+      .order("kantin_sales(created_at)", { referencedTable: "kantin_sales" });
+
+    if (kError) {
+      return NextResponse.json({ error: kError.message }, { status: 500 });
+    }
+
+    type KRow = {
+      qty: number;
+      unit_price: number;
+      product_name: string;
+      kantin_sales: {
+        total: number;
+        method: string;
+        created_at: string;
+        customer_name: string | null;
+        profiles: { full_name: string } | null;
+      } | null;
+    };
+
+    const kLines: string[] = [
+      "Tanggal;Jam;Metode;Produk;Qty;Harga;Subtotal;Pembeli;Dicatat",
+      ...((kData ?? []) as unknown as KRow[]).map((r) =>
+        [
+          new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(
+            new Date(r.kantin_sales?.created_at ?? "")
+          ),
+          new Intl.DateTimeFormat("id-ID", {
+            hour: "2-digit",
+            minute: "2-digit",
+            timeZone: "Asia/Jakarta",
+          }).format(new Date(r.kantin_sales?.created_at ?? "")),
+          r.kantin_sales?.method ?? "",
+          esc(r.product_name),
+          r.qty,
+          Number(r.unit_price),
+          Number(r.unit_price) * Number(r.qty),
+          esc(r.kantin_sales?.customer_name),
+          esc(r.kantin_sales?.profiles?.full_name),
+        ].join(";")
+      ),
+    ];
+
+    return new NextResponse("\uFEFF" + kLines.join("\r\n"), {
+      headers: {
+        "Content-Type": "text/csv; charset=utf-8",
+        "Content-Disposition": `attachment; filename="kantin-${month}.csv"`,
+      },
+    });
+  }
 
   const { data, error } = await supabase
     .from("payments")

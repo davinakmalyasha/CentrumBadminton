@@ -14,9 +14,11 @@ import {
   MessageCircle,
   SkipForward,
   TrendingUp,
+  TriangleAlert,
   User,
   Wallet,
 } from "lucide-react";
+import Link from "next/link";
 import Shuttlecock from "@/components/icons/Shuttlecock";
 import StatCard from "@/components/app/StatCard";
 import StatusBadge from "@/components/app/StatusBadge";
@@ -33,20 +35,31 @@ export default async function DashboardPage() {
   const today = todayISO();
   const tomorrow = addDaysISO(today, 1);
 
-  const [bookingsRes, paymentsRes, courtsRes, pricingRes] = await Promise.all([
-    supabase
-      .from("bookings")
-      .select("*, courts(name)")
-      .eq("booking_date", today)
-      .order("start_time"),
-    supabase
-      .from("payments")
-      .select("amount,method")
-      .gte("paid_at", `${today}T00:00:00+07:00`)
-      .lt("paid_at", `${tomorrow}T00:00:00+07:00`),
-    supabase.from("courts").select("id").eq("is_active", true),
-    supabase.rpc("get_pricing_for", { p_date: today }),
-  ]);
+  const [bookingsRes, paymentsRes, courtsRes, pricingRes, kantinRes, lowStockRes] =
+    await Promise.all([
+      supabase
+        .from("bookings")
+        .select("*, courts(name)")
+        .eq("booking_date", today)
+        .order("start_time"),
+      supabase
+        .from("payments")
+        .select("amount,method")
+        .gte("paid_at", `${today}T00:00:00+07:00`)
+        .lt("paid_at", `${tomorrow}T00:00:00+07:00`),
+      supabase.from("courts").select("id").eq("is_active", true),
+      supabase.rpc("get_pricing_for", { p_date: today }),
+      supabase
+        .from("kantin_sales")
+        .select("total")
+        .gte("created_at", `${today}T00:00:00+07:00`)
+        .lt("created_at", `${tomorrow}T00:00:00+07:00`),
+      supabase
+        .from("kantin_products")
+        .select("name,stock,low_stock_threshold")
+        .eq("track_stock", true)
+        .order("name"),
+    ]);
 
   const bookings = (bookingsRes.data ?? []) as Row[];
   const payments = (paymentsRes.data ?? []) as Array<{
@@ -85,6 +98,12 @@ export default async function DashboardPage() {
     return endMin > nowMin && (b.status === "confirmed" || b.status === "checked_in");
   });
 
+  // Kantin: revenue today + low-stock alert
+  const kantinToday = (kantinRes.data ?? []).reduce((a, s) => a + Number(s.total), 0);
+  const lowStock = (lowStockRes.data ?? []).filter(
+    (p) => p.stock <= p.low_stock_threshold
+  );
+
   return (
     <div className="space-y-5">
       <div>
@@ -106,8 +125,8 @@ export default async function DashboardPage() {
         <StatCard
           icon={Wallet}
           label="Pendapatan"
-          value={formatIDR(cash + qris)}
-          sub={`Cash ${formatIDR(cash)} · QRIS ${formatIDR(qris)}`}
+          value={formatIDR(cash + qris + kantinToday)}
+          sub={`Lapangan ${formatIDR(cash + qris)} · Kantin ${formatIDR(kantinToday)}`}
         />
         <StatCard
           icon={Shuttlecock}
@@ -127,6 +146,19 @@ export default async function DashboardPage() {
           sub={nextUp ? `${nextUp.customer_name} · ${nextUp.courts?.name ?? ""}` : "Tidak ada lagi"}
         />
       </div>
+
+      {/* Low stock alert */}
+      {lowStock.length > 0 && (
+        <Link
+          href="/app/kantin/stok"
+          className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
+        >
+          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
+          <span className="text-xs font-semibold text-amber-700">
+            Stok kantin menipis: <b>{lowStock.map((p) => p.name).join(", ")}</b>
+          </span>
+        </Link>
+      )}
 
       {/* Daily closing nudge (after 20:00 WIB) */}
       <DailyReportNudge />

@@ -7,6 +7,8 @@ import {
   getTodaySummary,
   getRangeSummary,
   getTopCustomers,
+  getKantinTodaySummary,
+  getKantinTopProducts,
 } from "@/lib/ai/tools";
 import { todayISO, formatIDR } from "@/lib/availability";
 
@@ -56,6 +58,30 @@ const DECLARATIONS: FunctionDeclaration[] = [
       },
     },
   },
+  {
+    name: "getKantinTodaySummary",
+    description:
+      "Ringkasan penjualan kantin satu hari: omzet, modal, laba kotor, item terjual, produk terlaris. Untuk pertanyaan soal kantin hari ini/tanggal tertentu.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        date: { type: Type.STRING, description: "Tanggal format YYYY-MM-DD (opsional, default hari ini)" },
+      },
+    },
+  },
+  {
+    name: "getKantinTopProducts",
+    description:
+      "Produk kantin paling laku dalam rentang tanggal (omzet per produk). Untuk pertanyaan produk terlaris mingguan/bulanan.",
+    parameters: {
+      type: Type.OBJECT,
+      properties: {
+        start: { type: Type.STRING, description: "Tanggal mulai YYYY-MM-DD (inklusif)" },
+        end: { type: Type.STRING, description: "Tanggal akhir YYYY-MM-DD (eksklusif)" },
+      },
+      required: ["start", "end"],
+    },
+  },
 ];
 
 function toolImpl(name: string): ((args: Record<string, unknown>) => Promise<unknown>) | null {
@@ -63,6 +89,10 @@ function toolImpl(name: string): ((args: Record<string, unknown>) => Promise<unk
   if (name === "getRangeSummary")
     return (a) => getRangeSummary(a as unknown as { start: string; end: string });
   if (name === "getTopCustomers") return (a) => getTopCustomers(a as { limit?: number });
+  if (name === "getKantinTodaySummary")
+    return (a) => getKantinTodaySummary(a as { date?: string });
+  if (name === "getKantinTopProducts")
+    return (a) => getKantinTopProducts(a as unknown as { start: string; end: string });
   return null;
 }
 

@@ -236,3 +236,81 @@ export async function getTopCustomers(p?: { limit?: number }): Promise<ToolResul
     })),
   };
 }
+
+/* ------------------------------------------------------------------ */
+/* Kantin tools                                                        */
+/* ------------------------------------------------------------------ */
+
+/** Ringkasan penjualan kantin hari ini (default) atau tanggal tertentu */
+export async function getKantinTodaySummary(p?: { date?: string }): Promise<ToolResult> {
+  const supabase = await sb();
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(p?.date ?? "") ? p!.date! : todayISO();
+  const [start, end] = dayRange(date);
+
+  const { data } = await supabase
+    .from("kantin_sale_items")
+    .select("qty,unit_price,unit_cost,product_name,kantin_sales!inner(created_at)")
+    .gte("kantin_sales.created_at", start)
+    .lt("kantin_sales.created_at", end);
+
+  const items = (data ?? []) as unknown as Array<{
+    qty: number;
+    unit_price: number;
+    unit_cost: number;
+    product_name: string;
+    kantin_sales: { created_at: string };
+  }>;
+
+  const revenue = items.reduce((a, i) => a + i.unit_price * i.qty, 0);
+  const cogs = items.reduce((a, i) => a + i.unit_cost * i.qty, 0);
+  const qty = items.reduce((a, i) => a + i.qty, 0);
+  const tally = new Map<string, number>();
+  for (const i of items) tally.set(i.product_name, (tally.get(i.product_name) ?? 0) + i.qty);
+  const top = [...tally.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
+
+  return {
+    tanggal: date,
+    omzet_kantin: revenue,
+    modal: cogs,
+    laba_kotor: revenue - cogs,
+    item_terjual: qty,
+    produk_terlaris: top.map(([nama, jml]) => ({ nama, jumlah: jml })),
+  };
+}
+
+/** Produk kantin paling laku dalam rentang tanggal (inklusif-exklusif) */
+export async function getKantinTopProducts(p: {
+  start: string;
+  end: string;
+}): Promise<ToolResult> {
+  const supabase = await sb();
+  const start = /^\d{4}-\d{2}-\d{2}$/.test(p.start) ? p.start : todayISO();
+  const end = /^\d{4}-\d{2}-\d{2}$/.test(p.end) ? p.end : addDaysISO(start, 1);
+
+  const { data } = await supabase
+    .from("kantin_sale_items")
+    .select("qty,unit_price,product_name,kantin_sales!inner(created_at)")
+    .gte("kantin_sales.created_at", `${start}T00:00:00+07:00`)
+    .lt("kantin_sales.created_at", `${end}T00:00:00+07:00`);
+
+  const items = (data ?? []) as unknown as Array<{
+    qty: number;
+    unit_price: number;
+    product_name: string;
+  }>;
+
+  const tally = new Map<string, { qty: number; revenue: number }>();
+  for (const i of items) {
+    const t = tally.get(i.product_name) ?? { qty: 0, revenue: 0 };
+    t.qty += i.qty;
+    t.revenue += i.unit_price * i.qty;
+    tally.set(i.product_name, t);
+  }
+  const top = [...tally.entries()].sort((a, b) => b[1].revenue - a[1].revenue).slice(0, 10);
+
+  return {
+    rentang: `${start} s.d. ${end}`,
+    total_omzet: items.reduce((a, i) => a + i.unit_price * i.qty, 0),
+    produk_teratas: top.map(([nama, t]) => ({ nama, jumlah: t.qty, omzet: t.revenue })),
+  };
+}
