@@ -8,6 +8,7 @@ import {
   CalendarDays,
   Home,
   Plus,
+  ShoppingBasket,
   Users,
   type LucideIcon,
 } from "lucide-react";
@@ -25,6 +26,7 @@ const tabs: Array<{
   { href: "/app/jadwal", label: "Jadwal", icon: CalendarDays },
   { href: "/app/booking/baru", label: "Booking", icon: Plus, accent: true },
   { href: "/app/pembayaran", label: "Bayar", icon: Banknote },
+  { href: "/app/kantin", label: "Kantin", icon: ShoppingBasket },
   { href: "/app/pelanggan", label: "Pelanggan", icon: Users },
 ];
 
@@ -86,7 +88,7 @@ export default function AppShell({
               <Link
                 key={tab.href}
                 href={tab.href}
-                className={`flex min-w-[56px] flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-semibold transition ${
+                className={`flex min-w-[48px] flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-[9px] font-semibold transition sm:text-[10px] ${
                   tab.accent ? "" : active ? "text-accent-600" : "text-navy-700/50"
                 }`}
               >
