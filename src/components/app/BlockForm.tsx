@@ -31,6 +31,7 @@ export default function BlockForm({
           <button
             type="button"
             onClick={() => setCourtId("")}
+            aria-pressed={courtId === ""}
             className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               courtId === ""
                 ? "border-accent-500 bg-accent-500/10 text-accent-600"
@@ -45,6 +46,7 @@ export default function BlockForm({
               key={c.id}
               type="button"
               onClick={() => setCourtId(c.id)}
+              aria-pressed={courtId === c.id}
               className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
                 courtId === c.id
                   ? "border-accent-500 bg-accent-500/10 text-accent-600"

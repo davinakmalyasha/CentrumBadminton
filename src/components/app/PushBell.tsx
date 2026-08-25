@@ -114,7 +114,9 @@ export default function PushBell() {
         title={
           err ?? (subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi booking")
         }
-        aria-label={err ?? undefined}
+        aria-label={
+          err ?? (subscribed ? "Matikan notifikasi" : "Aktifkan notifikasi booking")
+        }
         className={`rounded-lg p-2 transition ${
           err
             ? "text-red-500"

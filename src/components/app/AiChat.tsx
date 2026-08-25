@@ -113,12 +113,14 @@ export default function AiChat() {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Tanya sesuatu…"
+          aria-label="Pertanyaan untuk asisten"
           disabled={pending}
           className="min-w-0 flex-1 rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none disabled:opacity-60"
         />
         <button
           type="submit"
           disabled={pending || !input.trim()}
+          aria-label="Kirim pertanyaan"
           className="inline-flex flex-shrink-0 items-center justify-center rounded-xl bg-accent-500 px-4 py-2.5 text-sm font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
         >
           <Send className="h-4 w-4" />

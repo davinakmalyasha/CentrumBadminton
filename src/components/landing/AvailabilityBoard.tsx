@@ -24,6 +24,19 @@ interface CourtLite {
 
 const DATE_DAYS = 14;
 
+// Intl.DateTimeFormat construction is the expensive part — cache formatters
+// module-level instead of building ~45 per render (every slot tap re-renders).
+const fmtCache = new Map<string, Intl.DateTimeFormat>();
+function fmt(locale: string, opts: Intl.DateTimeFormatOptions): Intl.DateTimeFormat {
+  const key = `${locale}|${JSON.stringify(opts)}`;
+  let f = fmtCache.get(key);
+  if (!f) {
+    f = new Intl.DateTimeFormat(locale, { timeZone: "Asia/Jakarta", ...opts });
+    fmtCache.set(key, f);
+  }
+  return f;
+}
+
 export default function AvailabilityBoard({
   courts,
   pricing,
@@ -41,6 +54,7 @@ export default function AvailabilityBoard({
   const [dateISO, setDateISO] = useState(todayStr);
   const [busy, setBusy] = useState<BusyInterval[]>(initialBusy);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState(false);
   // courtId -> selected starting hours
   const [selection, setSelection] = useState<Record<string, number[]>>({});
 
@@ -55,9 +69,16 @@ export default function AvailabilityBoard({
   // (initial data comes server-rendered; no effect needed)
   const loadBusy = useCallback(
     async (d: string) => {
-      const { data } = await supabase.rpc("get_day_busy", { p_date: d });
-      setBusy(Array.isArray(data) ? (data as BusyInterval[]) : []);
-      setLoading(false);
+      try {
+        const { data, error } = await supabase.rpc("get_day_busy", { p_date: d });
+        if (error) throw error;
+        setBusy(Array.isArray(data) ? (data as BusyInterval[]) : []);
+        setLoadError(false);
+      } catch {
+        setLoadError(true);
+      } finally {
+        setLoading(false);
+      }
     },
     [supabase]
   );
@@ -118,25 +139,15 @@ export default function AvailabilityBoard({
 
   function dateLabelParts(iso: string) {
     const d = new Date(`${iso}T00:00:00+07:00`);
-    const weekday = new Intl.DateTimeFormat(locale, {
-      timeZone: "Asia/Jakarta",
-      weekday: "short",
-    }).format(d);
-    const num = new Intl.DateTimeFormat(locale, {
-      timeZone: "Asia/Jakarta",
-      day: "numeric",
-    }).format(d);
-    const month = new Intl.DateTimeFormat(locale, {
-      timeZone: "Asia/Jakarta",
-      month: "short",
-    }).format(d);
+    const weekday = fmt(locale, { weekday: "short" }).format(d);
+    const num = fmt(locale, { day: "numeric" }).format(d);
+    const month = fmt(locale, { month: "short" }).format(d);
     return { weekday, num, month };
   }
 
   function longDateLabel(iso: string): string {
     const d = new Date(`${iso}T00:00:00+07:00`);
-    return new Intl.DateTimeFormat(locale, {
-      timeZone: "Asia/Jakarta",
+    return fmt(locale, {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -244,9 +255,29 @@ export default function AvailabilityBoard({
             <span className="h-3 w-3 rounded-md bg-neutral-200" />
             {t.availability.legendPast}
           </span>
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 rounded-md bg-red-100" />
+            {t.availability.legendBlocked}
+          </span>
           <span className="hidden sm:inline">· {t.availability.normalNote}</span>
           <span className="hidden sm:inline">· {t.availability.peakNote}</span>
         </div>
+
+        {loadError && (
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
+            <span>{lang === "id" ? "Gagal memuat jadwal." : "Failed to load schedule."}</span>
+            <button
+              type="button"
+              onClick={() => {
+                setLoading(true);
+                void loadBusy(dateRef.current);
+              }}
+              className="rounded-lg border border-red-300 px-2 py-1 font-bold text-red-600 hover:bg-red-100"
+            >
+              {lang === "id" ? "Coba lagi" : "Retry"}
+            </button>
+          </div>
+        )}
 
         {/* Courts */}
         <div className={`mt-6 space-y-5 transition-opacity ${loading ? "opacity-60" : ""}`}>
@@ -345,7 +376,7 @@ export default function AvailabilityBoard({
               type="button"
               onClick={() => setSelection({})}
               className="flex-shrink-0 rounded-xl p-2 text-sky-brand-200 transition hover:text-white"
-              aria-label="clear"
+              aria-label={t.common.clearSelection}
             >
               <X className="h-4 w-4" />
             </button>

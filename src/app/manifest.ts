@@ -11,6 +11,7 @@ export default function manifest(): MetadataRoute.Manifest {
     scope: "/",
     display: "standalone",
     orientation: "portrait",
+    lang: "id",
     background_color: "#EFF7FF",
     theme_color: "#0B2545",
     icons: [
@@ -24,9 +25,21 @@ export default function manifest(): MetadataRoute.Manifest {
       },
     ],
     shortcuts: [
-      { name: "Jadwal", url: "/app/jadwal" },
-      { name: "Booking Baru", url: "/app/booking/baru" },
-      { name: "Pembayaran", url: "/app/pembayaran" },
+      {
+        name: "Jadwal",
+        url: "/app/jadwal",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Booking Baru",
+        url: "/app/booking/baru",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
+      {
+        name: "Pembayaran",
+        url: "/app/pembayaran",
+        icons: [{ src: "/icons/icon-192.png", sizes: "192x192" }],
+      },
     ],
   };
 }

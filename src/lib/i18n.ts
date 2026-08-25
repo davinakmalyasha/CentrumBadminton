@@ -19,10 +19,13 @@ const dict = {
         "2 lapangan indoor berlantai vinyl interlock di Cirebon. Cek jadwal, pilih jam, langsung booking lewat WhatsApp.",
       ctaBook: "Cek Jadwal & Booking",
       ctaWa: "Chat WhatsApp",
+      waIntro:
+        "Halo Centrum Badminton Arena! Saya mau tanya-tanya soal booking.",
       ratingLabel: "ulasan di Google",
       courtsLabel: "Lapangan",
       openNow: "Buka sekarang",
       closedNow: "Tutup · buka 07.00",
+      visualTag: "Cirebon · Indoor · 2 Lapangan",
     },
     availability: {
       title: "Jadwal Lapangan",
@@ -69,9 +72,10 @@ const dict = {
       ctaGoogle: "Lihat semua ulasan",
       followIg: "Ikuti Instagram",
       followFb: "Facebook",
+      cachedSuffix: "· tersimpan",
     },
     footer: { tagline: "Tempat main badminton favorit warga Cirebon.", manageApp: "Login Pengelola", rights: "Hak cipta dilindungi." },
-    common: { close: "Tutup", language: "Bahasa" },
+    common: { close: "Tutup", language: "Bahasa", clearSelection: "Hapus pilihan" },
   },
   en: {
     nav: {
@@ -89,10 +93,12 @@ const dict = {
         "2 indoor courts with vinyl interlock floors in Cirebon. Check the schedule, pick your hour, book straight through WhatsApp.",
       ctaBook: "Check Schedule & Book",
       ctaWa: "WhatsApp Us",
+      waIntro: "Hi Centrum Badminton Arena! I'd like to ask about booking.",
       ratingLabel: "Google reviews",
       courtsLabel: "Courts",
       openNow: "Open now",
       closedNow: "Closed · opens 07.00",
+      visualTag: "Cirebon · Indoor · 2 Courts",
     },
     availability: {
       title: "Court Schedule",
@@ -139,9 +145,10 @@ const dict = {
       ctaGoogle: "See all reviews",
       followIg: "Follow on Instagram",
       followFb: "Facebook",
+      cachedSuffix: "· cached",
     },
     footer: { tagline: "Cirebon's favourite place to play badminton.", manageApp: "Staff Login", rights: "All rights reserved." },
-    common: { close: "Close", language: "Language" },
+    common: { close: "Close", language: "Language", clearSelection: "Clear selection" },
   },
 };
 

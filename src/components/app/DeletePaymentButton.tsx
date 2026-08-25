@@ -20,6 +20,7 @@ export default function DeletePaymentButton({ paymentId }: { paymentId: string }
         type="submit"
         disabled={pending}
         title="Hapus pembayaran (owner)"
+        aria-label="Hapus pembayaran (owner)"
         className="px-1.5 text-[11px] text-navy-700/40 transition hover:text-red-500"
       >
         <Trash2 className="h-3.5 w-3.5" />

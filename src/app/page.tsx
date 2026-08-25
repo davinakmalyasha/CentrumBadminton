@@ -5,6 +5,7 @@ import {
   type BusyInterval,
   type PricingInfo,
 } from "@/lib/availability";
+import type { Metadata } from "next";
 import { VENUE } from "@/lib/constants";
 import { getGoogleRating } from "@/lib/rating";
 import { getDict } from "@/lib/i18n";
@@ -18,11 +19,20 @@ import LocationSection from "@/components/landing/LocationSection";
 import SocialSection from "@/components/landing/SocialSection";
 import Footer from "@/components/landing/Footer";
 
-export const metadata = {
-  title: "Centrum Badminton Arena — Booking Lapangan Badminton Cirebon",
-  description:
-    "2 lapangan badminton indoor vinyl interlock di Cirebon. Buka setiap hari 07.00–23.00 WIB. Rp40rb/jam siang, Rp50rb/jam malam. Booking mudah via WhatsApp.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  const lang = await getLang();
+  return lang === "en"
+    ? {
+        title: "Centrum Badminton Arena — Book Indoor Badminton Courts in Cirebon",
+        description:
+          "2 indoor vinyl interlock badminton courts in Cirebon. Open daily 07.00–23.00 WIB. IDR 40k/hr daytime, IDR 50k/hr evening. Easy WhatsApp booking.",
+      }
+    : {
+        title: "Centrum Badminton Arena — Booking Lapangan Badminton Cirebon",
+        description:
+          "2 lapangan badminton indoor vinyl interlock di Cirebon. Buka setiap hari 07.00–23.00 WIB. Rp40rb/jam siang, Rp50rb/jam malam. Booking mudah via WhatsApp.",
+      };
+}
 
 const FALLBACK_PRICING: PricingInfo = {
   openHour: 7,
@@ -67,7 +77,7 @@ export default async function LandingPage() {
   const openNow =
     nowMin >= pricing.openHour * 60 && nowMin < pricing.closeHour * 60;
 
-  const jsonLd = {
+  const jsonLd: Record<string, unknown> = {
     "@context": "https://schema.org",
     "@type": "SportsActivityLocation",
     name: VENUE.name,
@@ -75,12 +85,16 @@ export default async function LandingPage() {
     openingHours: "Mo-Su 07:00-23:00",
     telephone: `+${VENUE.whatsappNumber}`,
     priceRange: "Rp40.000 - Rp50.000",
-    aggregateRating: {
+  };
+  // Only claim a rating in structured data when it's a live Google value —
+  // the offline fallback constant must not be published as fact.
+  if (rating.live && rating.total > 0) {
+    jsonLd.aggregateRating = {
       "@type": "AggregateRating",
       ratingValue: rating.score,
       reviewCount: rating.total,
-    },
-  };
+    };
+  }
 
   return (
     <>
@@ -90,7 +104,7 @@ export default async function LandingPage() {
       />
       <Navbar lang={lang} />
       <main>
-        <Hero rating={rating} openNow={openNow} t={t} lang={lang} />
+        <Hero rating={rating} openNow={openNow} pricing={pricing} t={t} />
         <AvailabilityBoard
           courts={courts}
           pricing={pricing}
@@ -98,7 +112,7 @@ export default async function LandingPage() {
           todayStr={today}
           lang={lang}
         />
-        <PricingSection t={t} />
+        <PricingSection t={t} pricing={pricing} />
         <FacilitiesSection t={t} lang={lang} />
         <LocationSection t={t} lang={lang} />
         <SocialSection rating={rating} t={t} />
