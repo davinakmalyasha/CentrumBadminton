@@ -2,21 +2,34 @@
  * Kantin E2E — exercises the real DB paths (RPC, RLS, stock) + authenticated
  * page fetches against the dev server. Run:
  *   node --env-file=.env.local scripts/kantin-e2e.mjs
+ *
+ * Required env:
+ *   NEXT_PUBLIC_SUPABASE_URL / NEXT_PUBLIC_SUPABASE_ANON_KEY
+ *   E2E_OWNER_EMAIL / E2E_OWNER_PASSWORD  (owner credentials — never commit)
+ *   E2E_BASE_URL (default http://localhost:3000)
  */
 import { createClient } from "@supabase/supabase-js";
 
 const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const email = process.env.E2E_OWNER_EMAIL;
+const password = process.env.E2E_OWNER_PASSWORD;
+const baseUrl = process.env.E2E_BASE_URL ?? "http://localhost:3000";
+
+if (!url || !anon || !email || !password) {
+  console.error(
+    "Missing env: set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY, E2E_OWNER_EMAIL, E2E_OWNER_PASSWORD"
+  );
+  process.exit(1);
+}
+
 const results = [];
 const ok = (name, pass, detail = "") =>
   results.push(`${pass ? "PASS" : "FAIL"} ${name}${detail ? " — " + detail : ""}`);
 
 // 1) Sign in as owner
 const s = createClient(url, anon, { auth: { persistSession: false } });
-const { error: loginErr } = await s.auth.signInWithPassword({
-  email: "owner@centrum.dev",
-  password: "Centrum-E2E-xe4r55lw!7",
-});
+const { error: loginErr } = await s.auth.signInWithPassword({ email, password });
 ok("owner login", !loginErr, loginErr?.message);
 
 // 2) Seeded products visible (RLS: is_staff)
@@ -102,7 +115,7 @@ const cookieVal =
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
-const res = await fetch("http://localhost:3000/app/kantin", {
+const res = await fetch(`${baseUrl}/app/kantin`, {
   headers: { cookie: `${cookieName}=${cookieVal}` },
   redirect: "manual",
 });
@@ -110,7 +123,7 @@ const html = await res.text();
 ok("kantin page renders", res.status === 200 && html.includes("Kasir Kantin"), `status=${res.status}`);
 ok("products in page", html.includes("Es Teh") && html.includes("Indomie Goreng"));
 
-const resDash = await fetch("http://localhost:3000/app", {
+const resDash = await fetch(`${baseUrl}/app`, {
   headers: { cookie: `${cookieName}=${cookieVal}` },
 });
 const dashHtml = await resDash.text();
