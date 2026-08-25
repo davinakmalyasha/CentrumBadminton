@@ -6,9 +6,36 @@ import {
 } from "@/lib/months";
 
 /**
- * GET /api/reports/export?month=YYYY-MM
- * Owner-only CSV export of all payments in the given month.
+ * GET /api/reports/export?month=YYYY-MM[&type=kantin]
+ * Owner-only CSV export of payments (or kantin sales) in the given month.
  */
+
+const WIB_DAY = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" });
+const WIB_TIME = new Intl.DateTimeFormat("id-ID", {
+  hour: "2-digit",
+  minute: "2-digit",
+  timeZone: "Asia/Jakarta",
+});
+
+/** Neutralize spreadsheet formula injection, then quote when needed. */
+function esc(v: string | number | null | undefined): string {
+  let s = String(v ?? "");
+  if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
+  return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+}
+
+function day(iso: string | undefined | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : WIB_DAY.format(d);
+}
+
+function time(iso: string | undefined | null): string {
+  if (!iso) return "";
+  const d = new Date(iso);
+  return Number.isNaN(d.getTime()) ? "" : WIB_TIME.format(d);
+}
+
 export async function GET(request: Request) {
   const supabase = await createClient();
   const {
@@ -64,14 +91,8 @@ export async function GET(request: Request) {
       "Tanggal;Jam;Metode;Produk;Qty;Harga;Subtotal;Pembeli;Dicatat",
       ...((kData ?? []) as unknown as KRow[]).map((r) =>
         [
-          new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(
-            new Date(r.kantin_sales?.created_at ?? "")
-          ),
-          new Intl.DateTimeFormat("id-ID", {
-            hour: "2-digit",
-            minute: "2-digit",
-            timeZone: "Asia/Jakarta",
-          }).format(new Date(r.kantin_sales?.created_at ?? "")),
+          day(r.kantin_sales?.created_at),
+          time(r.kantin_sales?.created_at),
           r.kantin_sales?.method ?? "",
           esc(r.product_name),
           r.qty,
@@ -120,20 +141,11 @@ export async function GET(request: Request) {
 
   const rows = (data ?? []) as Row[];
 
-  const esc = (v: string | number | null | undefined) => {
-    let s = String(v ?? "");
-    // Neutralize spreadsheet formula injection (=, +, -, @, tab, CR)
-    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-    return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-  };
-
   const lines: string[] = [
     "Tanggal Bayar;Metode;Tanggal Main;Jam;Pelanggan;Telepon;Lapangan;Nominal",
     ...rows.map((r) =>
       [
-        new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Jakarta" }).format(
-          new Date(r.paid_at)
-        ),
+        day(r.paid_at),
         r.method,
         r.bookings?.booking_date ?? "",
         `${String(r.bookings?.start_time ?? "").slice(0, 5)}-${String(
