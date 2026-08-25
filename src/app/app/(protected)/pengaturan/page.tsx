@@ -34,7 +34,10 @@ type ProfileRow = {
 
 export default async function PengaturanPage() {
   const supabase = await requireOwnerPage();
-  const [courtsRes, pricingRes, profilesRes, devicesRes] = await Promise.all([
+  // listMyDevices() scopes to the caller via RLS + explicit profile filter;
+  // the previous raw push_subscriptions query worked only because RLS
+  // happened to scope it — brittle and easy to regress.
+  const [courtsRes, pricingRes, profilesRes, devices] = await Promise.all([
     supabase.from("courts").select("id,name,is_active,sort_order").order("sort_order"),
     supabase
       .from("pricing_rules")
@@ -45,19 +48,13 @@ export default async function PengaturanPage() {
       .from("profiles")
       .select("id,full_name,phone,role,is_active")
       .order("created_at"),
-    supabase
-      .from("push_subscriptions")
-      .select("id,user_agent,created_at")
-      .order("created_at", { ascending: false }),
+    listMyDevices(),
   ]);
 
   const courts = (courtsRes.data ?? []) as CourtRow[];
   const rules = (pricingRes.data ?? []) as PriceRow[];
   const profiles = (profilesRes.data ?? []) as ProfileRow[];
   const activeRule = rules[0];
-  const devices = (devicesRes.data ?? []) as Awaited<
-    ReturnType<typeof listMyDevices>
-  >;
 
   return (
     <div className="space-y-5">
@@ -75,7 +72,7 @@ export default async function PengaturanPage() {
         <ul className="mb-3 space-y-1.5">
           {courts.map((c) => (
             <li key={c.id} className="group flex items-center gap-2 rounded-xl bg-ice-100 px-2.5 py-2">
-              <RenameCourtForm courtId={c.id} name={c.name} />
+              <RenameCourtForm courtId={c.id} name={c.name} sortOrder={c.sort_order} />
               <ToggleCourtActiveButton courtId={c.id} active={c.is_active} />
             </li>
           ))}

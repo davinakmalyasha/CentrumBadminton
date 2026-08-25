@@ -22,6 +22,19 @@ function dayRange(dateISO: string): [string, string] {
   ];
 }
 
+/**
+ * Customer-controlled text is untrusted data, not instructions.
+ * Strip control chars/newlines so injected "system-like" lines cannot
+ * masquerade as conversation turns inside tool output.
+ */
+function clean(s: string | null | undefined, max = 60): string {
+  return (s ?? "")
+    .replace(/[\u0000-\u001f\u007f]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .slice(0, max);
+}
+
 /** Ringkasan hari tertentu (default: hari ini) */
 export async function getTodaySummary(p?: { date?: string }): Promise<ToolResult> {
   const supabase = await sb();
@@ -92,7 +105,7 @@ export async function getTodaySummary(p?: { date?: string }): Promise<ToolResult
     belum_bayar: active.filter(
       (b) => b.payment_status !== "paid" && (!isToday || Number(b.end_time.slice(0, 2)) * 60 > nowMin)
     ).map((b) => ({
-      nama: b.customer_name,
+      nama: clean(b.customer_name),
       jam: `${b.start_time.slice(0, 5)}-${b.end_time.slice(0, 5)}`,
       lapangan: b.courts?.[0]?.name ?? "",
       harga: Number(b.override_price ?? b.computed_price),
@@ -100,7 +113,7 @@ export async function getTodaySummary(p?: { date?: string }): Promise<ToolResult
     })),
     daftar_booking: bookings.map((b) => ({
       jam: `${b.start_time.slice(0, 5)}-${b.end_time.slice(0, 5)}`,
-      pelanggan: b.customer_name,
+      pelanggan: clean(b.customer_name),
       lapangan: b.courts?.[0]?.name ?? "",
       status: b.status,
     })),
@@ -189,49 +202,27 @@ export async function getRangeSummary(p: {
   };
 }
 
-/** Pelanggan paling sering main */
+/** Pelanggan paling sering main (aggregated in SQL via top_customers) */
 export async function getTopCustomers(p?: { limit?: number }): Promise<ToolResult> {
   const supabase = await sb();
-  const limit = Math.min(Math.max(p?.limit ?? 5, 1), 20);
+  const limit = Math.min(Math.max(Math.trunc(p?.limit ?? 5), 1), 20);
 
-  const [customersRes, bookingsRes] = await Promise.all([
-    supabase.from("customers").select("id,name,no_show_count").limit(200),
-    supabase
-      .from("bookings")
-      .select("customer_id,booking_date,status")
-      .neq("status", "no_show")
-      .order("booking_date", { ascending: false })
-      .limit(2000),
-  ]);
+  const { data, error } = await supabase.rpc("top_customers", { p_limit: limit });
+  if (error) return { error: error.message };
 
-  const tally = new Map<string, { visits: number; last?: string }>();
-  for (const b of (bookingsRes.data ?? []) as Array<{
-    customer_id: string | null;
-    booking_date: string;
-  }>) {
-    if (!b.customer_id) continue;
-    const t = tally.get(b.customer_id) ?? { visits: 0 };
-    t.visits += 1;
-    if (!t.last || b.booking_date > t.last) t.last = b.booking_date;
-    tally.set(b.customer_id, t);
-  }
-
-  const customers = (customersRes.data ?? []) as Array<{
-    id: string;
+  const rows = (data ?? []) as Array<{
     name: string;
+    phone: string;
     no_show_count: number;
+    visits: number;
+    last_visit: string | null;
   }>;
 
-  const top = customers
-    .map((c) => ({ ...c, ...(tally.get(c.id) ?? { visits: 0 }) }))
-    .sort((a, b) => b.visits - a.visits || (b.last ?? "").localeCompare(a.last ?? ""))
-    .slice(0, limit);
-
   return {
-    pelanggan_teratas: top.map((c) => ({
-      nama: c.name,
-      kunjungan: c.visits,
-      kunjungan_terakhir: c.last ?? null,
+    pelanggan_teratas: rows.map((c) => ({
+      nama: clean(c.name),
+      kunjungan: Number(c.visits),
+      kunjungan_terakhir: c.last_visit,
       no_show_total: c.no_show_count,
     })),
   };

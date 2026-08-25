@@ -1,7 +1,6 @@
 /* Centrum Badminton Arena — minimal hand-rolled service worker */
-const CACHE = "cba-v2";
+const CACHE = "cba-v3";
 const OFFLINE_URL = "/offline";
-const MAX_NAV_ENTRIES = 30;
 const MAX_STATIC_ENTRIES = 120;
 
 async function trimCache(cacheName, maxEntries) {
@@ -41,23 +40,20 @@ self.addEventListener("fetch", (event) => {
   const url = new URL(req.url);
   if (url.origin !== location.origin) return;
 
-  // Navigations: network-first with offline fallback
+  // Navigations: network-first with offline fallback.
+  // Authenticated /app pages are NEVER cached: on a shared device the
+  // cached HTML could leak one account's data into another's offline
+  // session. Only the static /offline shell is pre-cached at install.
   if (req.mode === "navigate") {
+    if (url.pathname.startsWith("/app")) {
+      event.respondWith(fetch(req).catch(() => caches.match(OFFLINE_URL)));
+      return;
+    }
     event.respondWith(
-      fetch(req)
-        .then((res) => {
-          const copy = res.clone();
-          caches
-            .open(CACHE)
-            .then((c) => c.put(req, copy))
-            .then(() => trimCache(CACHE, MAX_NAV_ENTRIES))
-            .catch(() => {});
-          return res;
-        })
-        .catch(async () => {
-          const cached = await caches.match(req);
-          return cached || caches.match(OFFLINE_URL);
-        })
+      fetch(req).catch(async () => {
+        const cached = await caches.match(req);
+        return cached || caches.match(OFFLINE_URL);
+      })
     );
     return;
   }

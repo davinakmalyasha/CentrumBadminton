@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useState, useTransition } from "react";
 import { Smartphone, Trash2 } from "lucide-react";
 import {
-  listMyDevices,
   removeDeviceById,
   type DeviceInfo,
 } from "@/app/app/(protected)/push-actions";
@@ -32,11 +31,6 @@ function deviceLabel(ua: string | null): string {
 export default function DeviceList({ initialDevices }: { initialDevices: DeviceInfo[] }) {
   const [devices, setDevices] = useState<DeviceInfo[]>(initialDevices);
   const [pending, startTransition] = useTransition();
-
-  // Refresh on mount (subscription may have been created after page render)
-  useEffect(() => {
-    void listMyDevices().then(setDevices);
-  }, []);
 
   function remove(id: string) {
     startTransition(async () => {
@@ -80,6 +74,7 @@ export default function DeviceList({ initialDevices }: { initialDevices: DeviceI
             disabled={pending}
             onClick={() => remove(d.id)}
             title="Hapus perangkat"
+            aria-label={`Hapus perangkat ${deviceLabel(d.user_agent)}`}
             className="flex-shrink-0 rounded-lg border border-red-200 bg-white px-2 py-1 text-[10px] font-bold text-red-500 hover:bg-red-50 disabled:opacity-50"
           >
             <Trash2 className="h-3.5 w-3.5" />

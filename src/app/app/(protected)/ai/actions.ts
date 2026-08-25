@@ -182,24 +182,23 @@ export async function askAi(
           calls.map((fc) => ({ functionCall: fc }))) as never,
       });
 
-      // Execute and append responses
-      const responseParts: Array<{
-        functionResponse: { name: string; response: unknown };
-      }> = [];
-      for (const fc of calls) {
-        const fn = toolImpl(fc.name ?? "");
-        let payload: unknown;
-        try {
-          payload = fn
-            ? await fn((fc.args ?? {}) as Record<string, unknown>)
-            : { error: `Tool ${fc.name} tidak dikenal.` };
-        } catch (e) {
-          payload = { error: e instanceof Error ? e.message : "tool error" };
-        }
-        responseParts.push({
-          functionResponse: { name: fc.name ?? "", response: payload },
-        });
-      }
+      // Execute all requested tools concurrently and append responses
+      const responseParts = await Promise.all(
+        calls.map(async (fc) => {
+          const fn = toolImpl(fc.name ?? "");
+          let payload: unknown;
+          try {
+            payload = fn
+              ? await fn((fc.args ?? {}) as Record<string, unknown>)
+              : { error: `Tool ${fc.name} tidak dikenal.` };
+          } catch (e) {
+            payload = { error: e instanceof Error ? e.message : "tool error" };
+          }
+          return {
+            functionResponse: { name: fc.name ?? "", response: payload },
+          };
+        })
+      );
       contents.push({ role: "user", parts: responseParts } as never);
     }
 

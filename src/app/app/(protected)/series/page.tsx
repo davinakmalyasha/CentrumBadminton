@@ -37,6 +37,8 @@ export default async function SeriesPage() {
       .from("bookings")
       .select("recurring_series_id,booking_date")
       .gte("booking_date", today)
+      .neq("status", "cancelled")
+      .neq("status", "no_show")
       .not("recurring_series_id", "is", null),
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
   ]);

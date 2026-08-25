@@ -6,7 +6,9 @@ import { createClient } from "@/lib/supabase/client";
 
 /**
  * Realtime refresh untuk jadwal admin — re-render server component
- * (router.refresh) setiap ada perubahan booking/blokir dari user lain.
+ * (router.refresh) saat ada perubahan booking/blokir dari user lain.
+ * Debounced: creating a 12-week series emits 12 INSERT events; without
+ * the debounce each one triggered a full RSC refresh storm.
  */
 export default function ScheduleRealtime({ dateISO }: { dateISO: string }) {
   const router = useRouter();
@@ -14,7 +16,11 @@ export default function ScheduleRealtime({ dateISO }: { dateISO: string }) {
   useEffect(() => {
     const supabase = createClient();
     const channelName = `jadwal-${dateISO}`;
-    const onChange = () => router.refresh();
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const onChange = () => {
+      clearTimeout(timer);
+      timer = setTimeout(() => router.refresh(), 400);
+    };
 
     const channel = supabase
       .channel(channelName)
@@ -31,6 +37,7 @@ export default function ScheduleRealtime({ dateISO }: { dateISO: string }) {
       .subscribe();
 
     return () => {
+      clearTimeout(timer);
       void supabase.removeChannel(channel);
     };
   }, [dateISO, router]);

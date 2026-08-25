@@ -5,6 +5,9 @@
  */
 const buckets = new Map<string, number[]>();
 
+const MAX_BUCKETS = 5000;
+const EVICT_SAMPLE = 20;
+
 export function rateLimit(
   key: string,
   max: number,
@@ -24,20 +27,37 @@ export function rateLimit(
   hits.push(now);
   buckets.set(key, hits);
 
-  // Prevent unbounded growth
-  if (buckets.size > 5000) {
-    for (const [k, v] of buckets) {
-      if (v.every((t) => now - t >= windowMs)) buckets.delete(k);
+  // Amortized cleanup: evict a few stale buckets per call instead of an
+  // O(n) full scan on every request once the map is saturated. Hits are
+  // appended chronologically, so checking only the tail detects staleness.
+  if (buckets.size > MAX_BUCKETS) {
+    let n = EVICT_SAMPLE;
+    for (const k of buckets.keys()) {
+      if (n-- === 0) break;
+      const v = buckets.get(k)!;
+      if (v.length === 0 || now - v[v.length - 1] >= windowMs) {
+        buckets.delete(k);
+      }
     }
   }
   return { ok: true, retryAfterSec: 0 };
 }
 
-/** Best-effort client IP from proxy headers (Vercel / nginx) */
+/**
+ * Best-effort client IP for rate limiting.
+ *
+ * `x-real-ip` is set by the platform/ingress and is not client-spoofable.
+ * `x-forwarded-for` may be client-supplied; when trusting it, take the
+ * LAST hop (added by our own proxy) rather than the first (attacker-
+ * controlled), so header rotation cannot evade the limiter.
+ */
 export function clientIp(headers: Headers): string {
-  return (
-    headers.get("x-forwarded-for")?.split(",")[0]?.trim() ??
-    headers.get("x-real-ip") ??
-    "unknown"
-  );
+  const real = headers.get("x-real-ip");
+  if (real) return real.trim();
+  const xff = headers.get("x-forwarded-for");
+  if (xff) {
+    const hops = xff.split(",").map((h) => h.trim()).filter(Boolean);
+    if (hops.length > 0) return hops[hops.length - 1];
+  }
+  return "unknown";
 }
