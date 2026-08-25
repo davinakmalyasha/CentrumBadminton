@@ -2,9 +2,10 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { addDaysISO, computePrice, todayISO } from "@/lib/availability";
+import { addDaysISO, computePrice, todayISO, wibNowMinutes } from "@/lib/availability";
 import { sendPushToAll } from "@/lib/webpush";
 import { rateLimit } from "@/lib/ratelimit";
 
@@ -54,6 +55,38 @@ async function getActivePricing(
     priceDay: Number(p.price_day),
     priceEvening: Number(p.price_evening),
   };
+}
+
+/** Look up or create the customer directory entry for a phone number. */
+async function upsertCustomerByPhone(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  name: string,
+  phoneRaw: string
+): Promise<string | null> {
+  const { data: existingCustomer } = await supabase
+    .from("customers")
+    .select("id")
+    .eq("phone", phoneRaw)
+    .maybeSingle();
+  if (existingCustomer?.id) return existingCustomer.id as string;
+
+  // Insert; on a concurrent unique-phone race, re-select instead of
+  // surfacing a raw duplicate-key error.
+  const { data: newCustomer, error } = await supabase
+    .from("customers")
+    .insert({ name, phone: phoneRaw })
+    .select("id")
+    .single();
+  if (newCustomer?.id) return newCustomer.id as string;
+  if (error?.code === "23505") {
+    const { data: raced } = await supabase
+      .from("customers")
+      .select("id")
+      .eq("phone", phoneRaw)
+      .maybeSingle();
+    return (raced?.id as string) ?? null;
+  }
+  return null;
 }
 
 export type ActionState = { error: string | null; ok?: boolean };
@@ -107,8 +140,18 @@ export async function createBooking(
     return { error: "Tanggal di luar rentang yang diizinkan." };
   }
 
-  // Validate against operating hours
-  const pricing = await getActivePricing(supabase, dateISO);
+  // Same-day slots that already started are not bookable
+  if (dateISO === today && startH * 60 <= wibNowMinutes()) {
+    return { error: "Jam sudah lewat — pilih slot lain." };
+  }
+
+  // Validate against operating hours + resolve owner & customer in parallel
+  const [pricing, owner, customerId] = await Promise.all([
+    getActivePricing(supabase, dateISO),
+    isOwner(supabase),
+    upsertCustomerByPhone(supabase, name, phoneRaw),
+  ]);
+
   if (startH < pricing.openHour || endH > pricing.closeHour) {
     return {
       error: `Jam operasional ${String(pricing.openHour).padStart(2, "0")}.00–${String(
@@ -118,28 +161,8 @@ export async function createBooking(
   }
 
   // Owner-only manual price override
-  const owner = await isOwner(supabase);
   const overridePrice = owner && overrideRaw ? Number(overrideRaw) : null;
-
   const computedPrice = computePrice(pricing, startH, endH);
-
-  // Upsert customer directory by phone
-  let customerId: string | null = null;
-  const { data: existingCustomer } = await supabase
-    .from("customers")
-    .select("id")
-    .eq("phone", phoneRaw)
-    .maybeSingle();
-  if (existingCustomer) {
-    customerId = existingCustomer.id as string;
-  } else {
-    const { data: newCustomer } = await supabase
-      .from("customers")
-      .insert({ name, phone: phoneRaw })
-      .select("id")
-      .single();
-    customerId = (newCustomer?.id as string) ?? null;
-  }
 
   const { error } = await supabase.from("bookings").insert({
     court_id: courtId,
@@ -164,15 +187,18 @@ export async function createBooking(
     return { error: `Gagal membuat booking: ${error.message}` };
   }
 
-  // Notify other staff devices (fire-and-forget)
-  await sendPushToAll(
-    {
-      title: "Booking baru masuk",
-      body: `${name} · ${dateISO} · ${String(startH).padStart(2, "0")}.00`,
-      url: `/app/jadwal?date=${dateISO}`,
-      tag: "new-booking",
-    },
-    user.id
+  // Notify other staff devices after the response is sent — push fan-out
+  // must never delay the booking redirect.
+  after(() =>
+    sendPushToAll(
+      {
+        title: "Booking baru masuk",
+        body: `${name} · ${dateISO} · ${String(startH).padStart(2, "0")}.00`,
+        url: `/app/jadwal?date=${dateISO}`,
+        tag: "new-booking",
+      },
+      user.id
+    )
   );
 
   revalidatePath("/app");
@@ -199,7 +225,7 @@ export async function updateBookingStatus(
 
   const { data: current } = await supabase
     .from("bookings")
-    .select("status")
+    .select("status,customer_id")
     .eq("id", id)
     .maybeSingle();
   const from = current?.status as string | undefined;
@@ -210,30 +236,24 @@ export async function updateBookingStatus(
     return { error: `Tidak bisa ubah status dari ${from} ke ${next}.` };
   }
 
-  const patch: Record<string, unknown> = { status: next };
-  if (next === "no_show") {
-    // bump customer's no-show counter when known
-    const { data: b } = await supabase
-      .from("bookings")
-      .select("customer_id")
-      .eq("id", id)
-      .maybeSingle();
-    const cid = b?.customer_id as string | undefined;
-    if (cid) {
-      const { data: c } = await supabase
-        .from("customers")
-        .select("no_show_count")
-        .eq("id", cid)
-        .maybeSingle();
-      await supabase
-        .from("customers")
-        .update({ no_show_count: ((c?.no_show_count as number) ?? 0) + 1 })
-        .eq("id", cid);
-    }
+  // Guarded transition: only applies when the row is still in `from`.
+  // Two racing updates cannot both succeed → no invalid double-hop.
+  const { data: updated, error } = await supabase
+    .from("bookings")
+    .update({ status: next })
+    .eq("id", id)
+    .eq("status", from)
+    .select("id");
+
+  if (error) return { error: `Gagal update: ${error.message}` };
+  if (!updated || updated.length === 0) {
+    return { error: "Status sudah diubah oleh staf lain — muat ulang halaman." };
   }
 
-  const { error } = await supabase.from("bookings").update(patch).eq("id", id);
-  if (error) return { error: `Gagal update: ${error.message}` };
+  if (next === "no_show" && current?.customer_id) {
+    // Atomic increment via SQL (no read-modify-write lost-update race)
+    await supabase.rpc("bump_no_show", { p_booking_id: id });
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/jadwal");
@@ -284,7 +304,32 @@ export async function recordPayment(
     return { error: "Terlalu banyak transaksi — coba lagi sebentar." };
   }
 
-  const { error } = await supabase.from("payments").insert({
+  // Reject overpayment against the booking's outstanding balance
+  const { data: booking } = await supabase
+    .from("bookings")
+    .select("computed_price,override_price")
+    .eq("id", bookingId)
+    .maybeSingle();
+  if (!booking) return { error: "Booking tidak ditemukan." };
+
+  const price = Number(booking.override_price ?? booking.computed_price) || 0;
+  const { data: paidRows } = await supabase
+    .from("payments")
+    .select("amount")
+    .eq("booking_id", bookingId);
+  const paid = (paidRows ?? []).reduce((a, p) => a + Number(p.amount), 0);
+  const outstanding = Math.max(price - paid, 0);
+
+  if (outstanding === 0) {
+    return { error: "Booking ini sudah lunas." };
+  }
+  if (amount > outstanding) {
+    return {
+      error: `Nominal melebihi sisa tagihan (sisa ${outstanding.toLocaleString("id-ID")}).`,
+    };
+  }
+
+  const { error: insertError } = await supabase.from("payments").insert({
     booking_id: bookingId,
     amount,
     method,
@@ -292,7 +337,7 @@ export async function recordPayment(
     recorded_by: user.id,
   });
 
-  if (error) return { error: `Gagal catat pembayaran: ${error.message}` };
+  if (insertError) return { error: `Gagal catat pembayaran: ${insertError.message}` };
 
   revalidatePath("/app/pembayaran");
   revalidatePath("/app");
@@ -395,6 +440,43 @@ export async function deleteBlock(
 
 const MAX_WEEKS = 12;
 
+type SeriesBookingRow = {
+  court_id: string;
+  booking_date: string;
+  start_time: string;
+  end_time: string;
+  status: "confirmed";
+  source: "walk_in";
+  customer_id: string | null;
+  customer_name: string;
+  customer_phone: string | null;
+  recurring_series_id: string;
+  computed_price: number;
+  notes: string;
+  created_by: string;
+};
+
+/**
+ * Insert weekly instances. Batch first (1 round-trip); on any overlap,
+ * fall back to per-week inserts so conflicting weeks are skipped.
+ */
+async function insertSeriesInstances(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  rows: SeriesBookingRow[]
+): Promise<number> {
+  if (rows.length === 0) return 0;
+
+  const { error } = await supabase.from("bookings").insert(rows);
+  if (!error) return rows.length;
+
+  let created = 0;
+  for (const row of rows) {
+    const { error: rowError } = await supabase.from("bookings").insert(row);
+    if (!rowError) created++;
+  }
+  return created;
+}
+
 export async function createSeries(
   _prev: ActionState,
   formData: FormData
@@ -413,7 +495,11 @@ export async function createSeries(
   const endH = Number(formData.get("end_hour"));
   const name = String(formData.get("customer_name") ?? "").trim();
   const phoneRaw = String(formData.get("customer_phone") ?? "").replace(/\D/g, "");
-  const weeks = Math.min(Math.max(Number(formData.get("weeks") ?? 8), 1), MAX_WEEKS);
+  const weeksRaw = formData.get("weeks");
+  const weeksNum = weeksRaw === null || weeksRaw === "" ? NaN : Number(weeksRaw);
+  const weeks = Number.isFinite(weeksNum)
+    ? Math.min(Math.max(Math.trunc(weeksNum), 1), MAX_WEEKS)
+    : 8;
   const endDateRaw = String(formData.get("end_date") ?? "");
 
   if (!courtId) return { error: "Pilih lapangan." };
@@ -425,28 +511,11 @@ export async function createSeries(
   if (!Number.isFinite(startH) || !Number.isFinite(endH) || endH <= startH)
     return { error: "Jam selesai harus setelah jam mulai." };
   if (!name) return { error: "Nama pelanggan wajib diisi." };
+  if (phoneRaw.length > 0 && phoneRaw.length < 8)
+    return { error: "Nomor WhatsApp tidak valid." };
 
-  // Upsert customer
-  let customerId: string | null = null;
-  if (phoneRaw.length >= 8) {
-    const { data: existing } = await supabase
-      .from("customers")
-      .select("id")
-      .eq("phone", phoneRaw)
-      .maybeSingle();
-    customerId =
-      (existing?.id as string) ??
-      (
-        (
-          await supabase
-            .from("customers")
-            .insert({ name, phone: phoneRaw })
-            .select("id")
-            .single()
-        ).data?.id as string | undefined
-      ) ??
-      null;
-  }
+  const customerId =
+    phoneRaw.length >= 8 ? await upsertCustomerByPhone(supabase, name, phoneRaw) : null;
 
   const pricing = await getActivePricing(supabase, startDate);
   const price = computePrice(pricing, startH, endH);
@@ -473,12 +542,17 @@ export async function createSeries(
   if (sErr || !series)
     return { error: `Gagal membuat langganan: ${sErr?.message ?? "?"}` };
 
-  // Generate weekly instances, skipping conflicts, capped by end_date
-  let created = 0;
+  // Generate weekly instances, capped by end_date
+  const dates: string[] = [];
   for (let i = 0; i < weeks; i++) {
     const d = addDaysISO(startDate, i * 7);
     if (endDateRaw && d > endDateRaw) break;
-    const { error } = await supabase.from("bookings").insert({
+    dates.push(d);
+  }
+
+  const created = await insertSeriesInstances(
+    supabase,
+    dates.map((d) => ({
       court_id: courtId,
       booking_date: d,
       start_time: `${String(startH).padStart(2, "0")}:00`,
@@ -492,9 +566,8 @@ export async function createSeries(
       computed_price: price,
       notes: "Langganan mingguan",
       created_by: user.id,
-    });
-    if (!error) created++;
-  }
+    }))
+  );
 
   revalidatePath("/app/series");
   revalidatePath("/app/jadwal");
@@ -502,7 +575,7 @@ export async function createSeries(
   return {
     error: null,
     ok: true,
-    info: `${created} jadwal mingguan dibuat`,
+    info: `${created} jadwal mingguan dibuat${dates.length - created > 0 ? `, ${dates.length - created} dilewati (bentrok)` : ""}`,
   };
 }
 
@@ -553,7 +626,9 @@ export async function extendSeries(
 
   const { data: s } = await supabase
     .from("recurring_series")
-    .select("*")
+    .select(
+      "court_id,customer_id,customer_name,customer_phone,start_time,end_time,start_date,end_date,status"
+    )
     .eq("id", id)
     .maybeSingle();
   if (!s) return { error: "Langganan tidak ditemukan." };
@@ -569,19 +644,29 @@ export async function extendSeries(
     .order("booking_date", { ascending: false })
     .limit(1);
 
+  const hasInstances = Boolean(lastBooking?.[0]?.booking_date);
   const baseDate =
     (lastBooking?.[0]?.booking_date as string | undefined) ?? (s.start_date as string);
   const weeks = 8;
+  const endDate = s.end_date as string | null;
 
   const pricing = await getActivePricing(supabase, baseDate);
   const startH = Number(String(s.start_time).slice(0, 2));
   const endH = Number(String(s.end_time).slice(0, 2));
   const price = computePrice(pricing, startH, endH);
 
-  let created = 0;
-  for (let i = 1; i <= weeks; i++) {
+  // From an existing instance continue at +7d; from an empty series
+  // start AT the start_date (previously skipped the first week).
+  const dates: string[] = [];
+  for (let i = hasInstances ? 1 : 0; i <= weeks; i++) {
     const d = addDaysISO(baseDate, i * 7);
-    const { error } = await supabase.from("bookings").insert({
+    if (endDate && d > endDate) break;
+    dates.push(d);
+  }
+
+  const created = await insertSeriesInstances(
+    supabase,
+    dates.map((d) => ({
       court_id: s.court_id as string,
       booking_date: d,
       start_time: s.start_time as string,
@@ -595,13 +680,19 @@ export async function extendSeries(
       computed_price: price,
       notes: "Langganan mingguan",
       created_by: user.id,
-    });
-    if (!error) created++;
-  }
+    }))
+  );
 
   revalidatePath("/app/series");
   revalidatePath("/app/jadwal");
-  return { error: null, ok: true, info: `${created} jadwal ditambahkan` };
+  return {
+    error: null,
+    ok: true,
+    info:
+      dates.length === 0
+        ? "Semua jadwal sampai tanggal akhir sudah ada."
+        : `${created} jadwal ditambahkan${dates.length - created > 0 ? `, ${dates.length - created} dilewati (bentrok)` : ""}`,
+  };
 }
 
 /* ------------------------------------------------------------------ */
@@ -686,13 +777,23 @@ export async function upsertCourt(
 
   const id = String(formData.get("court_id") ?? "");
   const name = String(formData.get("name") ?? "").trim();
-  const sortOrder = Number(formData.get("sort_order") ?? 0);
+  const sortRaw = formData.get("sort_order");
 
   if (!name) return { error: "Nama lapangan wajib diisi." };
 
+  // sort_order is only patched when the form provides it — renaming must
+  // not silently reset a court's ordering position.
+  const patch: { name: string; sort_order?: number } = { name };
+  if (sortRaw !== null && sortRaw !== "") {
+    const sortOrder = Number(sortRaw);
+    if (Number.isInteger(sortOrder)) patch.sort_order = sortOrder;
+  }
+
   const { error } = id
-    ? await supabase.from("courts").update({ name, sort_order: sortOrder }).eq("id", id)
-    : await supabase.from("courts").insert({ name, sort_order: sortOrder });
+    ? await supabase.from("courts").update(patch).eq("id", id)
+    : await supabase
+        .from("courts")
+        .insert({ ...patch, sort_order: Number(sortRaw ?? 0) || 0 });
 
   if (error) return { error: `Gagal menyimpan lapangan: ${error.message}` };
 
@@ -798,6 +899,8 @@ export async function toggleProfileActive(
   return { error: null, ok: true };
 }
 
+const PASSWORD_MAX_LENGTH = 72; // bcrypt input limit
+
 export async function createStaff(
   _prev: ActionState,
   formData: FormData
@@ -816,16 +919,19 @@ export async function createStaff(
     };
 
   const fullName = String(formData.get("full_name") ?? "").trim();
-  const phone = String(formData.get("phone") ?? "").replace(/\D/g, "");
+  const phone = String(formData.get("phone") ?? "").replace(/\D/g, "").slice(0, 16);
   const email = String(formData.get("email") ?? "")
     .trim()
-    .toLowerCase();
+    .toLowerCase()
+    .slice(0, 254);
   const password = String(formData.get("password") ?? "");
 
   if (!fullName) return { error: "Nama wajib diisi." };
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))
     return { error: "Email tidak valid." };
   if (password.length < 8) return { error: "Password minimal 8 karakter." };
+  if (password.length > PASSWORD_MAX_LENGTH)
+    return { error: `Password maksimal ${PASSWORD_MAX_LENGTH} karakter.` };
 
   const { data, error } = await admin.auth.admin.createUser({
     email,
@@ -860,7 +966,7 @@ export async function updateCustomerNotes(
   const { supabase } = await requireUser();
 
   const id = String(formData.get("customer_id") ?? "");
-  const notes = String(formData.get("notes") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim().slice(0, 500) || null;
   if (!id) return { error: "Pelanggan tidak valid." };
 
   const { error } = await supabase
