@@ -10,28 +10,15 @@ export interface Block {
   label: string;
   status: string;
   price: number;
-  courtName: string;
-  phone: string | null;
 }
 
-const STATUS_STYLE: Record<string, { bar: string; chip: string }> = {
-  pending: {
-    bar: "bg-amber-400/80 border-amber-500",
-    chip: "bg-amber-100 text-amber-700",
-  },
-  confirmed: {
-    bar: "bg-sky-brand-400/85 border-sky-brand-500 text-white",
-    chip: "bg-sky-brand-400/15 text-sky-brand-600",
-  },
-  checked_in: {
-    bar: "bg-emerald-500/90 border-emerald-600 text-white",
-    chip: "bg-emerald-100 text-emerald-700",
-  },
-  completed: {
-    bar: "bg-navy-800/25 border-navy-800/40",
-    chip: "bg-navy-800/10 text-navy-800",
-  },
-  no_show: { bar: "bg-red-200 border-red-300", chip: "bg-red-100 text-red-500" },
+const STATUS_STYLE: Record<string, string> = {
+  pending: "bg-amber-400/80 border-amber-500",
+  confirmed: "bg-sky-brand-400/85 border-sky-brand-500 text-white",
+  checked_in: "bg-emerald-500/90 border-emerald-600 text-white",
+  completed: "bg-navy-800/25 border-navy-800/40",
+  no_show: "bg-red-200 border-red-300",
+  blocked: "bg-red-100 border-red-300 text-red-600",
 };
 
 export default function TimelineGrid({
@@ -92,12 +79,13 @@ export default function TimelineGrid({
                 if (block && block.startHour === h) {
                   const style = STATUS_STYLE[block.status] ?? STATUS_STYLE.confirmed;
                   const spanH = (block.endHour - block.startHour) * ROW_H - 4;
+                  const isBlocked = block.status === "blocked";
                   return (
                     <div key={c.id} className="relative" style={{ height: ROW_H }}>
                       <div
-                        className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-2 ${style.bar}`}
+                        className={`absolute inset-x-1 z-10 overflow-hidden rounded-lg border px-2 ${style}`}
                         style={{ height: spanH }}
-                        title={`${block.label} · ${formatIDR(block.price)}`}
+                        title={`${block.label}${!isBlocked ? ` · ${formatIDR(block.price)}` : ""}`}
                       >
                         <p className="truncate pt-1 text-[10px] font-bold leading-tight">
                           {block.label}{" "}
@@ -123,6 +111,7 @@ export default function TimelineGrid({
                           : "border-emerald-300 text-emerald-400"
                       }`}
                       title={`Booking ${hourLabel(h)} · ${c.name}`}
+                      aria-label={`Buat booking ${hourLabel(h)} di ${c.name}`}
                     >
                       +
                     </Link>

@@ -49,27 +49,32 @@ export function NewCourtForm() {
 export function RenameCourtForm({
   courtId,
   name,
+  sortOrder,
 }: {
   courtId: string;
   name: string;
+  sortOrder: number;
 }) {
   const [, formAction, pending] = useActionState(upsertCourt, initial);
 
   return (
     <form action={formAction} className="flex flex-1 items-center gap-1.5">
       <input type="hidden" name="court_id" value={courtId} />
-      <input type="hidden" name="sort_order" value={0} />
+      {/* Preserve the court's position — renaming must not reorder it */}
+      <input type="hidden" name="sort_order" value={sortOrder} />
       <input
         name="name"
         defaultValue={name}
         required
+        aria-label={`Nama lapangan (${name})`}
         className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-navy-900 hover:border-sky-brand-200 focus:border-sky-brand-400 focus:bg-white focus:outline-none"
       />
       <button
         type="submit"
         disabled={pending}
         title="Simpan nama"
-        className="text-[11px] font-bold text-sky-brand-600 opacity-0 transition group-hover:opacity-100"
+        aria-label={`Simpan nama lapangan ${name}`}
+        className="text-[11px] font-bold text-sky-brand-600 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
       >
         {pending ? "…" : <Save className="h-3.5 w-3.5" />}
       </button>

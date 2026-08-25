@@ -45,8 +45,10 @@ export default function BookingForm({
     { length: pricing.closeHour - pricing.openHour },
     (_, i) => pricing.openHour + i
   );
+  // End options are exclusive hours: startH+1 … closeHour. Derived
+  // independently of `hours` so the final slot (e.g. 22→23) is bookable.
   const endHours = startH
-    ? hours.filter((h) => h > startH).map((h) => h + 1) // end is exclusive
+    ? Array.from({ length: pricing.closeHour - startH }, (_, i) => startH + 1 + i)
     : [];
 
   // Live price preview
@@ -84,6 +86,7 @@ export default function BookingForm({
               key={c.id}
               type="button"
               onClick={() => setCourtId(c.id)}
+              aria-pressed={courtId === c.id}
               className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
                 courtId === c.id
                   ? "border-accent-500 bg-accent-500/10 text-accent-600"
@@ -235,6 +238,7 @@ export default function BookingForm({
           <button
             type="button"
             onClick={() => setSource("walk_in")}
+            aria-pressed={source === "walk_in"}
             className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "walk_in"
                 ? "border-accent-500 bg-accent-500/10 text-accent-600"
@@ -247,6 +251,7 @@ export default function BookingForm({
           <button
             type="button"
             onClick={() => setSource("whatsapp")}
+            aria-pressed={source === "whatsapp"}
             className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "whatsapp"
                 ? "border-emerald-500 bg-emerald-50 text-emerald-600"
