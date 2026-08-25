@@ -88,6 +88,7 @@ export default function AppShell({
               <Link
                 key={tab.href}
                 href={tab.href}
+                aria-current={active ? "page" : undefined}
                 className={`flex min-w-[48px] flex-1 flex-col items-center gap-0.5 px-0.5 py-2 text-[9px] font-semibold transition sm:text-[10px] ${
                   tab.accent ? "" : active ? "text-accent-600" : "text-navy-700/50"
                 }`}

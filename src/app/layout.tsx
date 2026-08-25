@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import PwaRegister from "@/components/PwaRegister";
+import { getLang } from "@/lib/lang-server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -22,10 +23,13 @@ export const metadata: Metadata = {
     "GOR badminton indoor 2 lapangan di Cirebon. Booking mudah, harga transparan, buka setiap hari 07.00–23.00 WIB.",
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({ children }: LayoutProps<"/">) {
+  // Keep <html lang> in sync with the language cookie so screen readers and
+  // translation tools announce the active language correctly.
+  const lang = await getLang();
   return (
     <html
-      lang="id"
+      lang={lang}
       className={`${geistSans.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">

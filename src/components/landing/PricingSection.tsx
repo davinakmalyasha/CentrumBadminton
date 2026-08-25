@@ -1,7 +1,16 @@
 import { Banknote, Moon, Sun, Wallet } from "lucide-react";
+import { formatIDR } from "@/lib/availability";
 import type { Dict } from "@/lib/i18n";
+import type { PricingInfo } from "@/lib/availability";
 
-export default function PricingSection({ t }: { t: Dict }) {
+export default function PricingSection({
+  t,
+  pricing,
+}: {
+  t: Dict;
+  pricing: PricingInfo;
+}) {
+  const hours = (h: number) => `${String(h).padStart(2, "0")}.00`;
   return (
     <section id="harga" className="scroll-mt-20 bg-white py-16 md:py-24">
       <div className="mx-auto max-w-6xl px-4">
@@ -25,10 +34,12 @@ export default function PricingSection({ t }: { t: Dict }) {
             <p className="mt-3 text-sm font-bold uppercase tracking-wide text-sky-brand-600">
               {t.pricing.dayRate}
             </p>
-            <p className="mt-1 text-xs font-medium text-navy-700/60">{t.pricing.dayTime}</p>
+            <p className="mt-1 text-xs font-medium text-navy-700/60">
+              {hours(pricing.openHour)} – {hours(pricing.dayEndHour)} WIB
+            </p>
             <p className="mt-4 flex items-baseline gap-1">
               <span className="text-4xl font-black tracking-tight text-navy-900">
-                Rp40rb
+                {formatIDR(pricing.priceDay)}
               </span>
               <span className="text-sm font-semibold text-navy-700/60">
                 {t.pricing.perHour}
@@ -46,10 +57,12 @@ export default function PricingSection({ t }: { t: Dict }) {
               {t.pricing.eveningRate}
             </p>
             <p className="mt-1 text-xs font-medium text-sky-brand-200/70">
-              {t.pricing.eveningTime}
+              {hours(pricing.dayEndHour)} – {hours(pricing.closeHour)} WIB
             </p>
             <p className="mt-4 flex items-baseline gap-1">
-              <span className="text-4xl font-black tracking-tight text-white">Rp50rb</span>
+              <span className="text-4xl font-black tracking-tight text-white">
+                {formatIDR(pricing.priceEvening)}
+              </span>
               <span className="text-sm font-semibold text-sky-brand-200/70">
                 {t.pricing.perHour}
               </span>

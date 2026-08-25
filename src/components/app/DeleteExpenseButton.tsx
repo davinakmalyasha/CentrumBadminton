@@ -16,6 +16,7 @@ export default function DeleteExpenseButton({ expenseId }: { expenseId: string }
         type="submit"
         disabled={pending}
         title="Hapus"
+        aria-label="Hapus pengeluaran"
         className="px-1.5 text-xs text-navy-700/40 transition hover:text-red-500"
       >
         <Trash2 className="h-3.5 w-3.5" />

@@ -49,6 +49,7 @@ export default function ClosingReportCard() {
           name="date"
           value={date}
           onChange={(e) => setDate(e.target.value)}
+          aria-label="Tanggal laporan tutup buku"
           className="rounded-xl border border-sky-brand-200 bg-white px-3 py-2 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none"
         />
         <button

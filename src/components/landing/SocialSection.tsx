@@ -64,7 +64,7 @@ export default function SocialSection({
           </div>
           <p className="mt-2 text-sm font-medium text-sky-brand-200/70">
             {rating.total} {t.hero.ratingLabel}
-            {!rating.live && " · cached"}
+            {!rating.live && ` ${t.reviews.cachedSuffix}`}
           </p>
 
           <a

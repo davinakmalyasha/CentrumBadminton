@@ -52,6 +52,7 @@ export default function PaymentForm({
         <button
           type="button"
           onClick={() => setMethod(method === "cash" ? "qris" : "cash")}
+          aria-pressed={method === "qris"}
           className={`inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition ${
             method === "cash"
               ? "border-navy-800 bg-navy-800 text-white"

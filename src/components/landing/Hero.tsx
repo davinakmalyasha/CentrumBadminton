@@ -1,6 +1,7 @@
 import { MessageCircle, Star } from "lucide-react";
 import { VENUE, waLink } from "@/lib/constants";
-import type { Dict, Lang } from "@/lib/i18n";
+import { formatIDR, type PricingInfo } from "@/lib/availability";
+import type { Dict } from "@/lib/i18n";
 import Shuttlecock from "@/components/icons/Shuttlecock";
 import type { RatingData } from "@/lib/rating";
 
@@ -30,13 +31,13 @@ function Stars({ score }: { score: number }) {
 export default function Hero({
   rating,
   openNow,
+  pricing,
   t,
-  lang,
 }: {
   rating: RatingData;
   openNow: boolean;
+  pricing: PricingInfo;
   t: Dict;
-  lang: Lang;
 }) {
 
   return (
@@ -82,11 +83,7 @@ export default function Hero({
               {t.hero.ctaBook}
             </a>
             <a
-              href={waLink(
-                lang === "id"
-                  ? "Halo Centrum Badminton Arena! Saya mau tanya-tanya soal booking."
-                  : "Hi Centrum Badminton Arena! I'd like to ask about booking."
-              )}
+              href={waLink(t.hero.waIntro)}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 rounded-xl border border-sky-brand-300 bg-white px-6 py-3.5 text-sm font-bold text-navy-800 transition hover:bg-ice-100"
@@ -129,16 +126,27 @@ export default function Hero({
                 {VENUE.name}
               </p>
               <p className="mt-1 text-xs font-medium uppercase tracking-widest text-sky-brand-500">
-                Cirebon · Indoor · 2 Courts
+                {t.hero.visualTag}
               </p>
             </div>
             <div className="absolute bottom-4 left-4 rounded-2xl border border-sky-brand-200 bg-white/90 px-4 py-2.5 shadow-md backdrop-blur">
-              <p className="text-[11px] font-medium text-navy-700/60">07–17</p>
-              <p className="text-lg font-black leading-none text-navy-800">Rp40rb</p>
+              {/* Rates mirror the live pricing rule, not hardcoded copy */}
+              <p className="text-[11px] font-medium text-navy-700/60">
+                {String(pricing.openHour).padStart(2, "0")}–
+                {String(pricing.dayEndHour).padStart(2, "0")}
+              </p>
+              <p className="text-lg font-black leading-none text-navy-800">
+                {formatIDR(pricing.priceDay)}
+              </p>
             </div>
             <div className="absolute bottom-4 right-4 rounded-2xl border border-accent-400/40 bg-accent-500/95 px-4 py-2.5 shadow-md">
-              <p className="text-[11px] font-medium text-white/75">17–23</p>
-              <p className="text-lg font-black leading-none text-white">Rp50rb</p>
+              <p className="text-[11px] font-medium text-white/75">
+                {String(pricing.dayEndHour).padStart(2, "0")}–
+                {String(pricing.closeHour).padStart(2, "0")}
+              </p>
+              <p className="text-lg font-black leading-none text-white">
+                {formatIDR(pricing.priceEvening)}
+              </p>
             </div>
           </div>
         </div>
