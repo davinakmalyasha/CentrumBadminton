@@ -1,6 +1,11 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
+/** Auth cookies carry JWTs — never ship them over plain HTTP in prod. */
+const cookieOptions = {
+  secure: process.env.NODE_ENV === "production",
+};
+
 /**
  * Server-side Supabase client for Server Components, Server Actions and
  * Route Handlers. Uses the cookie store so sessions persist permanently
@@ -13,6 +18,7 @@ export async function createClient() {
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
+      cookieOptions,
       cookies: {
         getAll() {
           return cookieStore.getAll();

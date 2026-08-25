@@ -37,8 +37,13 @@ cp .env.local.example .env.local   # lalu isi nilainya
 
 1. Buat project di [supabase.com](https://supabase.com) (region Singapore terdekat)
 2. Buka **SQL Editor** → jalankan seluruh isi `supabase/migrations/0001_init.sql`
+   lalu `0002`–`0006` secara berurutan
 3. Jalankan seluruh isi `supabase/seed.sql` (lapangan + harga default)
 4. Salin **Project URL** dan **anon key** (Settings → API) ke `.env.local`
+5. **Keamanalan signup**: Dashboard → Authentication → Providers → Email →
+   matikan *Allow new users to sign up*. Sebagai lapis kedua, migration `0006`
+   membuat profil hasil self-signup **tidak aktif** (nol akses data) sampai
+   owner mengaktifkannya di Pengaturan → Staf.
 
 ### 3. Buat akun Owner
 
@@ -90,6 +95,9 @@ Push notification booking baru butuh VAPID keys:
 npx web-push generate-vapid-keys
 # isi NEXT_PUBLIC_VAPID_PUBLIC_KEY + VAPID_PRIVATE_KEY di .env.local
 ```
+
+Fan-out push membaca daftar perangkat semua staf via service-role, jadi
+`SUPABASE_SERVICE_ROLE_KEY` wajib diisi agar notifikasi terkirim.
 
 Lalu tekan ikon 🔕 di header aplikasi dan izinkan notifikasi. Perangkat yang
 terdaftar bisa dilihat/dihapus di **Pengaturan → Perangkat Saya**.
