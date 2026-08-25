@@ -33,18 +33,28 @@ export default async function JadwalPage({
   const date = /^\d{4}-\d{2}-\d{2}$/.test(sp.date ?? "") ? sp.date! : today;
 
   const supabase = await createClient();
-  const [bookingsRes, courtsRes, pricingRes] = await Promise.all([
+  const [bookingsRes, blocksRes, courtsRes, pricingRes] = await Promise.all([
     supabase
       .from("bookings")
       .select("*, courts(name)")
       .eq("booking_date", date)
       .neq("status", "cancelled")
       .order("start_time"),
+    // Maintenance / private-event blocks — must be visible on the internal
+    // timeline so staff don't book through a closed court.
+    supabase.from("court_blocks").select("*").eq("block_date", date),
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
     supabase.rpc("get_pricing_for", { p_date: date }),
   ]);
 
   const bookings = (bookingsRes.data ?? []) as Row[];
+  const courtBlocks = (blocksRes.data ?? []) as Array<{
+    id: string;
+    court_id: string | null;
+    start_time: string;
+    end_time: string;
+    reason: string;
+  }>;
   const courts = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
 
   const p = pricingRes.data?.[0];
@@ -58,7 +68,7 @@ export default async function JadwalPage({
       }
     : FALLBACK_PRICING;
 
-  const blocks: Block[] = bookings.map((b) => ({
+  const bookingBlocks: Block[] = bookings.map((b) => ({
     id: b.id,
     courtId: b.court_id,
     startHour: Number(b.start_time.slice(0, 2)),
@@ -66,9 +76,23 @@ export default async function JadwalPage({
     label: b.customer_name,
     status: b.status,
     price: Number(b.override_price ?? b.computed_price),
-    courtName: b.courts?.name ?? "",
-    phone: b.customer_phone,
   }));
+
+  // null court_id = all courts → expand into a block per active court
+  const blockBlocks: Block[] = courtBlocks.flatMap((cb) => {
+    const targets = cb.court_id ? [cb.court_id] : courts.map((c) => c.id);
+    return targets.map((cid) => ({
+      id: `${cb.id}:${cid}`,
+      courtId: cid,
+      startHour: Number(cb.start_time.slice(0, 2)),
+      endHour: Number(cb.end_time.slice(0, 2)),
+      label: cb.reason || "Ditutup",
+      status: "blocked",
+      price: 0,
+    }));
+  });
+
+  const blocks = [...bookingBlocks, ...blockBlocks];
 
   const dayLabel = new Intl.DateTimeFormat("id-ID", {
     weekday: "long",
@@ -132,9 +156,9 @@ export default async function JadwalPage({
       />
 
       {/* Agenda */}
-      {blocks.length > 0 && (
+      {bookingBlocks.length > 0 && (
         <ul className="space-y-2">
-          {[...blocks]
+          {[...bookingBlocks]
             .sort((a, b) => a.startHour - b.startHour)
             .map((b) => (
               <li
