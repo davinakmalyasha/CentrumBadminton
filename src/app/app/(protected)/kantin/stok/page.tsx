@@ -8,9 +8,8 @@ export const metadata = { title: "Kantin · Stok · Centrum Manager" };
 type PRow = {
   id: string;
   name: string;
-  price: number;
   track_stock: boolean;
-  stock: number | null;
+  stock: number;
   low_stock_threshold: number;
 };
 
@@ -37,7 +36,7 @@ export default async function KantinStokPage() {
   const [productsRes, movementsRes] = await Promise.all([
     supabase
       .from("kantin_products")
-      .select("id,name,price,track_stock,stock,low_stock_threshold")
+      .select("id,name,track_stock,stock,low_stock_threshold")
       .order("name"),
     supabase
       .from("kantin_stock_movements")
@@ -52,7 +51,7 @@ export default async function KantinStokPage() {
     products.map((p) => ({
       name: p.name,
       track_stock: p.track_stock,
-      stock: p.stock ?? 0,
+      stock: p.stock,
       low_stock_threshold: p.low_stock_threshold,
     }))
   );
@@ -93,7 +92,7 @@ export default async function KantinStokPage() {
                   <span className="min-w-0 truncate text-sm font-bold text-navy-900">{p.name}</span>
                   <span
                     className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                      p.stock !== null && p.stock <= p.low_stock_threshold
+                      p.stock <= p.low_stock_threshold
                         ? "bg-amber-100 text-amber-700"
                         : "bg-ice-100 text-navy-700/60"
                     }`}
@@ -101,7 +100,7 @@ export default async function KantinStokPage() {
                     stok {p.stock}
                   </span>
                 </div>
-                <StockAdjustForm productId={p.id} stock={p.stock ?? 0} />
+                <StockAdjustForm productId={p.id} stock={p.stock} />
               </li>
             ))}
           </ul>

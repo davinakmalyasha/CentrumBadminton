@@ -26,7 +26,7 @@ export default async function ProtectedLayout({
   let profile: Profile | null = null;
   const { data } = await supabase
     .from("profiles")
-    .select("*")
+    .select("role,full_name,is_active")
     .eq("id", user.id)
     .maybeSingle();
   profile = data as Profile | null;

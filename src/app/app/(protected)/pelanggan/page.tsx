@@ -4,21 +4,20 @@ import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
 export const metadata = { title: "Pelanggan · Centrum Manager" };
 
+type StatsRow = { customer_id: string; visits: number; last_visit: string | null };
+
 export default async function PelangganPage() {
   const supabase = await createClient();
 
-  const [customersRes, bookingsRes] = await Promise.all([
+  const [customersRes, statsRes] = await Promise.all([
     supabase
       .from("customers")
-      .select("id,name,phone,notes,no_show_count,created_at")
+      .select("id,name,phone,notes,no_show_count")
       .order("name")
       .limit(200),
-    supabase
-      .from("bookings")
-      .select("customer_id,booking_date,status")
-      .neq("status", "no_show")
-      .order("booking_date", { ascending: false })
-      .limit(2000),
+    // Aggregated server-side (excludes cancelled & no-show) — replaces the
+    // previous 2000-row booking fetch + JS tally.
+    supabase.rpc("customer_stats"),
   ]);
 
   type C = {
@@ -30,18 +29,14 @@ export default async function PelangganPage() {
   };
 
   const customers = (customersRes.data ?? []) as C[];
-  const bookingRows =
-    (bookingsRes.data as unknown as Array<{ customer_id: string; booking_date: string }> | null) ??
-    [];
+  const statRows = (statsRes.data ?? []) as unknown as StatsRow[];
 
-  // Tally visits + last visit per customer
   const stats = new Map<string, { visits: number; last?: string }>();
-  for (const b of bookingRows) {
-    if (!b.customer_id) continue;
-    const s = stats.get(b.customer_id) ?? { visits: 0 };
-    s.visits += 1;
-    if (!s.last || b.booking_date > s.last) s.last = b.booking_date;
-    stats.set(b.customer_id, s);
+  for (const s of statRows) {
+    stats.set(s.customer_id, {
+      visits: Number(s.visits),
+      last: s.last_visit ?? undefined,
+    });
   }
 
   return (
@@ -101,6 +96,7 @@ export default async function PelangganPage() {
                   target="_blank"
                   rel="noopener noreferrer"
                   title="Chat WhatsApp"
+                  aria-label={`Chat WhatsApp dengan ${c.name}`}
                   className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
                 >
                   <MessageCircle className="h-4 w-4" />
