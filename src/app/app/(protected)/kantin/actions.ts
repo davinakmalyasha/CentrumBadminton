@@ -29,11 +29,20 @@ async function requireOwner() {
 
 function friendlyError(msg: string): string {
   if (msg.startsWith("OUT_OF_STOCK:")) return `Stok habis: ${msg.split(":").slice(1).join(":")}`;
+  if (msg.startsWith("NEGATIVE_STOCK:"))
+    return `Stok tidak bisa minus: ${msg.split(":").slice(1).join(":")}`;
+  if (msg.startsWith("NOT_TRACKED:"))
+    return `Pelacakan stok belum aktif untuk ${msg.split(":").slice(1).join(":")}.`;
   if (msg.includes("PRODUCT_NOT_FOUND")) return "Ada produk yang sudah tidak tersedia — muat ulang halaman.";
   if (msg.includes("EMPTY_CART")) return "Keranjang kosong.";
   if (msg.includes("BAD_QTY")) return "Jumlah tidak valid.";
-  if (msg.includes("FORBIDDEN")) return "Hanya staf yang bisa mencatat penjualan.";
-  return `Gagal mencatat penjualan: ${msg.slice(0, 120)}`;
+  if (msg.includes("BAD_REASON")) return "Alasan tidak valid.";
+  if (msg.includes("NO_CHANGE")) return "Tidak ada perubahan stok.";
+  if (msg.includes("SALE_NOT_FOUND")) return "Penjualan sudah dihapus atau tidak ditemukan.";
+  if (msg.includes("FORBIDDEN")) {
+    return "Hanya staf yang bisa mencatat penjualan.";
+  }
+  return `Gagal memproses: ${msg.slice(0, 120)}`;
 }
 
 /* ------------------------------------------------------------------ */
@@ -187,7 +196,7 @@ export async function deleteProduct(
 }
 
 /* ------------------------------------------------------------------ */
-/* Owner: stock adjustments                                            */
+/* Owner: stock adjustments (atomic RPC + audit row)                   */
 /* ------------------------------------------------------------------ */
 
 export async function adjustStock(
@@ -200,7 +209,7 @@ export async function adjustStock(
   } catch {
     return { error: "Hanya owner." };
   }
-  const { supabase, user } = ctx;
+  const { supabase } = ctx;
 
   const productId = String(formData.get("product_id") ?? "");
   const reasonRaw = String(formData.get("reason") ?? "");
@@ -210,51 +219,28 @@ export async function adjustStock(
   const reason = ["restock", "waste", "correction"].includes(reasonRaw) ? reasonRaw : "";
   if (!productId) return { error: "Produk tidak valid." };
   if (!reason) return { error: "Alasan tidak valid." };
-  if (!Number.isFinite(qty) || qty < 1) return { error: "Jumlah harus lebih dari 0." };
+  if (!Number.isFinite(qty) || qty < 1)
+    return { error: "Jumlah harus lebih dari 0." };
 
-  // reason → delta sign: restock +, waste -, correction = absolute set
-  const { data: product } = await supabase
-    .from("kantin_products")
-    .select("stock, track_stock, name")
-    .eq("id", productId)
-    .maybeSingle();
-  if (!product) return { error: "Produk tidak ditemukan." };
-  if (!product.track_stock) return { error: "Pelacakan stok belum aktif untuk produk ini." };
-
-  let delta: number;
-  let newStock: number;
-  if (reason === "restock") {
-    delta = qty;
-    newStock = product.stock + qty;
-  } else if (reason === "waste") {
-    delta = -qty;
-    newStock = product.stock - qty;
-  } else {
-    // correction: qty = physical count → delta = counted - current
-    delta = qty - product.stock;
-    newStock = qty;
-  }
-  if (newStock < 0) return { error: `Stok tidak bisa minus (sekarang ${product.stock}).` };
-  if (delta === 0) return { error: "Tidak ada perubahan stok." };
-
-  const { error } = await supabase.from("kantin_products").update({ stock: newStock }).eq("id", productId);
-  if (error) return { error: `Gagal update stok: ${error.message}` };
-
-  await supabase.from("kantin_stock_movements").insert({
-    product_id: productId,
-    delta,
-    reason,
-    note,
-    created_by: user.id,
+  // Atomic in SQL: row lock → compute → update + movement insert.
+  // Replaces the previous read-modify-write that lost updates under
+  // concurrency and could swallow movement-insert failures.
+  const { data: newStock, error } = await supabase.rpc("adjust_kantin_stock", {
+    p_product_id: productId,
+    p_delta: qty,
+    p_reason: reason,
+    p_note: note,
   });
+
+  if (error) return { error: friendlyError(error.message) };
 
   revalidatePath("/app/kantin/stok");
   revalidatePath("/app/kantin");
-  return { error: null, ok: true };
+  return { error: null, ok: true, info: String(newStock ?? "") };
 }
 
 /* ------------------------------------------------------------------ */
-/* Owner: void a sale (restores tracked stock)                         */
+/* Owner: void a sale (atomic delete + stock restore via RPC)          */
 /* ------------------------------------------------------------------ */
 
 export async function voidSale(
@@ -267,41 +253,19 @@ export async function voidSale(
   } catch {
     return { error: "Hanya owner." };
   }
-  const { supabase, user } = ctx;
+  const { supabase } = ctx;
 
   const saleId = String(formData.get("sale_id") ?? "");
   if (!saleId) return { error: "Penjualan tidak valid." };
 
-  const { data: items } = await supabase
-    .from("kantin_sale_items")
-    .select("product_id, qty")
-    .eq("sale_id", saleId);
+  // One atomic call: locks the sale, restores tracked stock, writes void
+  // movements, then deletes the sale. Fixes double-void races and silent
+  // restore failures of the previous per-item loop.
+  const { error } = await supabase.rpc("void_kantin_sale", {
+    p_sale_id: saleId,
+  });
 
-  const { error } = await supabase.from("kantin_sales").delete().eq("id", saleId);
-  if (error) return { error: `Gagal batal: ${error.message}` };
-
-  // Restore tracked stock + write void movements (best-effort)
-  for (const it of items ?? []) {
-    const pid = (it as { product_id: string | null }).product_id;
-    const qty = (it as { qty: number }).qty;
-    if (!pid) continue;
-    const { data: p } = await supabase
-      .from("kantin_products")
-      .select("track_stock, stock")
-      .eq("id", pid)
-      .maybeSingle();
-    if (!p?.track_stock) continue;
-    await supabase
-      .from("kantin_products")
-      .update({ stock: p.stock + qty })
-      .eq("id", pid);
-    await supabase.from("kantin_stock_movements").insert({
-      product_id: pid,
-      delta: qty,
-      reason: "void",
-      created_by: user.id,
-    });
-  }
+  if (error) return { error: friendlyError(error.message) };
 
   revalidatePath("/app/kantin/riwayat");
   revalidatePath("/app/kantin");

@@ -29,11 +29,23 @@ export default function KantinPos({
   products: PosProduct[];
   bookings: PosBooking[];
 }) {
-  const [state, formAction, pending] = useActionState(recordSale, initial);
   const [cart, setCart] = useState<Record<string, number>>({});
   const [category, setCategory] = useState<string>("all");
   const [method, setMethod] = useState<"cash" | "qris">("cash");
   const [details, setDetails] = useState(false);
+
+  // A recorded sale must start a fresh transaction: leaving items in the
+  // cart invited duplicate "Catat" taps (double sale + double stock hit).
+  // Clearing inside the action (not an effect) guarantees it runs on every
+  // successful submit.
+  const [state, formAction, pending] = useActionState(
+    async (prev: KantinActionState, formData: FormData) => {
+      const res = await recordSale(prev, formData);
+      if (!res.error) setCart({});
+      return res;
+    },
+    initial
+  );
 
   const categories = useMemo(
     () => [...new Set(products.map((p) => p.category))],
@@ -269,6 +281,7 @@ export default function KantinPos({
               <button
                 type="button"
                 onClick={() => setMethod(method === "cash" ? "qris" : "cash")}
+                aria-pressed={method === "qris"}
                 className={`rounded-xl border px-3 py-2.5 text-xs font-black text-white transition ${
                   method === "cash" ? "border-sky-brand-400 bg-sky-brand-500" : "border-emerald-400 bg-emerald-500"
                 }`}
