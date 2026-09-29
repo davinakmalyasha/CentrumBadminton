@@ -1,9 +1,10 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import {
   todayISO,
   wibNowMinutes,
   type BusyInterval,
   type PricingInfo,
+  type PricingRule,
 } from "@/lib/availability";
 import type { Metadata } from "next";
 import { VENUE } from "@/lib/constants";
@@ -18,6 +19,7 @@ import FacilitiesSection from "@/components/landing/FacilitiesSection";
 import LocationSection from "@/components/landing/LocationSection";
 import SocialSection from "@/components/landing/SocialSection";
 import Footer from "@/components/landing/Footer";
+import ChatWidget from "@/components/landing/ChatWidget";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLang();
@@ -33,6 +35,11 @@ export async function generateMetadata(): Promise<Metadata> {
           "2 lapangan badminton indoor vinyl interlock di Cirebon. Buka setiap hari 07.00–23.00 WIB. Rp40rb/jam siang, Rp50rb/jam malam. Booking mudah via WhatsApp.",
       };
 }
+
+// The landing fetches live courts/pricing/busy from the proxy —
+// never statically prerender at build time (proxy is not reachable
+// at build, and the data changes throughout the day).
+export const dynamic = "force-dynamic";
 
 const FALLBACK_PRICING: PricingInfo = {
   openHour: 7,
@@ -53,8 +60,9 @@ export default async function LandingPage() {
       .from("courts")
       .select("id,name")
       .eq("is_active", true)
+      .eq("type", "badminton")
       .order("sort_order"),
-    supabase.rpc("get_pricing_for", { p_date: today }),
+    supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: today }),
     supabase.rpc("get_day_busy", { p_date: today }),
     getGoogleRating(),
   ]);
@@ -118,6 +126,7 @@ export default async function LandingPage() {
         <SocialSection rating={rating} t={t} />
       </main>
       <Footer t={t} />
+      <ChatWidget />
     </>
   );
 }
