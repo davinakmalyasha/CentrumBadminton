@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import {
   addDaysISO,
   formatIDR,
   todayISO,
   type PricingInfo,
+  type PricingRule,
 } from "@/lib/availability";
 import type { Booking } from "@/lib/types";
 import TimelineGrid, { type Block } from "@/components/app/TimelineGrid";
@@ -44,7 +45,7 @@ export default async function JadwalPage({
     // timeline so staff don't book through a closed court.
     supabase.from("court_blocks").select("*").eq("block_date", date),
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
-    supabase.rpc("get_pricing_for", { p_date: date }),
+    supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: date }),
   ]);
 
   const bookings = (bookingsRes.data ?? []) as Row[];
@@ -106,22 +107,22 @@ export default async function JadwalPage({
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/app/jadwal?date=${addDaysISO(date, -1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           aria-label="Hari sebelumnya"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black text-navy-900">
+          <h1 className="flex items-center justify-center gap-2 text-base font-black text-zinc-900 dark:text-zinc-50">
             <CalendarDays className="h-5 w-5" strokeWidth={1.75} /> Jadwal
           </h1>
-          <p className="text-xs font-semibold capitalize text-navy-700/60">
+          <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
             {date === today ? "Hari ini" : dayLabel}
           </p>
         </div>
         <Link
           href={`/app/jadwal?date=${addDaysISO(date, 1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-800 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-100"
           aria-label="Hari berikutnya"
         >
           <ChevronRight className="h-4 w-4" />
@@ -132,7 +133,7 @@ export default async function JadwalPage({
         <div className="flex justify-center">
           <Link
             href={`/app/jadwal`}
-            className="inline-flex items-center gap-1 rounded-full border border-sky-brand-200 bg-white px-3 py-1 text-[11px] font-bold text-sky-brand-600"
+            className="manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-full border border-zinc-200 bg-white px-3 py-1 text-[11px] font-bold text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300"
           >
             <RotateCcw className="h-3.5 w-3.5" /> Kembali ke hari ini
           </Link>
@@ -163,14 +164,14 @@ export default async function JadwalPage({
             .map((b) => (
               <li
                 key={`agenda-${b.id}`}
-                className="flex items-center justify-between gap-2 rounded-xl border border-sky-brand-200 bg-white px-3.5 py-2.5"
+                className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
               >
-                <span className="min-w-0 truncate text-xs font-bold text-navy-900">
+                <span className="min-w-0 truncate text-xs font-bold text-zinc-900 dark:text-zinc-50">
                   {String(b.startHour).padStart(2, "0")}.00–
                   {String(b.endHour).padStart(2, "0")}.00{" "}
-                  <span className="ml-1 font-semibold text-navy-700/60">{b.label}</span>
+                  <span className="ml-1 font-semibold text-zinc-500 dark:text-zinc-400">{b.label}</span>
                 </span>
-                <span className="flex-shrink-0 text-[11px] font-bold text-sky-brand-600">
+                <span className="flex-shrink-0 text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
                   {formatIDR(b.price)}
                 </span>
               </li>

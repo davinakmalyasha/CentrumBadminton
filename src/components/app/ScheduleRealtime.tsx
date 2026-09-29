@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/proxy/browser";
 
 /**
  * Realtime refresh untuk jadwal admin — re-render server component
