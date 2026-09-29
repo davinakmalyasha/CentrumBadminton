@@ -21,6 +21,9 @@ export const metadata: Metadata = {
   title: "Centrum Badminton Arena",
   description:
     "GOR badminton indoor 2 lapangan di Cirebon. Booking mudah, harga transparan, buka setiap hari 07.00–23.00 WIB.",
+  icons: {
+    icon: [{ url: "/icon-32.png", sizes: "32x32", type: "image/png" }],
+  },
 };
 
 export default async function RootLayout({ children }: LayoutProps<"/">) {
