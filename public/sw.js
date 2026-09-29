@@ -1,5 +1,5 @@
 /* Centrum Badminton Arena — minimal hand-rolled service worker */
-const CACHE = "cba-v3";
+const CACHE = "cba-v5";
 const OFFLINE_URL = "/offline";
 const MAX_STATIC_ENTRIES = 120;
 
@@ -58,9 +58,29 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Static assets: cache-first
+  // Next.js build chunks: network-first with cache fallback.
+  // (Was cache-first: stale JS survived deploys/restarts and the UI
+  // "regressed" to old bundles. Chunk URLs are content-hashed, so
+  // network-first is always correct — cache is only a fallback.)
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          const copy = res.clone();
+          caches
+            .open(CACHE)
+            .then((c) => c.put(req, copy))
+            .then(() => trimCache(CACHE, MAX_STATIC_ENTRIES))
+            .catch(() => {});
+          return res;
+        })
+        .catch(() => caches.match(req))
+    );
+    return;
+  }
+
+  // Static assets: cache-first (images, icons, fonts — content-addressed or rarely changed)
   const isStatic =
-    url.pathname.startsWith("/_next/static/") ||
     url.pathname.startsWith("/icons/") ||
     /\.(png|jpg|jpeg|svg|woff2?|ico)$/.test(url.pathname);
 
