@@ -1,21 +1,75 @@
-/** Promote an auth user to role 'owner'.
+/** Promote a user to role 'owner' via AgentsProxy.
  *  Run: node --env-file=.env.local scripts/promote-owner.mjs [email]
- *  Email defaults to OWNER_EMAIL env, then owner@centrum.dev. */
-import { createClient } from "@supabase/supabase-js";
+ *  Email defaults to OWNER_EMAIL env, then owner@centrum.dev.
+ *
+ *  Requires: E2E_OWNER_EMAIL / E2E_OWNER_PASSWORD (existing owner) or
+ *  ADMIN credentials via PROXY. Falls back to direct DB via psql hint.
+ */
+const proxyUrl = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
+const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? "centrum";
+const targetEmail = process.argv[2] ?? process.env.OWNER_EMAIL ?? "owner@centrum.dev";
+const ownerEmail = process.env.E2E_OWNER_EMAIL ?? process.env.OWNER_EMAIL;
+const ownerPassword = process.env.E2E_OWNER_PASSWORD;
 
-const targetEmail =
-  process.argv[2] ?? process.env.OWNER_EMAIL ?? "owner@centrum.dev";
+if (!ownerEmail || !ownerPassword) {
+  console.error(
+    "Missing owner credentials: set E2E_OWNER_EMAIL and E2E_OWNER_PASSWORD (owner login)\n" +
+      "Or promote via psql:\n" +
+      `  psql "$DATABASE_URL" -c "UPDATE sports_users SET role='owner' WHERE tenant_id='${tenantId}' AND email='${targetEmail}';"`
+  );
+  process.exit(1);
+}
 
-const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY, {
-  auth: { autoRefreshToken: false, persistSession: false },
+// login as owner
+const loginRes = await fetch(`${proxyUrl}/v1/auth/login`, {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({ tenant_id: tenantId, email: ownerEmail, password: ownerPassword }),
 });
+const loginJson = await loginRes.json().catch(() => ({}));
+if (!loginRes.ok || !loginJson.token) {
+  console.error("OWNER_LOGIN_FAILED:", loginJson.error ?? loginRes.status);
+  process.exit(1);
+}
+const token = loginJson.token;
 
-const { data: users, error: listErr } = await admin.auth.admin.listUsers({ perPage: 50 });
-if (listErr) { console.error("LIST_FAILED:", listErr.message); process.exit(1); }
+// find user id via customers/users list — users endpoint is /v1/sports/users
+// List users (proxy's sports_users) — use the users table via facilities? Actually users are via /v1/sports/users
+// Fallback: query via proxy's customers? Safer to call PATCH directly if we know id via login /me search
+// Try list users
+let userId = null;
+const listRes = await fetch(`${proxyUrl}/v1/sports/users/`, {
+  headers: { "X-Session-Token": token },
+});
+if (listRes.ok) {
+  const j = await listRes.json().catch(() => ({}));
+  const items = j.items ?? j.data ?? [];
+  const found = items.find((u) => (u.email ?? "").toLowerCase() === targetEmail.toLowerCase());
+  if (found) userId = found.id ?? found.ID;
+}
+if (!userId) {
+  // Try get via /v1/auth/me if target is self
+  if (targetEmail.toLowerCase() === ownerEmail.toLowerCase()) {
+    const meRes = await fetch(`${proxyUrl}/v1/auth/me`, { headers: { "X-Session-Token": token } });
+    const me = await meRes.json().catch(() => ({}));
+    userId = me.user?.id ?? me.id;
+  }
+}
+if (!userId) {
+  console.error("USER_NOT_FOUND:", targetEmail, "(list /v1/sports/users returned 0 matches)");
+  console.error(`Fallback psql: psql "$DATABASE_URL" -c "UPDATE sports_users SET role='owner' WHERE tenant_id='${tenantId}' AND email='${targetEmail}';"`);
+  process.exit(1);
+}
 
-const u = users.users.find((x) => x.email === targetEmail);
-if (!u) { console.error("USER_NOT_FOUND:", targetEmail); process.exit(1); }
-
-const { error } = await admin.from("profiles").update({ role: "owner" }).eq("id", u.id);
-if (error) { console.error("PROMOTE_FAILED:", error.message); process.exit(1); }
-console.log("PROMOTED", targetEmail, u.id);
+const patchRes = await fetch(`${proxyUrl}/v1/sports/users/${userId}`, {
+  method: "PATCH",
+  headers: { "Content-Type": "application/json", "X-Session-Token": token },
+  body: JSON.stringify({ role: "owner" }),
+});
+const patchJson = await patchRes.json().catch(() => ({}));
+if (!patchRes.ok) {
+  console.error("PROMOTE_FAILED:", patchJson.error ?? patchRes.status);
+  console.error(`Fallback psql: psql "$DATABASE_URL" -c "UPDATE sports_users SET role='owner' WHERE id='${userId}';"`);
+  process.exit(1);
+}
+console.log("PROMOTED", targetEmail, userId);
