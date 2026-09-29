@@ -63,7 +63,7 @@ export default function Hero({
             {openNow ? t.hero.openNow : t.hero.closedNow}
           </div>
 
-          <h1 className="text-4xl font-black leading-[1.08] tracking-tight text-navy-900 md:text-6xl">
+          <h1 className="text-3xl font-black leading-[1.1] tracking-tight text-navy-900 sm:text-4xl md:text-6xl">
             {t.hero.titleA}{" "}
             <span className="bg-gradient-to-r from-sky-brand-400 to-sky-brand-600 bg-clip-text text-transparent">
               {t.hero.titleB}
@@ -74,10 +74,10 @@ export default function Hero({
             {t.hero.subtitle}
           </p>
 
-          <div className="mt-7 flex flex-wrap gap-3">
+          <div className="mt-7 flex flex-col gap-3 sm:flex-row sm:flex-wrap">
             <a
               href="#jadwal"
-              className="inline-flex items-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:bg-accent-600"
+              className="inline-flex items-center justify-center gap-2 rounded-xl bg-accent-500 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-accent-500/25 transition hover:bg-accent-600"
             >
               <Shuttlecock className="h-4 w-4" />
               {t.hero.ctaBook}
@@ -86,7 +86,7 @@ export default function Hero({
               href={waLink(t.hero.waIntro)}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-sky-brand-300 bg-white px-6 py-3.5 text-sm font-bold text-navy-800 transition hover:bg-ice-100"
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-sky-brand-300 bg-white px-6 py-3.5 text-sm font-bold text-navy-800 transition hover:bg-ice-100"
             >
               <MessageCircle className="h-4 w-4" />
               {t.hero.ctaWa}
@@ -116,11 +116,9 @@ export default function Hero({
           <div className="relative aspect-[4/3] overflow-hidden rounded-3xl border border-sky-brand-200 bg-gradient-to-br from-ice-100 via-white to-sky-brand-200 shadow-2xl shadow-navy-800/10">
             <div className="absolute inset-0 opacity-[0.35] [background-image:linear-gradient(to_right,#93cdff_1px,transparent_1px),linear-gradient(to_bottom,#93cdff_1px,transparent_1px)] [background-size:44px_44px]" />
             <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 text-center">
-              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center rounded-full bg-accent-500 shadow-inner">
-                <Shuttlecock
-                  className="h-16 w-16 text-white"
-                  strokeWidth={1.5}
-                />
+              <div className="mx-auto mb-4 flex h-28 w-28 items-center justify-center overflow-hidden rounded-full bg-white shadow-xl ring-4 ring-white">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/centrumLOGO-badge.avif" alt="Centrum Badminton Arena" width={256} height={256} className="h-28 w-28 rounded-full object-cover" />
               </div>
               <p className="text-lg font-extrabold tracking-wide text-navy-800">
                 {VENUE.name}
