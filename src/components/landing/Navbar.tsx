@@ -14,11 +14,12 @@ export default function Navbar({ lang }: { lang: Lang }) {
   const t = getDict(lang);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-sky-brand-200/60 bg-white/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-4 px-4">
+    <header className="sticky top-0 z-40 border-b border-sky-brand-200/60 bg-white/85 pt-[env(safe-area-inset-top)] backdrop-blur">
+      <div className="mx-auto flex h-16 max-w-6xl items-center justify-between gap-3 px-4">
         <a href="#top" className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-500 text-sm font-black text-white shadow-sm">
-            CB
+          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/centrumLOGO-badge.avif" alt="Centrum Badminton Arena" width={256} height={256} className="h-9 w-9 rounded-full object-cover" />
           </span>
           <span className="leading-tight">
             <span className="block text-sm font-extrabold tracking-tight text-navy-800">
@@ -30,12 +31,12 @@ export default function Navbar({ lang }: { lang: Lang }) {
           </span>
         </a>
 
-        <nav className="hidden items-center gap-1 md:flex">
+        <nav className="hidden items-center gap-1 md:flex" aria-label="Navigasi utama">
           {links.map((l) => (
             <a
               key={l.href}
               href={l.href}
-              className="rounded-lg px-3 py-2 text-sm font-medium text-navy-700 transition hover:bg-ice-100 hover:text-navy-800"
+              className="rounded-lg px-3 py-2.5 text-sm font-medium text-navy-700 transition hover:bg-ice-100 hover:text-navy-800"
             >
               {t.nav[l.key]}
             </a>
@@ -52,9 +53,11 @@ export default function Navbar({ lang }: { lang: Lang }) {
             )}
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden rounded-xl bg-accent-500 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-accent-600 sm:block"
+            aria-label={lang === "id" ? "Chat WhatsApp" : "Chat on WhatsApp"}
+            className="rounded-xl bg-accent-500 px-3.5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-accent-600 sm:px-4 sm:py-2"
           >
-            {VENUE.shortName} · WA
+            <span className="sm:hidden">WA</span>
+            <span className="hidden sm:inline">{VENUE.shortName} · WA</span>
           </a>
         </div>
       </div>

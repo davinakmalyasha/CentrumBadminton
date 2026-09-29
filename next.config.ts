@@ -6,10 +6,28 @@ import type { NextConfig } from "next";
  * The CSP ships enforced in production (script-src keeps 'unsafe-inline'
  * because Next's hydration bootstrap requires it; 'unsafe-eval' is dropped
  * outside dev where React refresh needs it). In development the policy runs
- * Report-Only so HMR/dev tooling never breaks. Known origins: Supabase
- * REST/realtime, Google Maps embed + directions, wa.me navigations.
+ * Report-Only so HMR/dev tooling never breaks. Known origins: AgentsProxy
+ * + Google Maps embed + directions, wa.me navigations.
  */
 const isProd = process.env.NODE_ENV === "production";
+
+// Proxy URL host for landing data + authenticated app calls. Falls back
+// to localhost for dev; allow any http(s) localhost variant and the
+// configured proxy origin.
+const proxyHost = (() => {
+  try {
+    return new URL(process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080").origin;
+  } catch {
+    return "http://localhost:8080";
+  }
+})();
+
+const connectSrc = [
+  "'self'",
+  proxyHost,
+  // Dev-only localhost fallbacks — not exposed in production CSP
+  ...(isProd ? [] : ["http://localhost:8080", "http://127.0.0.1:8080"]),
+].join(" ");
 
 const cspDirectives = [
   "default-src 'self'",
@@ -17,7 +35,7 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
-  "connect-src 'self' https://*.supabase.co wss://*.supabase.co",
+  `connect-src ${connectSrc}`,
   "frame-src https://www.google.com https://maps.google.com",
   "frame-ancestors 'none'",
   "base-uri 'self'",
@@ -51,6 +69,11 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
+  },
+  // Legacy /favicon.ico lookup → generated PNG icon (internal rewrite,
+  // no extra round-trip). Modern browsers use the metadata link instead.
+  async rewrites() {
+    return [{ source: "/favicon.ico", destination: "/icon-32.png" }];
   },
 };
 

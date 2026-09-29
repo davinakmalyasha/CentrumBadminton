@@ -9,8 +9,9 @@ export default function Footer({ t }: { t: Dict }) {
     <footer className="border-t border-sky-brand-200/60 bg-white py-10">
       <div className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 md:flex-row md:justify-between">
         <div className="flex items-center gap-2.5">
-          <span className="flex h-9 w-9 items-center justify-center rounded-full bg-accent-500 text-sm font-black text-white">
-            CB
+          <span className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-white shadow-sm ring-1 ring-black/5">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/centrumLOGO-badge.avif" alt="Centrum Badminton Arena" width={256} height={256} className="h-9 w-9 rounded-full object-cover" />
           </span>
           <div>
             <p className="text-sm font-extrabold text-navy-800">{VENUE.name}</p>
