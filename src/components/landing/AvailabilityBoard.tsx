@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { CalendarDays, Check, MessageCircle, X } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { createClient } from "@/lib/proxy/browser";
 import {
   addDaysISO,
   buildSlots,
@@ -23,6 +23,11 @@ interface CourtLite {
 }
 
 const DATE_DAYS = 14;
+
+// The browser connector is a module singleton, so one shared instance is
+// enough — and it keeps the fetches below free of closure state, which is
+// what the React Compiler needs to preserve its own memoization.
+const supabase = createClient();
 
 // Intl.DateTimeFormat construction is the expensive part — cache formatters
 // module-level instead of building ~45 per render (every slot tap re-renders).
@@ -58,7 +63,6 @@ export default function AvailabilityBoard({
   // courtId -> selected starting hours
   const [selection, setSelection] = useState<Record<string, number[]>>({});
 
-  const supabase = useMemo(() => createClient(), []);
   const dateRef = useRef(dateISO);
 
   useEffect(() => {
@@ -74,13 +78,15 @@ export default function AvailabilityBoard({
         if (error) throw error;
         setBusy(Array.isArray(data) ? (data as BusyInterval[]) : []);
         setLoadError(false);
-      } catch {
+      } catch (e) {
+        // eslint-disable-next-line no-console
+        console.error("[AvailabilityBoard] get_day_busy failed:", d, e);
         setLoadError(true);
       } finally {
         setLoading(false);
       }
     },
-    [supabase]
+    [setLoadError]
   );
 
   // Realtime updates — refetch current day on any booking/block change.
@@ -110,7 +116,7 @@ export default function AvailabilityBoard({
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [supabase, loadBusy]);
+  }, [loadBusy]);
 
   function toggle(courtId: string, hour: number) {
     setSelection((prev) => {
@@ -166,6 +172,16 @@ export default function AvailabilityBoard({
 
   const countSelected = Object.values(selection).reduce((a, b) => a + b.length, 0);
 
+  const totalHours = useMemo(() => {
+    let sum = 0;
+    for (const c of courts) {
+      const hours = selection[c.id] ?? [];
+      if (hours.length === 0) continue;
+      for (const [s, e] of groupHours(hours)) sum += e - s;
+    }
+    return sum;
+  }, [selection, courts]);
+
   const waHref = useMemo(() => {
     if (countSelected === 0) return "#jadwal";
     const lines: string[] = [];
@@ -195,17 +211,17 @@ export default function AvailabilityBoard({
   }, [selection, courts, pricing, dateISO, totalSelected, countSelected, lang]);
 
   return (
-    <section id="jadwal" className="scroll-mt-20 bg-ice-100 py-16 md:py-24">
+    <section id="jadwal" className="scroll-mt-20 bg-ice-100 py-20 md:py-28">
       <div className="mx-auto max-w-6xl px-4">
         <div className="mb-8 text-center">
-          <h2 className="flex items-center justify-center gap-3 text-2xl font-black tracking-tight text-navy-900 md:text-4xl">
+          <h2 className="flex items-center justify-center gap-3 text-3xl font-black tracking-tight text-navy-900 md:text-5xl">
             <CalendarDays
-              className="h-5 w-5 text-sky-brand-500 md:h-6 md:w-6"
+              className="h-6 w-6 text-sky-brand-500 md:h-7 md:w-7"
               strokeWidth={1.75}
             />
             {t.availability.title}
           </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-navy-700/70 md:text-base">
+          <p className="mx-auto mt-2 max-w-xl text-base text-navy-700/70 md:text-lg">
             {t.availability.subtitle}
           </p>
         </div>
@@ -222,27 +238,27 @@ export default function AvailabilityBoard({
                 key={iso}
                 type="button"
                 onClick={() => pickDate(iso)}
-                className={`min-w-[68px] flex-shrink-0 rounded-2xl border px-3 py-2.5 text-center transition ${
+                className={`min-w-[76px] flex-shrink-0 rounded-2xl border px-4 py-3 text-center transition md:min-w-[84px] md:px-4 md:py-3.5 ${
                   active
                     ? "border-sky-brand-500 bg-navy-800 text-white shadow-md"
                     : "border-sky-brand-200 bg-white text-navy-800 hover:border-sky-brand-300 hover:bg-ice-200"
                 }`}
               >
                 <span
-                  className={`block text-[10px] font-semibold uppercase tracking-wide ${
+                  className={`block text-[10px] font-semibold uppercase tracking-wide md:text-xs ${
                     active ? "text-sky-brand-200" : "text-sky-brand-500"
                   }`}
                 >
                   {label}
                 </span>
-                <span className="block text-lg font-black leading-tight">{num}</span>
+                <span className="block text-xl font-black leading-tight md:text-2xl">{num}</span>
               </button>
             );
           })}
         </div>
 
-        {/* Legend */}
-        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs text-navy-700/70">
+        {/* Legend — high contrast on bg-ice-100 */}
+        <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm font-semibold text-navy-800">
           <span className="flex items-center gap-1.5">
             <span className="h-3 w-3 rounded-md border border-emerald-500 bg-emerald-100" />
             {t.availability.legendAvailable}
@@ -259,20 +275,29 @@ export default function AvailabilityBoard({
             <span className="h-3 w-3 rounded-md bg-red-100" />
             {t.availability.legendBlocked}
           </span>
-          <span className="hidden sm:inline">· {t.availability.normalNote}</span>
-          <span className="hidden sm:inline">· {t.availability.peakNote}</span>
+          <span className="hidden sm:inline text-sky-brand-700">· {t.availability.normalNote}</span>
+          <span className="hidden sm:inline text-amber-700">· {t.availability.peakNote}</span>
         </div>
 
         {loadError && (
-          <div className="mt-4 flex items-center justify-between rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-xs font-semibold text-red-600">
-            <span>{lang === "id" ? "Gagal memuat jadwal." : "Failed to load schedule."}</span>
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-700">
+            <span>
+              {lang === "id"
+                ? busy.length === 0
+                  ? "Gagal memuat jadwal. Periksa koneksi."
+                  : "Gagal memperbarui jadwal — menampilkan data terakhir."
+                : busy.length === 0
+                  ? "Failed to load schedule. Check connection."
+                  : "Failed to refresh — showing cached schedule."}
+            </span>
             <button
               type="button"
               onClick={() => {
                 setLoading(true);
+                setLoadError(false);
                 void loadBusy(dateRef.current);
               }}
-              className="rounded-lg border border-red-300 px-2 py-1 font-bold text-red-600 hover:bg-red-100"
+              className="rounded-lg border border-amber-300 bg-white px-2 py-1 font-bold text-amber-700 hover:bg-amber-100"
             >
               {lang === "id" ? "Coba lagi" : "Retry"}
             </button>
@@ -285,11 +310,11 @@ export default function AvailabilityBoard({
             const slots = buildSlots(pricing, busy, c.id, dateISO, todayStr);
             const sel = selection[c.id] ?? [];
             return (
-              <div key={c.id} className="rounded-3xl border border-sky-brand-200 bg-white p-4 md:p-5">
+              <div key={c.id} className="rounded-3xl border border-sky-brand-200 bg-white p-5 md:p-6">
                 <div className="mb-3 flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 text-base font-extrabold text-navy-900">
-                    <span className="flex h-7 w-7 items-center justify-center rounded-full bg-accent-500/10">
-                      <Shuttlecock className="h-4 w-4 text-accent-500" />
+                  <h3 className="flex items-center gap-2 text-lg font-extrabold text-navy-900 md:text-xl">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-accent-500/10 md:h-9 md:w-9">
+                      <Shuttlecock className="h-4 w-4 text-accent-500 md:h-5 md:w-5" />
                     </span>
                     {c.name}
                   </h3>
@@ -301,11 +326,11 @@ export default function AvailabilityBoard({
                   )}
                 </div>
 
-                <div className="flex gap-1.5 overflow-x-auto pb-1 [scrollbar-width:thin]">
+                <div className="flex gap-2 overflow-x-auto pb-1 [scrollbar-width:thin] md:gap-2.5">
                   {slots.map((s) => {
                     const selected = sel.includes(s.hour);
                     const base =
-                      "min-w-[62px] flex-shrink-0 rounded-xl border px-2 py-2.5 text-center transition select-none";
+                      "min-w-[72px] flex-shrink-0 rounded-xl border px-3 py-3 text-center transition select-none md:min-w-[80px] md:rounded-2xl md:px-3 md:py-3.5";
                     let cls: string;
                     if (selected) {
                       cls = "border-sky-brand-600 bg-sky-brand-500 text-white shadow";
@@ -331,10 +356,10 @@ export default function AvailabilityBoard({
                         className={`${base} ${cls}`}
                         title={`${hourLabel(s.hour)} · ${formatIDR(s.price)}`}
                       >
-                        <span className="block text-xs font-bold leading-none">
+                        <span className="block text-sm font-black leading-none">
                           {hourLabel(s.hour)}
                         </span>
-                        <span className="mt-1 block text-[10px] font-medium opacity-70">
+                        <span className="mt-1 block text-xs font-medium opacity-70">
                           {formatK(s.price)}
                         </span>
                       </button>
@@ -347,39 +372,81 @@ export default function AvailabilityBoard({
         </div>
       </div>
 
-      {/* Spacer so the sticky bar never covers the footer */}
-      {countSelected > 0 && <div className="h-24" aria-hidden="true" />}
+      {/* Spacer so the sticky bar never covers the footer — taller when preview shows */}
+      {countSelected > 0 && <div className="h-40 md:h-36" aria-hidden="true" />}
 
-      {/* Sticky booking bar */}
+      {/* Sticky booking bar — informative preview: date, per-range rows, total jam & total harga */}
       {countSelected > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
-          <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-navy-800/10 bg-navy-800 p-3 pl-4 shadow-2xl shadow-navy-800/30">
+          <div className="mx-auto flex max-w-xl flex-col gap-3 rounded-2xl border border-navy-800/10 bg-navy-800 p-4 pl-4 shadow-2xl shadow-navy-800/30 md:max-w-2xl md:flex-row md:items-center">
+            {/* Preview content */}
             <div className="min-w-0 flex-1">
-              <p className="truncate text-xs font-medium text-sky-brand-200">
-                {t.availability.selectedTitle}:{" "}
-                <span className="font-bold text-white">{countSelected}</span> slot
-              </p>
-              <p className="truncate text-sm font-black text-white">
-                {t.availability.totalPrice}: {formatIDR(totalSelected)}
-              </p>
+              {/* Date + slot count */}
+              <div className="flex items-center gap-2 text-xs font-bold text-sky-brand-200">
+                <CalendarDays className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="truncate">{longDateLabel(dateISO)}</span>
+                <span className="ml-auto flex-shrink-0 rounded-full bg-white/10 px-2 py-0.5 text-[10px] font-black text-white">
+                  {countSelected} slot
+                </span>
+              </div>
+
+              {/* Per-range rows */}
+              <div className="mt-2 max-h-24 space-y-1 overflow-y-auto pr-1">
+                {courts.flatMap((c) => {
+                  const hours = selection[c.id] ?? [];
+                  if (hours.length === 0) return [];
+                  return groupHours(hours).map(([s, e]) => {
+                    const dur = e - s;
+                    let rangePrice = 0;
+                    for (let h = s; h < e; h++) rangePrice += h >= pricing.dayEndHour ? pricing.priceEvening : pricing.priceDay;
+                    return (
+                      <div key={`${c.id}-${s}`} className="flex items-center gap-2 text-sm leading-tight">
+                        <span className="h-1.5 w-1.5 flex-shrink-0 rounded-full bg-accent-500" />
+                        <span className="font-black text-white">
+                          {hourLabel(s)}–{hourLabel(e)}
+                        </span>
+                        <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-bold text-sky-brand-200">
+                          {dur} Jam
+                        </span>
+                        <span className="min-w-0 flex-1 truncate text-sky-brand-200">{c.name}</span>
+                        <span className="flex-shrink-0 font-bold text-white">{formatIDR(rangePrice)}</span>
+                      </div>
+                    );
+                  });
+                })}
+              </div>
+
+              {/* Total summary */}
+              <div className="mt-2 flex items-center justify-between gap-2 border-t border-white/10 pt-2">
+                <span className="text-xs font-semibold text-sky-brand-200">
+                  Total jam: <span className="font-black text-white">{totalHours} jam</span>
+                </span>
+                <span className="text-sm font-black text-white">
+                  {formatIDR(totalSelected)}
+                </span>
+              </div>
             </div>
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex flex-shrink-0 items-center gap-2 rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-600/30 transition hover:bg-accent-600"
-            >
-              <MessageCircle className="h-4 w-4" />
-              {t.availability.bookWa}
-            </a>
-            <button
-              type="button"
-              onClick={() => setSelection({})}
-              className="flex-shrink-0 rounded-xl p-2 text-sky-brand-200 transition hover:text-white"
-              aria-label={t.common.clearSelection}
-            >
-              <X className="h-4 w-4" />
-            </button>
+
+            {/* CTA column */}
+            <div className="flex items-center gap-2 md:flex-col md:items-stretch">
+              <a
+                href={waHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex flex-1 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-accent-500 px-5 py-3 text-sm font-bold text-white shadow-lg shadow-accent-600/30 transition hover:bg-accent-600 md:flex-none md:px-6"
+              >
+                <MessageCircle className="h-4 w-4" />
+                {t.availability.bookWa}
+              </a>
+              <button
+                type="button"
+                onClick={() => setSelection({})}
+                className="rounded-xl p-2 text-sky-brand-200 transition hover:bg-white/10 hover:text-white"
+                aria-label={t.common.clearSelection}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       )}
