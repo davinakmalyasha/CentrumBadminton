@@ -49,27 +49,27 @@ export default function DailyReportNudge() {
   if (!show) return null;
 
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-accent-400/50 bg-accent-500/10 p-3.5">
-      <ClipboardList className="h-6 w-6 flex-shrink-0 text-accent-600" strokeWidth={1.75} />
+    <div className="flex items-center gap-3 rounded-2xl border border-zinc-300 bg-white p-3.5 dark:border-zinc-700 dark:bg-zinc-900">
+      <ClipboardList className="h-6 w-6 flex-shrink-0 text-zinc-500 dark:text-zinc-400" strokeWidth={1.75} aria-hidden="true" />
       <div className="min-w-0 flex-1">
-        <p className="text-xs font-black text-navy-900">Sudah tutup buku hari ini?</p>
-        <p className="text-[11px] font-medium text-navy-700/60">
+        <p className="text-xs font-extrabold text-zinc-900 dark:text-zinc-50">Sudah tutup buku hari ini?</p>
+        <p className="text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
           Buat laporan harian &amp; kirim ke WhatsApp.
         </p>
       </div>
       <Link
         href="/app/ai"
-        className="flex-shrink-0 rounded-xl bg-accent-500 px-3 py-2 text-xs font-black text-white transition hover:bg-accent-600"
+        className="manager-tap flex-shrink-0 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         Buat
       </Link>
       <button
         type="button"
         onClick={dismiss}
-        aria-label="Tutup"
-        className="flex-shrink-0 px-1 text-navy-700/40 transition hover:text-navy-800"
+        aria-label="Tutup pengingat"
+        className="manager-tap flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg text-zinc-400 transition hover:bg-zinc-100 hover:text-zinc-700 dark:hover:bg-zinc-800 dark:hover:text-zinc-200"
       >
-        <X className="h-4 w-4" />
+        <X className="h-4 w-4" aria-hidden="true" />
       </button>
     </div>
   );

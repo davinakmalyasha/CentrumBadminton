@@ -19,11 +19,11 @@ export default function BlockForm({
 
   const hours = Array.from({ length: 17 }, (_, i) => i + 7); // 07..23
   const field =
-    "w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none";
-  const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-navy-700/60";
+    "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
+  const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
 
   return (
-    <form action={formAction} className="space-y-3 rounded-2xl border border-sky-brand-200 bg-white p-4">
+    <form action={formAction} className="space-y-3 rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
       <input type="hidden" name="court_id" value={courtId} />
       <div>
         <span className={label}>Lapangan</span>
@@ -32,10 +32,10 @@ export default function BlockForm({
             type="button"
             onClick={() => setCourtId("")}
             aria-pressed={courtId === ""}
-            className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+            className={`manager-tap inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
               courtId === ""
-                ? "border-accent-500 bg-accent-500/10 text-accent-600"
-                : "border-sky-brand-200 text-navy-800"
+                ? "border-zinc-900 bg-zinc-100 text-zinc-800 dark:border-zinc-100 dark:bg-zinc-800 dark:text-zinc-100"
+                : "border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             }`}
           >
             <Ban className="h-3.5 w-3.5" />
@@ -47,10 +47,10 @@ export default function BlockForm({
               type="button"
               onClick={() => setCourtId(c.id)}
               aria-pressed={courtId === c.id}
-              className={`inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
+              className={`manager-tap inline-flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-bold transition ${
                 courtId === c.id
-                  ? "border-accent-500 bg-accent-500/10 text-accent-600"
-                  : "border-sky-brand-200 text-navy-800"
+                  ? "border-zinc-900 bg-zinc-100 text-zinc-800 dark:border-zinc-100 dark:bg-zinc-800 dark:text-zinc-100"
+                  : "border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               }`}
             >
               <Shuttlecock className="h-3.5 w-3.5" />
@@ -112,7 +112,7 @@ export default function BlockForm({
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-2.5 text-sm font-black text-white transition hover:bg-red-600 disabled:opacity-50"
+        className="manager-tap inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl bg-red-500 py-2.5 text-sm font-black text-white transition hover:bg-red-600 disabled:opacity-50"
       >
         {pending ? (
           "Memproses…"

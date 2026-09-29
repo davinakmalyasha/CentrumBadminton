@@ -35,10 +35,10 @@ export default async function BlokirPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
           <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
         </h1>
-        <p className="text-xs font-semibold text-navy-700/60">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Maintenance / private event — langsung hilang dari jadwal publik.
         </p>
       </div>
@@ -46,11 +46,11 @@ export default async function BlokirPage() {
       <BlockForm courts={(courtsRes.data ?? []) as Array<{ id: string; name: string }>} today={today} />
 
       <section>
-        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-navy-700/60">
+        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Aktif ({blocks.length})
         </h2>
         {blocks.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-6 text-center text-sm text-navy-700/50">
+          <p className="rounded-2xl border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
             Tidak ada blokir mendatang.
           </p>
         ) : (
@@ -71,7 +71,7 @@ export default async function BlokirPage() {
                     <p className="text-xs font-black text-red-600">
                       {d} · {String(b.start_time).slice(0, 5)}–{String(b.end_time).slice(0, 5)}
                     </p>
-                    <p className="text-[11px] font-semibold text-navy-700/70">
+                    <p className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
                       {b.court_id ? (b.courts?.name ?? "Lapangan") : "Semua lapangan"} ·{" "}
                       {b.reason}
                     </p>

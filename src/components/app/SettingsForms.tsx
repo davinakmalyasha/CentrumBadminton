@@ -12,9 +12,9 @@ import {
 const initial: ActionState = { error: null };
 
 const field =
-  "w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none";
+  "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
 const label =
-  "mb-1 block text-xs font-bold uppercase tracking-wide text-navy-700/60";
+  "mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
 
 export function NewCourtForm() {
   const [state, formAction, pending] = useActionState(upsertCourt, initial);
@@ -38,7 +38,7 @@ export function NewCourtForm() {
       <button
         type="submit"
         disabled={pending}
-        className="rounded-xl bg-accent-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
+        className="manager-tap min-h-[44px] rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         <Plus className="h-3.5 w-3.5" />
       </button>
@@ -67,14 +67,14 @@ export function RenameCourtForm({
         defaultValue={name}
         required
         aria-label={`Nama lapangan (${name})`}
-        className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-navy-900 hover:border-sky-brand-200 focus:border-sky-brand-400 focus:bg-white focus:outline-none"
+        className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-bold text-zinc-900 hover:border-zinc-200 focus:border-zinc-500 focus:bg-white focus:outline-none dark:text-zinc-50 dark:hover:border-zinc-700 dark:focus:bg-zinc-800"
       />
       <button
         type="submit"
         disabled={pending}
         title="Simpan nama"
         aria-label={`Simpan nama lapangan ${name}`}
-        className="text-[11px] font-bold text-sky-brand-600 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100"
+        className="manager-tap text-[11px] font-bold text-zinc-600 opacity-0 transition group-hover:opacity-100 focus-visible:opacity-100 dark:text-zinc-300"
       >
         {pending ? "…" : <Save className="h-3.5 w-3.5" />}
       </button>
@@ -86,7 +86,7 @@ export function PricingRuleForm({ nextMonth }: { nextMonth: string }) {
   const [state, formAction, pending] = useActionState(createPricingRule, initial);
 
   return (
-    <form action={formAction} className="space-y-3 rounded-xl border border-dashed border-accent-400/60 bg-accent-500/5 p-3">
+      <form action={formAction} className="space-y-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
       <div className="grid grid-cols-2 gap-2">
         <div className="col-span-2 sm:col-span-1">
           <label htmlFor="pvf" className={label}>
@@ -114,7 +114,7 @@ export function PricingRuleForm({ nextMonth }: { nextMonth: string }) {
           <input id="ppe" name="price_evening" inputMode="numeric" placeholder="50000" required className={field} />
         </div>
       </div>
-      <p className="text-[10px] font-medium text-navy-700/50">
+      <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
         Batas jam mengikuti standar 07–23, batas malam 17.00. Aturan lama otomatis
         digantikan sejak tanggal tersebut.
       </p>
@@ -123,7 +123,7 @@ export function PricingRuleForm({ nextMonth }: { nextMonth: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-navy-800 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="manager-tap inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-900 py-2 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? (
           "Menyimpan…"
@@ -144,7 +144,7 @@ export function NewStaffForm() {
   return (
     <form
       action={formAction}
-      className="space-y-3 rounded-xl border border-dashed border-sky-brand-400/60 bg-sky-brand-400/5 p-3"
+      className="space-y-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900"
     >
       <div className="grid grid-cols-2 gap-2">
         <div>
@@ -185,7 +185,7 @@ export function NewStaffForm() {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex w-full items-center justify-center gap-1.5 rounded-xl bg-navy-800 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="manager-tap inline-flex min-h-[44px] w-full items-center justify-center gap-1.5 rounded-xl bg-zinc-900 py-2 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? (
           "Membuat akun…"

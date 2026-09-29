@@ -39,13 +39,13 @@ export default function PaymentForm({
           onChange={(e) => setAmount(e.target.value.replace(/\D/g, ""))}
           placeholder="Nominal"
           required
-          className="min-w-0 flex-1 rounded-xl border border-sky-brand-200 bg-white px-3 py-2 text-sm font-bold text-navy-900 focus:border-sky-brand-400 focus:outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-zinc-200 bg-white px-3 py-2 text-sm font-bold text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
         />
         <button
           type="button"
           onClick={() => setAmount(String(Math.ceil(outstanding / 2)))}
           title="Setengah harga (DP)"
-          className="rounded-xl border border-sky-brand-200 bg-white px-2.5 text-[11px] font-bold text-sky-brand-600 hover:bg-ice-100"
+          className="manager-tap rounded-xl border border-zinc-200 bg-white px-2.5 text-[11px] font-bold text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           ½ DP
         </button>
@@ -53,9 +53,9 @@ export default function PaymentForm({
           type="button"
           onClick={() => setMethod(method === "cash" ? "qris" : "cash")}
           aria-pressed={method === "qris"}
-          className={`inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition ${
+          className={`manager-tap inline-flex items-center gap-1.5 rounded-xl border px-3 text-xs font-black transition ${
             method === "cash"
-              ? "border-navy-800 bg-navy-800 text-white"
+              ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
               : "border-emerald-500 bg-emerald-500 text-white"
           }`}
         >
@@ -77,7 +77,7 @@ export default function PaymentForm({
         name="note"
         placeholder="Catatan (opsional — cth. DP via transfer)"
         maxLength={120}
-        className="mt-1.5 w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-1.5 text-[11px] text-navy-800 placeholder:text-navy-700/35 focus:border-sky-brand-400 focus:outline-none"
+        className="mt-1.5 w-full rounded-xl border border-zinc-200 bg-white px-3 py-1.5 text-[11px] text-zinc-800 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100"
       />
 
       {state.error && (
@@ -87,7 +87,7 @@ export default function PaymentForm({
       <button
         type="submit"
         disabled={pending}
-        className="mt-1.5 w-full rounded-xl bg-navy-800 py-2.5 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="manager-tap mt-1.5 min-h-[44px] w-full rounded-xl bg-zinc-900 py-2.5 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? "Menyimpan…" : `Catat Pembayaran ${formatIDR(Number(amount || 0))}`}
       </button>

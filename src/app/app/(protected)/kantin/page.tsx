@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import { ShoppingBasket } from "lucide-react";
 import KantinPos, { type PosBooking, type PosProduct } from "@/components/app/kantin/KantinPos";
 
@@ -42,10 +42,10 @@ export default async function KantinPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
           <ShoppingBasket className="h-5 w-5" strokeWidth={1.75} /> Kasir Kantin
         </h1>
-        <p className="text-xs font-semibold text-navy-700/60">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Ketuk produk untuk masuk keranjang — total dihitung otomatis dari harga tersimpan.
         </p>
       </div>

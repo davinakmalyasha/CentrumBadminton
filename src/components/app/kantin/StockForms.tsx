@@ -9,7 +9,7 @@ import {
 const initial: KantinActionState = { error: null };
 
 const field =
-  "w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none";
+  "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
 
 export function StockAdjustForm({
   productId,
@@ -21,7 +21,7 @@ export function StockAdjustForm({
   const [state, formAction, pending] = useActionState(adjustStock, initial);
 
   return (
-    <form action={formAction} className="mt-2 space-y-2 border-t border-sky-brand-200 pt-2.5">
+    <form action={formAction} className="mt-2 space-y-2 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
       <input type="hidden" name="product_id" value={productId} />
       <div className="grid grid-cols-3 gap-1.5">
         <select name="reason" className={`${field} py-2 text-xs`} defaultValue="restock">
@@ -40,7 +40,7 @@ export function StockAdjustForm({
         <button
           type="submit"
           disabled={pending}
-          className="rounded-xl bg-navy-800 px-2 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+          className="manager-tap rounded-xl bg-zinc-900 px-2 py-2 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         >
           {pending ? "…" : "Simpan"}
         </button>

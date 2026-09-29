@@ -1,6 +1,6 @@
 import { Plus } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { todayISO, type PricingInfo } from "@/lib/availability";
+import { createClient } from "@/lib/proxy/client";
+import { todayISO, type PricingInfo, type PricingRule } from "@/lib/availability";
 import BookingForm from "@/components/app/BookingForm";
 
 export const metadata = { title: "Booking Baru · Centrum Manager" };
@@ -28,7 +28,7 @@ export default async function NewBookingPage({
   const supabase = await createClient();
   const [courtsRes, pricingRes, customersRes] = await Promise.all([
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
-    supabase.rpc("get_pricing_for", { p_date: date }),
+    supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: date }),
     supabase
       .from("customers")
       .select("name,phone")
@@ -49,7 +49,7 @@ export default async function NewBookingPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+      <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
         <Plus className="h-5 w-5" strokeWidth={1.75} /> Booking Baru
       </h1>
       <BookingForm

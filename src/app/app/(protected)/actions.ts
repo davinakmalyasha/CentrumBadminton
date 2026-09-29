@@ -2,11 +2,8 @@
 
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { after } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { createAdminClient } from "@/lib/supabase/admin";
-import { addDaysISO, computePrice, todayISO, wibNowMinutes } from "@/lib/availability";
-import { sendPushToAll } from "@/lib/webpush";
+import { createClient } from "@/lib/proxy/client";
+import { addDaysISO, computePrice, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
 import { rateLimit } from "@/lib/ratelimit";
 
 export async function signOut() {
@@ -37,7 +34,7 @@ async function getActivePricing(
   supabase: Awaited<ReturnType<typeof createClient>>,
   dateISO: string
 ) {
-  const { data } = await supabase.rpc("get_pricing_for", { p_date: dateISO });
+  const { data } = await supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: dateISO });
   const p = data?.[0];
   if (!p) {
     return {
@@ -187,20 +184,6 @@ export async function createBooking(
     return { error: `Gagal membuat booking: ${error.message}` };
   }
 
-  // Notify other staff devices after the response is sent — push fan-out
-  // must never delay the booking redirect.
-  after(() =>
-    sendPushToAll(
-      {
-        title: "Booking baru masuk",
-        body: `${name} · ${dateISO} · ${String(startH).padStart(2, "0")}.00`,
-        url: `/app/jadwal?date=${dateISO}`,
-        tag: "new-booking",
-      },
-      user.id
-    )
-  );
-
   revalidatePath("/app");
   revalidatePath("/app/jadwal");
   revalidatePath("/");
@@ -223,7 +206,7 @@ export async function updateBookingStatus(
   const next = String(formData.get("status") ?? "");
   if (!id || !next) return { error: "Permintaan tidak valid" };
 
-  const { data: current } = await supabase
+  const { data: current, error: curErr } = await supabase
     .from("bookings")
     .select("status,customer_id")
     .eq("id", id)
@@ -238,6 +221,7 @@ export async function updateBookingStatus(
 
   // Guarded transition: only applies when the row is still in `from`.
   // Two racing updates cannot both succeed → no invalid double-hop.
+  // Note: QueryBuilder update ignores second eq("status") filter; proxy validates transition server-side.
   const { data: updated, error } = await supabase
     .from("bookings")
     .update({ status: next })
@@ -245,7 +229,11 @@ export async function updateBookingStatus(
     .eq("status", from)
     .select("id");
 
-  if (error) return { error: `Gagal update: ${error.message}` };
+  if (error) {
+    // eslint-disable-next-line no-console
+    console.error("[updateBookingStatus] patch failed", { id, from, next, error: error.message, status: (error as unknown as { status?: number }).status });
+    return { error: `Gagal update: ${error.message} (${(error as unknown as { status?: number }).status ?? ""})` };
+  }
   if (!updated || updated.length === 0) {
     return { error: "Status sudah diubah oleh staf lain — muat ulang halaman." };
   }
@@ -273,6 +261,122 @@ export async function deleteBooking(
   const id = String(formData.get("booking_id") ?? "");
   const { error } = await supabase.from("bookings").delete().eq("id", id);
   if (error) return { error: `Gagal hapus: ${error.message}` };
+
+  revalidatePath("/app");
+  revalidatePath("/app/jadwal");
+  revalidatePath("/");
+  return { error: null, ok: true };
+}
+
+export async function extendBooking(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("booking_id") ?? "");
+  const hours = Math.min(Math.max(Number(formData.get("hours") ?? 1), 1), 3);
+  if (!id) return { error: "Booking tidak valid" };
+
+  const { data: cur } = await supabase
+    .from("bookings")
+    .select("court_id,booking_date,start_time,end_time,status")
+    .eq("id", id)
+    .maybeSingle();
+  if (!cur) return { error: "Booking tidak ditemukan" };
+  const curRow = cur as unknown as {
+    court_id: string;
+    booking_date: string;
+    start_time: string;
+    end_time: string;
+    status: string;
+  };
+  if (curRow.status !== "confirmed" && curRow.status !== "checked_in") {
+    return { error: "Hanya booking aktif yang bisa ditambah jam." };
+  }
+  const sHour = Number(String(curRow.start_time).slice(0, 2));
+  const eHour = Number(String(curRow.end_time).slice(0, 2));
+  const newEnd = eHour + hours;
+  if (newEnd > 23) return { error: "Melebihi jam operasional (23.00)" };
+  const newEndStr = `${String(newEnd).padStart(2, "0")}:00`;
+
+  // Check next booking overlap on same court/date
+  const { data: nexts } = await supabase
+    .from("bookings")
+    .select("start_time,end_time")
+    .eq("court_id", curRow.court_id)
+    .eq("booking_date", curRow.booking_date)
+    .neq("id", id)
+    .neq("status", "cancelled")
+    .neq("status", "no_show");
+  const nextList = (nexts ?? []) as Array<{ start_time: string; end_time: string }>;
+  for (const n of nextList) {
+    const ns = Number(String(n.start_time).slice(0, 2));
+    const ne = Number(String(n.end_time).slice(0, 2));
+    if (ns < newEnd && ne > eHour) {
+      // suggest next free slot after ne
+      return {
+        error: `Bentrok dengan booking ${String(n.start_time).slice(0, 5)}-${String(n.end_time).slice(0, 5)}. Next free ${String(ne).padStart(2, "0")}:00`,
+      };
+    }
+  }
+
+  // Also check court_blocks
+  const { data: blocks } = await supabase
+    .from("court_blocks")
+    .select("start_time,end_time")
+    .eq("court_id", curRow.court_id)
+    .eq("block_date", curRow.booking_date);
+  for (const b of (blocks ?? []) as Array<{ start_time: string; end_time: string }>) {
+    const bs = Number(String(b.start_time).slice(0, 2));
+    const be = Number(String(b.end_time).slice(0, 2));
+    if (bs < newEnd && be > eHour) return { error: `Bentrok dengan blokir ${String(b.start_time).slice(0, 5)}-${String(b.end_time).slice(0, 5)}` };
+  }
+
+  const { error } = await supabase
+    .from("bookings")
+    .update({ end_time: newEndStr })
+    .eq("id", id);
+  if (error) return { error: `Gagal nambah jam: ${error.message}` };
+
+  revalidatePath("/app");
+  revalidatePath("/app/jadwal");
+  revalidatePath("/");
+  return { error: null, ok: true };
+}
+
+export async function releaseBooking(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { supabase } = await requireUser();
+  const id = String(formData.get("booking_id") ?? "");
+  if (!id) return { error: "Booking tidak valid" };
+
+  const { data: cur } = await supabase
+    .from("bookings")
+    .select("start_time,end_time,status,booking_date")
+    .eq("id", id)
+    .maybeSingle();
+  if (!cur) return { error: "Booking tidak ditemukan" };
+  const row = cur as unknown as { start_time: string; end_time: string; status: string; booking_date: string };
+  if (row.status !== "confirmed" && row.status !== "checked_in") {
+    return { error: "Hanya yang sedang main bisa dikosongkan." };
+  }
+  const nowMin = wibNowMinutes();
+  const sMin = Number(String(row.start_time).slice(0, 2)) * 60 + Number(String(row.start_time).slice(3, 5) || 0);
+  const eMin = Number(String(row.end_time).slice(0, 2)) * 60 + Number(String(row.end_time).slice(3, 5) || 0);
+  if (nowMin < sMin) return { error: "Belum mulai — batalkan saja." };
+  if (nowMin >= eMin) return { error: "Sudah selesai." };
+
+  const nowHour = Math.floor(nowMin / 60);
+  const nowStr = `${String(nowHour).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
+
+  // Kosongkan = completed early, keep money, free slot now->end
+  const { error } = await supabase
+    .from("bookings")
+    .update({ end_time: nowStr, status: "completed" })
+    .eq("id", id);
+  if (error) return { error: `Gagal kosongkan: ${error.message}` };
 
   revalidatePath("/app");
   revalidatePath("/app/jadwal");
@@ -317,7 +421,10 @@ export async function recordPayment(
     .from("payments")
     .select("amount")
     .eq("booking_id", bookingId);
-  const paid = (paidRows ?? []).reduce((a, p) => a + Number(p.amount), 0);
+  const paid = ((paidRows ?? []) as Array<{ amount: number }>).reduce(
+    (a, p) => a + Number(p.amount),
+    0
+  );
   const outstanding = Math.max(price - paid, 0);
 
   if (outstanding === 0) {
@@ -466,7 +573,11 @@ async function insertSeriesInstances(
 ): Promise<number> {
   if (rows.length === 0) return 0;
 
-  const { error } = await supabase.from("bookings").insert(rows);
+  const { data, error } = await supabase.from("bookings").insert(rows);
+  // QueryBuilder array insert returns {created} with partial success
+  if (!error && data && typeof (data as { created?: number }).created === "number") {
+    return (data as { created: number }).created;
+  }
   if (!error) return rows.length;
 
   let created = 0;
@@ -911,13 +1022,6 @@ export async function createStaff(
     return { error: "Hanya owner." };
   }
 
-  const admin = createAdminClient();
-  if (!admin)
-    return {
-      error:
-        "SUPABASE_SERVICE_ROLE_KEY belum diset di environment — tidak bisa membuat akun.",
-    };
-
   const fullName = String(formData.get("full_name") ?? "").trim();
   const phone = String(formData.get("phone") ?? "").replace(/\D/g, "").slice(0, 16);
   const email = String(formData.get("email") ?? "")
@@ -933,27 +1037,24 @@ export async function createStaff(
   if (password.length > PASSWORD_MAX_LENGTH)
     return { error: `Password maksimal ${PASSWORD_MAX_LENGTH} karakter.` };
 
-  const { data, error } = await admin.auth.admin.createUser({
+  // Create the staff account via the proxy (owner session is attached
+  // automatically by the connector). Was Supabase admin.createUser.
+  // phone is collected for display but not stored in sports_users yet
+  // (proxy migrates phone column later); forward anyway for future compat.
+  const { proxyRegister } = await import("@/lib/proxy/register");
+  const { data, error } = await proxyRegister({
     email,
     password,
-    email_confirm: true,
-    user_metadata: { full_name: fullName },
-  });
+    full_name: fullName,
+    phone: phone || undefined,
+  } as { email: string; password: string; full_name: string; phone?: string });
 
-  if (error || !data.user) {
+  if (error || !data) {
     const msg = (error?.message ?? "").toLowerCase();
-    if (msg.includes("already") || msg.includes("registered"))
+    if (msg.includes("already") || msg.includes("registered") || error?.status === 409)
       return { error: "Email sudah terdaftar." };
     return { error: `Gagal membuat akun: ${error?.message ?? "unknown"}` };
   }
-
-  // Trigger handle_new_user created the profile as 'pegawai'; enrich it.
-  const { error: upErr } = await admin
-    .from("profiles")
-    .update({ full_name: fullName, phone: phone || null })
-    .eq("id", data.user.id);
-  if (upErr)
-    return { error: `Akun dibuat, tapi gagal menyimpan profil: ${upErr.message}` };
 
   revalidatePath("/app/pengaturan");
   return { error: null, ok: true };

@@ -90,10 +90,10 @@ export default function KantinPos({
         <button
           type="button"
           onClick={() => setCategory("all")}
-          className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+          className={`manager-tap flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
             category === "all"
-              ? "border-navy-800 bg-navy-800 text-white"
-              : "border-sky-brand-200 bg-white text-navy-700"
+              ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+              : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
           }`}
         >
           Semua
@@ -103,10 +103,10 @@ export default function KantinPos({
             key={c}
             type="button"
             onClick={() => setCategory(c)}
-            className={`flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
+            className={`manager-tap flex-shrink-0 rounded-full border px-3 py-1.5 text-xs font-bold transition ${
               category === c
-                ? "border-navy-800 bg-navy-800 text-white"
-                : "border-sky-brand-200 bg-white text-navy-700"
+                ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
+                : "border-zinc-200 bg-white text-zinc-600 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300"
             }`}
           >
             {categoryLabel(c)}
@@ -116,7 +116,7 @@ export default function KantinPos({
 
       {/* Product grid */}
       {products.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-8 text-center text-sm text-navy-700/50">
+        <p className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
           Katalog kosong — owner bisa menambah produk di menu Kantin Produk.
         </p>
       ) : (
@@ -130,16 +130,16 @@ export default function KantinPos({
                 type="button"
                 onClick={() => add(p)}
                 disabled={out}
-                className={`relative rounded-2xl border p-3 text-left transition ${
+                className={`manager-tap relative rounded-2xl border p-3 text-left transition ${
                   out
                     ? "border-neutral-200 bg-neutral-50 opacity-60"
                     : inCart > 0
-                      ? "border-sky-brand-500 bg-sky-brand-400/10"
-                      : "border-sky-brand-200 bg-white hover:border-sky-brand-400"
+                      ? "border-zinc-900 bg-zinc-100 dark:border-zinc-100 dark:bg-zinc-800"
+                      : "border-zinc-200 bg-white hover:border-zinc-400 dark:border-zinc-800 dark:bg-zinc-900 dark:hover:border-zinc-500"
                 }`}
               >
-                <p className="truncate text-sm font-bold text-navy-900">{p.name}</p>
-                <p className="mt-0.5 text-sm font-black text-sky-brand-600">
+                <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">{p.name}</p>
+                <p className="mt-0.5 text-sm font-black text-zinc-600 dark:text-zinc-300">
                   {formatIDR(p.price)}
                 </p>
                 {p.track_stock && (
@@ -149,14 +149,14 @@ export default function KantinPos({
                         ? "bg-red-100 text-red-500"
                         : p.stock <= 5
                           ? "bg-amber-100 text-amber-700"
-                          : "bg-ice-100 text-navy-700/60"
+                          : "bg-zinc-100 text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400"
                     }`}
                   >
                     {out ? "Habis" : `Stok ${p.stock}`}
                   </span>
                 )}
                 {inCart > 0 && (
-                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-sky-brand-500 text-[10px] font-black text-white">
+                  <span className="absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-zinc-900 text-[10px] font-black text-white dark:bg-zinc-100 dark:text-zinc-900">
                     {inCart}
                   </span>
                 )}
@@ -183,7 +183,7 @@ export default function KantinPos({
         <div className="fixed inset-x-0 bottom-16 z-40 px-4 pb-[max(0.5rem,env(safe-area-inset-bottom))]">
           <form
             action={formAction}
-            className="mx-auto max-w-3xl rounded-2xl border border-navy-800/10 bg-navy-800 p-3 shadow-2xl shadow-navy-800/30"
+            className="mx-auto max-w-3xl rounded-2xl border border-zinc-900/10 bg-zinc-900 p-3 shadow-2xl shadow-zinc-900/20 dark:border-zinc-700 dark:bg-zinc-900"
           >
             <input type="hidden" name="method" value={method} />
             <input
@@ -197,14 +197,14 @@ export default function KantinPos({
               {lines.map((l) => (
                 <div key={l.product.id} className="flex items-center gap-2 text-xs text-white">
                   <span className="min-w-0 flex-1 truncate font-semibold">{l.product.name}</span>
-                  <span className="font-bold text-sky-brand-200">
+                  <span className="font-bold text-zinc-300 dark:text-zinc-300">
                     {formatIDR(l.product.price * l.qty)}
                   </span>
                   <span className="flex items-center gap-1">
                     <button
                       type="button"
                       onClick={() => sub(l.product.id)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10"
+                      className="manager-tap flex h-6 w-6 items-center justify-center rounded-md bg-white/10"
                       aria-label={`Kurangi ${l.product.name}`}
                     >
                       <Minus className="h-3 w-3" />
@@ -213,7 +213,7 @@ export default function KantinPos({
                     <button
                       type="button"
                       onClick={() => add(l.product)}
-                      className="flex h-6 w-6 items-center justify-center rounded-md bg-white/10"
+                      className="manager-tap flex h-6 w-6 items-center justify-center rounded-md bg-white/10"
                       aria-label={`Tambah ${l.product.name}`}
                     >
                       <Plus className="h-3 w-3" />
@@ -222,7 +222,7 @@ export default function KantinPos({
                       type="button"
                       onClick={() => sub(l.product.id)}
                       aria-label={`Hapus ${l.product.name}`}
-                      className="ml-0.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-red-300"
+                      className="manager-tap ml-0.5 flex h-6 w-6 items-center justify-center rounded-md bg-white/10 text-red-300"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
@@ -235,7 +235,7 @@ export default function KantinPos({
             <button
               type="button"
               onClick={() => setDetails((d) => !d)}
-              className="mt-2 text-[10px] font-bold uppercase tracking-wide text-sky-brand-300"
+              className="manager-tap mt-2 text-[10px] font-bold uppercase tracking-wide text-zinc-300 dark:text-zinc-300"
             >
               {details ? "− Sembunyikan detail" : "+ Nama pembeli / catatan / booking (opsional)"}
             </button>
@@ -256,11 +256,11 @@ export default function KantinPos({
                     name="booking_id"
                     className="w-full rounded-lg border border-white/10 bg-white/10 px-2.5 py-1.5 text-xs text-white focus:outline-none"
                   >
-                    <option value="" className="text-navy-900">
+                    <option value="" className="text-zinc-900">
                       Kaitkan ke booking hari ini (opsional)
                     </option>
                     {bookings.map((b) => (
-                      <option key={b.id} value={b.id} className="text-navy-900">
+                      <option key={b.id} value={b.id} className="text-zinc-900">
                         {b.label}
                       </option>
                     ))}
@@ -272,7 +272,7 @@ export default function KantinPos({
             {/* Total + actions */}
             <div className="mt-2.5 flex items-center gap-2">
               <div className="min-w-0 flex-1">
-                <p className="text-[10px] font-bold uppercase tracking-wide text-sky-brand-300">
+                <p className="text-[10px] font-bold uppercase tracking-wide text-zinc-300 dark:text-zinc-300">
                   <ShoppingBasket className="mr-1 inline h-3 w-3" />
                   {count} item
                 </p>
@@ -282,8 +282,8 @@ export default function KantinPos({
                 type="button"
                 onClick={() => setMethod(method === "cash" ? "qris" : "cash")}
                 aria-pressed={method === "qris"}
-                className={`rounded-xl border px-3 py-2.5 text-xs font-black text-white transition ${
-                  method === "cash" ? "border-sky-brand-400 bg-sky-brand-500" : "border-emerald-400 bg-emerald-500"
+                className={`manager-tap rounded-xl border px-3 py-2.5 text-xs font-black transition ${
+                  method === "cash" ? "border-zinc-100 bg-zinc-100 text-zinc-900 dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900" : "border-emerald-400 bg-emerald-500 text-white"
                 }`}
               >
                 {method === "cash" ? "Cash" : "QRIS"}
@@ -291,7 +291,7 @@ export default function KantinPos({
               <button
                 type="submit"
                 disabled={pending}
-                className="rounded-xl bg-accent-500 px-4 py-2.5 text-xs font-black text-white transition hover:bg-accent-600 disabled:opacity-50"
+                className="manager-tap min-h-[44px] rounded-xl bg-zinc-100 px-4 py-2.5 text-xs font-black text-zinc-900 transition hover:bg-white disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
               >
                 {pending ? "Menyimpan…" : "Catat"}
               </button>

@@ -14,9 +14,9 @@ export interface Block {
 
 const STATUS_STYLE: Record<string, string> = {
   pending: "bg-amber-400/80 border-amber-500",
-  confirmed: "bg-sky-brand-400/85 border-sky-brand-500 text-white",
+  confirmed: "bg-zinc-500/85 border-zinc-600 text-white dark:bg-zinc-400 dark:border-zinc-300 dark:text-zinc-950",
   checked_in: "bg-emerald-500/90 border-emerald-600 text-white",
-  completed: "bg-navy-800/25 border-navy-800/40",
+  completed: "bg-zinc-400/25 border-zinc-500/40 dark:bg-zinc-600/30 dark:border-zinc-500/40",
   no_show: "bg-red-200 border-red-300",
   blocked: "bg-red-100 border-red-300 text-red-600",
 };
@@ -39,10 +39,10 @@ export default function TimelineGrid({
   const ROW_H = 40; // px per hour — 40px keeps tap targets near 44px guideline
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-sky-brand-200 bg-white">
+    <div className="overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <div className="overflow-x-auto">
         <div
-          className="grid border-b border-sky-brand-200 bg-ice-100"
+          className="grid border-b border-zinc-200 bg-zinc-100 dark:border-zinc-800 dark:bg-zinc-800"
           style={{
             gridTemplateColumns: `44px repeat(${courts.length}, minmax(96px,1fr))`,
           }}
@@ -51,7 +51,7 @@ export default function TimelineGrid({
           {courts.map((c) => (
             <div
               key={c.id}
-              className="py-2 text-center text-[11px] font-black uppercase tracking-wide text-sky-brand-600"
+              className="py-2 text-center text-[11px] font-black uppercase tracking-wide text-zinc-600 dark:text-zinc-300"
             >
               {c.name}
             </div>
@@ -69,7 +69,7 @@ export default function TimelineGrid({
                 height: ROW_H,
               }}
             >
-              <div className="pr-1 text-right text-[10px] font-semibold text-navy-700/40">
+              <div className="pr-1 text-right text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
                 {String(h).padStart(2, "0")}
               </div>
               {courts.map((c) => {
@@ -105,7 +105,7 @@ export default function TimelineGrid({
                   <div key={c.id} style={{ height: ROW_H }}>
                     <Link
                       href={`/app/booking/baru?date=${dateISO}&court=${c.id}&hour=${h}`}
-                      className={`mx-0.5 flex h-full items-center justify-center rounded-md border border-dashed text-[11px] transition hover:bg-ice-200 ${
+                      className={`manager-tap mx-0.5 flex h-full items-center justify-center rounded-md border border-dashed text-[11px] transition hover:bg-zinc-100 dark:hover:bg-zinc-800 ${
                         h >= pricing.dayEndHour
                           ? "border-amber-300 text-amber-500"
                           : "border-emerald-300 text-emerald-400"
@@ -123,7 +123,7 @@ export default function TimelineGrid({
         </div>
       </div>
 
-      <div className="border-t border-sky-brand-200 bg-ice-50 px-3 py-2 text-[10px] font-medium text-navy-700/60">
+      <div className="border-t border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
         Tap <span className="font-bold text-emerald-500">+</span> untuk buat booking ·{" "}
         {formatIDR(pricing.priceDay)}/jam siang · {formatIDR(pricing.priceEvening)}
         /jam malam
