@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import { MessageCircle, Phone, UserX, Users } from "lucide-react";
 import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
@@ -42,16 +42,16 @@ export default async function PelangganPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
           <Users className="h-5 w-5" strokeWidth={1.75} /> Pelanggan
         </h1>
-        <p className="text-xs font-semibold text-navy-700/60">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {customers.length} terdaftar · dibuat otomatis dari booking
         </p>
       </div>
 
       {customers.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-8 text-center text-sm text-navy-700/50">
+        <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Belum ada pelanggan. Daftar terisi otomatis saat membuat booking.
         </p>
       ) : (
@@ -62,13 +62,13 @@ export default async function PelangganPage() {
             return (
               <li
                 key={c.id}
-                className="flex items-center gap-3 rounded-2xl border border-sky-brand-200 bg-white p-3.5"
+                className="flex items-center gap-3 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5"
               >
-                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-sky-brand-400/15 text-sm font-black text-sky-brand-600">
+                <span className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-full bg-zinc-100 dark:bg-zinc-800 text-sm font-black text-zinc-600 dark:text-zinc-300">
                   {c.name.slice(0, 1).toUpperCase()}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-black text-navy-900">
+                  <p className="truncate text-sm font-black text-zinc-900 dark:text-zinc-50">
                     {c.name}
                     {(c.no_show_count ?? 0) > 0 && (
                       <span className="ml-2 rounded-full bg-red-50 px-2 py-0.5 align-middle text-[9px] font-bold uppercase text-red-500">
@@ -77,7 +77,7 @@ export default async function PelangganPage() {
                       </span>
                     )}
                   </p>
-                  <p className="truncate text-[11px] font-semibold text-navy-700/50">
+                  <p className="truncate text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                     <Phone className="mr-1 inline h-3 w-3" />
                     {c.phone}
                     {s?.visits ? ` · ${s.visits}x main` : ""}
@@ -97,7 +97,7 @@ export default async function PelangganPage() {
                   rel="noopener noreferrer"
                   title="Chat WhatsApp"
                   aria-label={`Chat WhatsApp dengan ${c.name}`}
-                  className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
+                  className="manager-tap flex h-9 w-9 min-h-[40px] min-w-[40px] flex-shrink-0 items-center justify-center rounded-xl border border-emerald-200 bg-emerald-50 text-emerald-600 transition hover:bg-emerald-100"
                 >
                   <MessageCircle className="h-4 w-4" />
                 </a>

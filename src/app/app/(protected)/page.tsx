@@ -1,10 +1,11 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import {
   addDaysISO,
   formatIDR,
   hourLabel,
   todayISO,
   wibNowMinutes,
+  type PricingRule,
 } from "@/lib/availability";
 import type { Booking } from "@/lib/types";
 import {
@@ -25,6 +26,7 @@ import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
 import OwnerMenu from "@/components/app/OwnerMenu";
 import DailyReportNudge from "@/components/app/DailyReportNudge";
+import LiveLapangan from "@/components/app/LiveLapangan";
 
 export const metadata = { title: "Dashboard · Centrum Manager" };
 
@@ -48,7 +50,7 @@ export default async function DashboardPage() {
         .gte("paid_at", `${today}T00:00:00+07:00`)
         .lt("paid_at", `${tomorrow}T00:00:00+07:00`),
       supabase.from("courts").select("id").eq("is_active", true),
-      supabase.rpc("get_pricing_for", { p_date: today }),
+      supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: today }),
       supabase
         .from("kantin_sales")
         .select("total")
@@ -99,17 +101,24 @@ export default async function DashboardPage() {
   });
 
   // Kantin: revenue today + low-stock alert
-  const kantinToday = (kantinRes.data ?? []).reduce((a, s) => a + Number(s.total), 0);
-  const lowStock = (lowStockRes.data ?? []).filter(
-    (p) => p.stock <= p.low_stock_threshold
+  const kantinToday = ((kantinRes.data ?? []) as Array<{ total: number }>).reduce(
+    (a, s) => a + Number(s.total),
+    0
   );
+  const lowStock = (
+    (lowStockRes.data ?? []) as Array<{
+      stock: number;
+      low_stock_threshold: number;
+      name: string;
+    }>
+  ).filter((p) => p.stock <= p.low_stock_threshold);
 
   return (
-    <div className="space-y-5">
+    <div className="manager-rise space-y-5">
       <div>
-        <h1 className="flex flex-wrap items-center gap-2 text-lg font-black text-navy-900">
-          <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Hari Ini{" "}
-          <span className="text-sm font-semibold text-navy-700/50">
+        <h1 className="flex flex-wrap items-center gap-2 text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+          <BarChart3 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" /> Hari Ini{" "}
+          <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
             {new Intl.DateTimeFormat("id-ID", {
               weekday: "long",
               day: "numeric",
@@ -151,14 +160,17 @@ export default async function DashboardPage() {
       {lowStock.length > 0 && (
         <Link
           href="/app/kantin/stok"
-          className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5"
+          className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/40"
         >
-          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" />
-          <span className="text-xs font-semibold text-amber-700">
+          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
+          <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
             Stok kantin menipis: <b>{lowStock.map((p) => p.name).join(", ")}</b>
           </span>
         </Link>
       )}
+
+      {/* Live lapangan — which is in use till when, + nambah jam / kosongkan */}
+      <LiveLapangan bookings={bookings as unknown as Array<{ id: string; court_id: string; courts: { name: string } | null; customer_name: string; start_time: string; end_time: string; status: string }>} />
 
       {/* Daily closing nudge (after 20:00 WIB) */}
       <DailyReportNudge />
@@ -168,12 +180,12 @@ export default async function DashboardPage() {
 
       {/* Agenda */}
       <div>
-        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-navy-700/60">
+        <h2 className="mb-2 text-xs font-bold tracking-widest text-zinc-400 uppercase dark:text-zinc-500">
           Agenda Lapangan
         </h2>
         {bookings.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-8 text-center">
-            <p className="text-sm font-medium text-navy-700/50">
+          <div className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center dark:border-zinc-700 dark:bg-zinc-900">
+            <p className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
               Belum ada booking hari ini
             </p>
           </div>
@@ -182,19 +194,19 @@ export default async function DashboardPage() {
             {bookings.map((b) => (
               <li
                 key={b.id}
-                className="rounded-2xl border border-sky-brand-200 bg-white p-3.5"
+                className="rounded-2xl border border-zinc-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-black text-navy-900">
+                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
                       {hourLabel(Number(b.start_time.slice(0, 2)))}–
                       {hourLabel(Number(b.end_time.slice(0, 2)))}
-                      <span className="rounded-md bg-ice-200 px-1.5 py-0.5 text-[10px] font-bold text-sky-brand-600">
+                      <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                         {b.courts?.name ?? "—"}
                       </span>
                       <StatusBadge status={b.status} />
                     </p>
-                    <p className="mt-1 truncate text-xs font-medium text-navy-700/70">
+                    <p className="mt-1 truncate text-xs font-medium text-zinc-600 dark:text-zinc-400">
                       <User className="mr-1 inline-block h-3.5 w-3.5 align-[-1px]" />
                       {b.customer_name}
                       {b.customer_phone && (
@@ -212,7 +224,7 @@ export default async function DashboardPage() {
                         </>
                       )}
                     </p>
-                    <p className="mt-0.5 text-[11px] font-semibold text-navy-700/50">
+                    <p className="mt-0.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                       {formatIDR(Number(b.override_price ?? b.computed_price))}{" · "}
                       {b.source === "whatsapp" ? (
                         <>

@@ -26,13 +26,13 @@ export default function CustomerNotesForm({
         onChange={(e) => setValue(e.target.value)}
         placeholder="+ catatan (cth. suka lapangan 2, sering telat…)"
         maxLength={200}
-        className="min-w-0 flex-1 rounded-lg border border-transparent bg-ice-100 px-2 py-1 text-[11px] text-navy-800 placeholder:text-navy-700/30 hover:border-sky-brand-200 focus:border-sky-brand-400 focus:bg-white focus:outline-none"
+        className="min-w-0 flex-1 rounded-lg border border-transparent bg-zinc-100 px-2 py-1 text-[11px] text-zinc-800 placeholder:text-zinc-400 hover:border-zinc-200 focus:border-zinc-500 focus:bg-white focus:outline-none dark:bg-zinc-800 dark:text-zinc-100 dark:hover:border-zinc-700"
       />
       {dirty && (
         <button
           type="submit"
           disabled={pending}
-          className="flex-shrink-0 rounded-lg border border-sky-brand-200 bg-white px-2 py-1 text-[10px] font-bold text-sky-brand-600 hover:bg-ice-100 disabled:opacity-50"
+          className="manager-tap flex-shrink-0 rounded-lg border border-zinc-200 bg-white px-2 py-1 text-[10px] font-bold text-zinc-600 hover:bg-zinc-100 disabled:opacity-50 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
         >
           {pending ? "…" : <Save className="h-3.5 w-3.5" />}
         </button>

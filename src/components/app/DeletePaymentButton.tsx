@@ -21,7 +21,7 @@ export default function DeletePaymentButton({ paymentId }: { paymentId: string }
         disabled={pending}
         title="Hapus pembayaran (owner)"
         aria-label="Hapus pembayaran (owner)"
-        className="px-1.5 text-[11px] text-navy-700/40 transition hover:text-red-500"
+        className="manager-tap px-1.5 text-[11px] text-zinc-400 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

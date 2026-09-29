@@ -19,7 +19,7 @@ export default function BookingActions({
   const [delState, delAction, delPending] = useActionState(deleteBooking, initial);
 
   const btn =
-    "inline-flex items-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-bold transition disabled:opacity-50";
+    "manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:opacity-50";
 
   const err = state.error || delState.error;
 
@@ -47,7 +47,7 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={pending}
-            className={`${btn} border border-sky-brand-300 text-sky-brand-600 hover:bg-ice-100`}
+            className={`${btn} border border-zinc-300 text-zinc-700 hover:bg-zinc-100 dark:border-zinc-600 dark:text-zinc-200 dark:hover:bg-zinc-800`}
           >
             Confirm
           </button>
@@ -60,7 +60,7 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={pending}
-            className={`${btn} bg-navy-800 text-white hover:bg-navy-700`}
+            className={`${btn} bg-zinc-900 text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white`}
           >
             <Flag className="h-3.5 w-3.5" />
             Selesai
@@ -74,7 +74,7 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={pending}
-            className={`${btn} border border-red-200 text-red-400 hover:bg-red-50`}
+            className={`${btn} border border-red-200 text-red-400 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/40`}
             title="Tandai no-show (menambah counter pelanggan)"
           >
             <UserX className="h-3.5 w-3.5" />
@@ -89,7 +89,7 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={pending}
-            className={`${btn} border border-red-200 text-red-500 hover:bg-red-50`}
+            className={`${btn} border border-red-200 text-red-500 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/40`}
           >
             Batal
           </button>
@@ -102,7 +102,7 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={pending}
-            className={`${btn} border border-red-200 text-red-400 hover:bg-red-50`}
+            className={`${btn} border border-red-200 text-red-400 hover:bg-red-50 dark:border-red-900/60 dark:text-red-300 dark:hover:bg-red-950/40`}
             title="Tandai no-show (menambah counter pelanggan)"
           >
             <UserX className="h-3.5 w-3.5" />
@@ -116,14 +116,14 @@ export default function BookingActions({
           <button
             type="submit"
             disabled={delPending}
-            className={`${btn} text-navy-700/40 hover:text-red-500`}
+            className={`${btn} text-zinc-400 hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-zinc-800`}
             title="Hapus permanen (owner)"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
         </form>
       )}
-      {err && <span className="text-[10px] font-semibold text-red-500">{err}</span>}
+      {err && <span role="alert" className="text-[10px] font-semibold text-red-500 dark:text-red-400">{err}</span>}
     </div>
   );
 }

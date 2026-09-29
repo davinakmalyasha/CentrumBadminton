@@ -26,7 +26,7 @@ export function ToggleCourtActiveButton({
       <button
         type="submit"
         disabled={pending}
-        className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
+        className={`manager-tap inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
           active
             ? "border-emerald-300 bg-emerald-50 text-emerald-600"
             : "border-neutral-300 bg-neutral-100 text-neutral-500"
@@ -68,7 +68,7 @@ export function ToggleStaffActiveButton({
         <button
           type="submit"
           disabled={pending}
-          className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
+          className={`manager-tap inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
             active
               ? "border-emerald-300 bg-emerald-50 text-emerald-600"
               : "border-red-200 bg-red-50 text-red-500"

@@ -13,6 +13,18 @@ export interface PricingInfo {
   priceEvening: number;
 }
 
+/**
+ * Pricing row as the backend returns it (times are "HH:MM:SS"), before
+ * it is narrowed into {@link PricingInfo}.
+ */
+export interface PricingRule {
+  open_time: string;
+  close_time: string;
+  day_end: string;
+  price_day: number;
+  price_evening: number;
+}
+
 export type SlotStatus = "available" | "booked" | "past" | "blocked";
 
 export interface Slot {

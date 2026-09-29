@@ -21,7 +21,7 @@ export default function SeriesControls({
   const [extState, extAction, extPending] = useActionState(extendSeries, initial);
 
   const btn =
-    "inline-flex items-center gap-1 rounded-lg border px-2.5 py-2 text-[11px] font-bold transition disabled:opacity-50";
+    "manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-lg border px-2.5 py-2 text-[11px] font-bold transition disabled:opacity-50";
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
@@ -29,7 +29,7 @@ export default function SeriesControls({
         <form action={statusAction}>
           <input type="hidden" name="series_id" value={seriesId} />
           <input type="hidden" name="status" value="paused" />
-          <button type="submit" disabled={statusPending} className={`${btn} border-sky-brand-300 text-sky-brand-600 hover:bg-ice-100`}>
+          <button type="submit" disabled={statusPending} className={`${btn} border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800`}>
             <Pause className="h-3.5 w-3.5" />
             Jeda
           </button>
@@ -52,7 +52,7 @@ export default function SeriesControls({
               type="submit"
               disabled={extPending || status !== "active"}
               title={status === "active" ? "Tambah 8 minggu ke depan" : "Aktifkan dulu"}
-              className={`${btn} border-sky-brand-300 text-sky-brand-600 hover:bg-ice-100`}
+              className={`${btn} border-zinc-300 text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-300 dark:hover:bg-zinc-800`}
             >
               <Plus className="h-3.5 w-3.5" />
               +8 mgg

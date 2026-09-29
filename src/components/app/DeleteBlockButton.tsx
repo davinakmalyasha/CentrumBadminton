@@ -17,7 +17,7 @@ export default function DeleteBlockButton({ blockId }: { blockId: string }) {
         disabled={pending}
         title="Hapus blokir"
         aria-label="Hapus blokir"
-        className="px-1.5 text-xs text-navy-700/40 transition hover:text-red-500"
+        className="manager-tap px-1.5 text-xs text-zinc-400 transition hover:text-red-500 dark:text-zinc-500 dark:hover:text-red-400"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>

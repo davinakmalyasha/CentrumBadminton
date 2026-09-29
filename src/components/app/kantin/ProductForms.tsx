@@ -14,8 +14,8 @@ import { formatIDR } from "@/lib/availability";
 const initial: KantinActionState = { error: null };
 
 const field =
-  "w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none";
-const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-navy-700/60";
+  "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
+const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
 
 export function NewProductForm() {
   const [state, formAction, pending] = useActionState(upsertProduct, initial);
@@ -24,7 +24,7 @@ export function NewProductForm() {
   return (
     <form
       action={formAction}
-      className="space-y-3 rounded-xl border border-dashed border-sky-brand-400/60 bg-sky-brand-400/5 p-3"
+      className="space-y-3 rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900"
     >
       <div className="grid grid-cols-2 gap-2">
         <div className="col-span-2 sm:col-span-1">
@@ -60,14 +60,14 @@ export function NewProductForm() {
           <input id="npcost" name="cost_price" inputMode="numeric" placeholder="2000" className={field} />
         </div>
       </div>
-      <label className="flex items-center gap-2 text-xs font-semibold text-navy-700">
+      <label className="flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
         <input
           type="checkbox"
           name="track_stock"
           value="1"
           checked={track}
           onChange={(e) => setTrack(e.target.checked)}
-          className="h-4 w-4 accent-sky-brand-500"
+          className="h-4 w-4 accent-zinc-900"
         />
         Lacak stok (kurangi otomatis saat terjual)
       </label>
@@ -92,7 +92,7 @@ export function NewProductForm() {
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-xl bg-navy-800 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+        className="manager-tap min-h-[44px] w-full rounded-xl bg-zinc-900 py-2 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? "Menyimpan…" : "Tambah Produk"}
       </button>
@@ -123,14 +123,14 @@ export function EditProductRow({
   const err = editState.error || toggleState.error || delState.error;
 
   return (
-    <li className="rounded-xl bg-ice-100 p-3">
+    <li className="rounded-xl bg-zinc-100 p-3 dark:bg-zinc-800">
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={() => setOpen((o) => !o)}
-          className="min-w-0 flex-1 text-left"
+          className="manager-tap min-w-0 flex-1 text-left"
         >
-          <p className="truncate text-sm font-bold text-navy-900">
+          <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">
             {product.name}
             {!product.is_active && (
               <span className="ml-2 rounded-full bg-neutral-200 px-2 py-0.5 text-[9px] font-bold uppercase text-neutral-500">
@@ -138,7 +138,7 @@ export function EditProductRow({
               </span>
             )}
           </p>
-          <p className="text-[11px] font-semibold text-navy-700/50">
+          <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
             {formatIDR(product.price)} · modal {formatIDR(product.cost_price)} ·{" "}
             {categoryLabel(product.category)}
             {product.track_stock ? ` · stok ${product.stock}` : ""}
@@ -150,7 +150,7 @@ export function EditProductRow({
           <button
             type="submit"
             disabled={togglePending}
-            className={`rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
+            className={`manager-tap rounded-lg border px-2.5 py-1.5 text-[10px] font-bold transition ${
               product.is_active
                 ? "border-emerald-300 bg-emerald-50 text-emerald-600"
                 : "border-neutral-300 bg-neutral-100 text-neutral-500"
@@ -165,7 +165,7 @@ export function EditProductRow({
             type="submit"
             disabled={delPending}
             title="Hapus produk (riwayat penjualan tetap tersimpan)"
-            className="rounded-lg border border-red-200 bg-white p-2 text-red-500 transition hover:bg-red-50"
+            className="manager-tap rounded-lg border border-red-200 bg-white p-2 text-red-500 transition hover:bg-red-50"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
@@ -173,7 +173,7 @@ export function EditProductRow({
       </div>
 
       {open && (
-        <form action={editAction} className="mt-3 space-y-2 border-t border-sky-brand-200 pt-3">
+        <form action={editAction} className="mt-3 space-y-2 border-t border-zinc-200 pt-3 dark:border-zinc-800">
           <input type="hidden" name="product_id" value={product.id} />
           <div className="grid grid-cols-2 gap-2">
             <div className="col-span-2 sm:col-span-1">
@@ -231,13 +231,13 @@ export function EditProductRow({
               />
             </div>
           </div>
-          <label className="flex items-center gap-2 text-xs font-semibold text-navy-700">
+          <label className="flex items-center gap-2 text-xs font-semibold text-zinc-600 dark:text-zinc-300">
             <input
               type="checkbox"
               name="track_stock"
               value="1"
               defaultChecked={product.track_stock}
-              className="h-4 w-4 accent-sky-brand-500"
+              className="h-4 w-4 accent-zinc-900"
             />
             Lacak stok
           </label>
@@ -258,7 +258,7 @@ export function EditProductRow({
           <button
             type="submit"
             disabled={editPending}
-            className="inline-flex items-center gap-1 rounded-xl bg-navy-800 px-4 py-2 text-xs font-black text-white transition hover:bg-navy-700 disabled:opacity-50"
+            className="manager-tap inline-flex items-center gap-1 rounded-xl bg-zinc-900 px-4 py-2 text-xs font-black text-white transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
             {editPending ? "Menyimpan…" : (
               <>

@@ -64,8 +64,8 @@ export default function BookingForm({
   }
 
   const field =
-    "w-full rounded-xl border border-sky-brand-200 bg-white px-3 py-2.5 text-sm text-navy-900 focus:border-sky-brand-400 focus:outline-none";
-  const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-navy-700/60";
+    "w-full rounded-xl border border-zinc-200 bg-white px-3 py-2.5 text-sm text-zinc-900 placeholder:text-zinc-400 focus:border-zinc-500 focus:outline-none dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100";
+  const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
 
   return (
     <form action={formAction} className="space-y-4">
@@ -87,10 +87,10 @@ export default function BookingForm({
               type="button"
               onClick={() => setCourtId(c.id)}
               aria-pressed={courtId === c.id}
-              className={`inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+              className={`manager-tap inline-flex items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
                 courtId === c.id
-                  ? "border-accent-500 bg-accent-500/10 text-accent-600"
-                  : "border-sky-brand-200 bg-white text-navy-800"
+                  ? "border-zinc-900 bg-zinc-100 text-zinc-800 dark:border-zinc-100 dark:bg-zinc-800 dark:text-zinc-100"
+                  : "border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
               }`}
             >
               <Shuttlecock className="h-4 w-4" />
@@ -200,7 +200,7 @@ export default function BookingForm({
                   key={c.phone}
                   type="button"
                   onClick={() => pickCustomer(c.name)}
-                  className="inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-sky-brand-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-navy-700 hover:bg-ice-100"
+                  className="manager-tap inline-flex flex-shrink-0 items-center gap-1 rounded-full border border-zinc-200 bg-white px-2.5 py-1 text-[10px] font-semibold text-zinc-600 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800"
                 >
                   <User className="h-3 w-3" />
                   {c.name}
@@ -239,10 +239,10 @@ export default function BookingForm({
             type="button"
             onClick={() => setSource("walk_in")}
             aria-pressed={source === "walk_in"}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+            className={`manager-tap inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "walk_in"
-                ? "border-accent-500 bg-accent-500/10 text-accent-600"
-                : "border-sky-brand-200 bg-white text-navy-800"
+                ? "border-zinc-900 bg-zinc-100 text-zinc-800 dark:border-zinc-100 dark:bg-zinc-800 dark:text-zinc-100"
+                : "border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             }`}
           >
             <Footprints className="h-4 w-4" />
@@ -252,10 +252,10 @@ export default function BookingForm({
             type="button"
             onClick={() => setSource("whatsapp")}
             aria-pressed={source === "whatsapp"}
-            className={`inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
+            className={`manager-tap inline-flex items-center justify-center gap-2 rounded-xl border px-3 py-2.5 text-sm font-bold transition ${
               source === "whatsapp"
                 ? "border-emerald-500 bg-emerald-50 text-emerald-600"
-                : "border-sky-brand-200 bg-white text-navy-800"
+                : "border-zinc-200 bg-white text-zinc-800 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-100"
             }`}
           >
             <MessageCircle className="h-4 w-4" />
@@ -286,10 +286,10 @@ export default function BookingForm({
       </label>
 
       {role === "owner" && (
-        <div className="rounded-xl border border-dashed border-accent-400 bg-accent-500/5 p-3">
+        <div className="rounded-xl border border-dashed border-zinc-300 bg-zinc-50 p-3 dark:border-zinc-700 dark:bg-zinc-900">
           <label
             htmlFor="override_price"
-            className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-navy-700/60"
+            className="mb-1 flex items-center gap-1.5 text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400"
           >
             <Gem className="h-3.5 w-3.5" />
             Harga Manual (owner)
@@ -307,11 +307,11 @@ export default function BookingForm({
       )}
 
       {/* Price preview */}
-      <div className="flex items-center justify-between rounded-2xl border border-sky-brand-200 bg-ice-100 px-4 py-3">
-        <span className="text-xs font-bold uppercase tracking-wide text-navy-700/60">
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-200 bg-zinc-100 px-4 py-3 dark:border-zinc-800 dark:bg-zinc-800">
+        <span className="text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Total harga
         </span>
-        <span className="text-lg font-black text-navy-900">
+        <span className="text-lg font-black text-zinc-900 dark:text-zinc-50">
           {override ? formatIDR(Number(override.replace(/\D/g, "") || 0)) : preview !== null ? formatIDR(preview) : "—"}
         </span>
       </div>
@@ -325,7 +325,7 @@ export default function BookingForm({
       <button
         type="submit"
         disabled={pending}
-        className="w-full rounded-2xl bg-accent-500 py-3.5 text-sm font-black text-white shadow-lg shadow-accent-500/30 transition hover:bg-accent-600 disabled:opacity-50"
+        className="manager-tap min-h-[48px] w-full rounded-2xl bg-zinc-900 py-3.5 text-sm font-black text-white shadow-lg shadow-zinc-900/20 transition hover:bg-zinc-700 disabled:opacity-50 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         {pending ? "Menyimpan…" : "Simpan Booking"}
       </button>

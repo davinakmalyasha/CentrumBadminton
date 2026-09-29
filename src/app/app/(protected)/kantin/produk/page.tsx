@@ -37,10 +37,10 @@ export default async function KantinProdukPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
           <ShoppingBasket className="h-5 w-5" strokeWidth={1.75} /> Produk Kantin
         </h1>
-        <p className="text-xs font-semibold text-navy-700/60">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {products.length} produk · ketuk nama untuk mengubah harga/modal/stok
         </p>
       </div>
@@ -50,7 +50,7 @@ export default async function KantinProdukPage() {
       <ul className="space-y-2">
         {[...grouped.entries()].map(([cat, list]) => (
           <li key={cat}>
-            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-navy-700/40">
+            <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
               {cat}
             </p>
             <ul className="space-y-2">
@@ -61,7 +61,7 @@ export default async function KantinProdukPage() {
           </li>
         ))}
         {products.length === 0 && (
-          <li className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-8 text-center text-sm text-navy-700/50">
+          <li className="rounded-2xl border border-dashed border-zinc-300 bg-white p-8 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
             Belum ada produk — tambah di form atas.
           </li>
         )}

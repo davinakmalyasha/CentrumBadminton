@@ -41,19 +41,19 @@ export default async function PengeluaranPage({
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/app/pengeluaran?month=${addMonths(month, -1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-navy-900">
+          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-zinc-900 dark:text-zinc-50">
             <Receipt className="h-5 w-5" strokeWidth={1.75} /> Pengeluaran
           </h1>
-          <p className="text-xs font-semibold text-navy-700/60">{formatMonthLabel(month)}</p>
+          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{formatMonthLabel(month)}</p>
         </div>
         <Link
           href={`/app/pengeluaran?month=${addMonths(month, 1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100"
         >
           <ChevronRight className="h-4 w-4" />
         </Link>
@@ -61,31 +61,31 @@ export default async function PengeluaranPage({
 
       <ExpenseForm today={today} />
 
-      <div className="flex items-center justify-between rounded-2xl border border-navy-800/10 bg-navy-800 px-4 py-3 text-white">
-        <span className="text-xs font-bold uppercase tracking-widest text-sky-brand-200/70">
+      <div className="flex items-center justify-between rounded-2xl border border-zinc-900 bg-zinc-900 px-4 py-3 text-white dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-50">
+        <span className="text-xs font-bold uppercase tracking-widest text-zinc-400">
           Total bulan ini
         </span>
-        <span className="text-xl font-black">{formatIDR(total)}</span>
+        <span className="text-xl font-black text-white">{formatIDR(total)}</span>
       </div>
 
       {rows.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-6 text-center text-sm text-navy-700/50">
+        <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
           Belum ada pengeluaran bulan ini.
         </p>
       ) : (
-        <ul className="divide-y divide-sky-brand-200/60 overflow-hidden rounded-2xl border border-sky-brand-200 bg-white">
+        <ul className="divide-y divide-zinc-200 dark:divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           {rows.map((e) => (
             <li key={e.id} className="flex items-center justify-between px-3.5 py-2.5">
               <div className="min-w-0">
-                <p className="truncate text-sm font-bold text-navy-900">
+                <p className="truncate text-sm font-bold text-zinc-900 dark:text-zinc-50">
                   {e.category}
                   {e.note && (
-                    <span className="ml-2 text-[11px] font-medium text-navy-700/50">
+                    <span className="ml-2 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
                       {e.note}
                     </span>
                   )}
                 </p>
-                <p className="text-[11px] font-semibold text-navy-700/40">
+                <p className="text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                   {new Intl.DateTimeFormat("id-ID", {
                     day: "numeric",
                     month: "short",

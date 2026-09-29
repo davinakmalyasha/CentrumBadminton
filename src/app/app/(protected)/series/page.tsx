@@ -62,10 +62,10 @@ export default async function SeriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-navy-900">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
           <Repeat className="h-5 w-5" strokeWidth={1.75} /> Langganan Mingguan
         </h1>
-        <p className="text-xs font-semibold text-navy-700/60">
+        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Komunitas rutin — slot dibuat otomatis setiap minggu.
         </p>
       </div>
@@ -76,11 +76,11 @@ export default async function SeriesPage() {
       />
 
       <section>
-        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-navy-700/60">
+        <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Berjalan ({series.length})
         </h2>
         {series.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-sky-brand-300 bg-white p-6 text-center text-sm text-navy-700/50">
+          <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
             Belum ada langganan aktif.
           </p>
         ) : (
@@ -88,10 +88,10 @@ export default async function SeriesPage() {
             {series.map((s) => {
               const count = futureCount.get(s.id) ?? 0;
               return (
-                <li key={s.id} className="rounded-2xl border border-sky-brand-200 bg-white p-3.5">
+                <li key={s.id} className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3.5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-black text-navy-900">
+                      <p className="truncate text-sm font-black text-zinc-900 dark:text-zinc-50">
                         <Users className="mr-1 inline h-3 w-3" />
                         {s.customer_name}
                         <span
@@ -106,7 +106,7 @@ export default async function SeriesPage() {
                           {s.status}
                         </span>
                       </p>
-                      <p className="mt-0.5 text-[11px] font-semibold text-navy-700/60">
+                      <p className="mt-0.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                         {DAY_NAMES[s.weekday]} · {String(s.start_time).slice(0, 5)}–
                         {String(s.end_time).slice(0, 5)} ·{" "}
                         <Shuttlecock className="mr-1 inline h-3 w-3" />
@@ -119,7 +119,7 @@ export default async function SeriesPage() {
                             }).format(new Date(`${s.end_date}T00:00:00+07:00`))}`
                           : ""}{" "}
                         ·{" "}
-                        <span className="font-bold text-sky-brand-600">
+                        <span className="font-bold text-zinc-600 dark:text-zinc-300">
                           {count} jadwal ke depan
                         </span>
                       </p>
