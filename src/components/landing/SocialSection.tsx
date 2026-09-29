@@ -82,7 +82,7 @@ export default function SocialSection({
             href={igUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-white/15 hover:border-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
               <Camera className="h-4 w-4" />
               @{VENUE.instagram}
@@ -91,7 +91,7 @@ export default function SocialSection({
             href={fbUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-sky-brand-100 transition hover:bg-white/10"
+            className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-white/15 hover:border-white/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           >
               <ThumbsUp className="h-4 w-4" />
             {t.reviews.followFb}
