@@ -1,8 +1,17 @@
 @import "tailwindcss";
 
+/* Class-based dark mode for the manager (/app) area.
+   The `.dark` class is applied on the manager wrapper only,
+   so the public landing stays light. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   --background: #ffffff;
   --foreground: #0b2545;
+}
+
+.dark {
+  color-scheme: dark;
 }
 
 @theme inline {
@@ -41,4 +50,120 @@ body {
 
 ::selection {
   background: var(--color-sky-brand-200);
+}
+
+/* ---- Manager UI motion (decorative only) ---- */
+@keyframes manager-slide-in {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes manager-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes manager-rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes manager-pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.manager-drawer {
+  animation: manager-slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.manager-backdrop {
+  animation: manager-fade-in 0.18s ease both;
+}
+
+.manager-modal {
+  animation: manager-pop-in 0.2s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.manager-rise {
+  animation: manager-rise-in 0.3s ease both;
+}
+
+/* Typing dots for chat pending states */
+@keyframes manager-blink {
+  0%,
+  80%,
+  100% {
+    opacity: 0.25;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}
+
+.manager-dot {
+  animation: manager-blink 1.2s infinite ease-in-out;
+}
+
+.manager-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.manager-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+/* Thin scrollbars for chat + drawer */
+.manager-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(161 161 170 / 0.5) transparent;
+}
+
+.manager-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.manager-scroll::-webkit-scrollbar-thumb {
+  background: rgb(161 161 170 / 0.5);
+  border-radius: 999px;
+}
+
+/* Remove tap highlight flash on mobile nav */
+.manager-tap {
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .manager-drawer,
+  .manager-backdrop,
+  .manager-modal,
+  .manager-rise,
+  .manager-dot {
+    animation: none;
+  }
 }
