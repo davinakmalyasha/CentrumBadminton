@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { requireOwnerPage } from "@/lib/guard";
-import { formatIDR } from "@/lib/availability";
+import { requireStaffPage } from "@/lib/guard";
+import { formatIDR, type PricingRule } from "@/lib/availability";
+import { proxyFetch } from "@/lib/proxy/client";
 import {
   BarChart3,
   ChevronLeft,
@@ -20,6 +21,7 @@ import {
   monthStart,
   formatMonthLabel,
 } from "@/lib/months";
+import { todayISO } from "@/lib/availability";
 
 export const metadata = { title: "Laporan · Centrum Manager" };
 
@@ -33,11 +35,11 @@ export default async function LaporanPage({
   const start = monthStart(month);
   const endEx = monthEndExclusive(month);
 
-  const supabase = await requireOwnerPage();
+  const supabase = await requireStaffPage();
 
-  const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes, kantinItemsRes] =
+  const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes, kantinSalesRes] =
     await Promise.all([
-      supabase.rpc("get_pricing_for", { p_date: start }),
+      supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: start }),
       supabase
         .from("payments")
         .select("amount,method,paid_at")
@@ -57,10 +59,10 @@ export default async function LaporanPage({
         .lt("spent_at", endEx),
       supabase.from("courts").select("id,name").eq("is_active", true),
       supabase
-        .from("kantin_sale_items")
-        .select("qty,unit_price,unit_cost,product_name,kantin_sales!inner(created_at)")
-        .gte("kantin_sales.created_at", `${start}T00:00:00+07:00`)
-        .lt("kantin_sales.created_at", `${endEx}T00:00:00+07:00`),
+        .from("kantin_sales")
+        .select("id,total,created_at")
+        .gte("created_at", `${start}T00:00:00+07:00`)
+        .lt("created_at", `${endEx}T00:00:00+07:00`),
     ]);
 
   const pRule = pricingForMonth.data?.[0];
@@ -78,13 +80,22 @@ export default async function LaporanPage({
   }>;
   const expenses = (expensesRes.data ?? []) as Array<{ amount: number }>;
   const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
-  const kantinItems = (kantinItemsRes.data ?? []) as unknown as Array<{
-    qty: number;
-    unit_price: number;
-    unit_cost: number;
-    product_name: string;
-    kantin_sales: { created_at: string };
-  }>;
+  const kantinSales = (kantinSalesRes.data ?? []) as Array<{ id: string; total: number; created_at: string }>;
+  // Real COGS + top products via GET /kantin/sales/{id}/items
+  // (one sale at a time; month scope is small — cap at 500 sales).
+  const kantinItems: Array<{ qty: number; unit_price: number; unit_cost: number; product_name: string }> = [];
+  await Promise.all(
+    kantinSales.slice(0, 500).map(async (s) => {
+      try {
+        const res = await proxyFetch<{
+          items: Array<{ qty: number; unit_price: number; unit_cost: number; product_name: string }>;
+        }>(`/v1/sports/kantin/sales/${s.id}/items`);
+        for (const it of res.items ?? []) kantinItems.push(it);
+      } catch {
+        /* one bad sale must not kill the report */
+      }
+    })
+  );
 
   const openHours = pRule
     ? Math.max(
@@ -104,19 +115,21 @@ export default async function LaporanPage({
   const gross = cash + qris;
   const expenseTotal = expenses.reduce((a, b) => a + Number(b.amount), 0);
 
-  // Kantin: revenue, COGS, profit, top products
-  const kRevenue = kantinItems.reduce((a, i) => a + i.unit_price * i.qty, 0);
-  const kCogs = kantinItems.reduce((a, i) => a + i.unit_cost * i.qty, 0);
+  // Kantin: revenue from sales totals, real COGS + top from items
+  const kRevenue = kantinSales.reduce((a, s) => a + Number(s.total ?? 0), 0);
+  const kCogs = kantinItems.reduce((a, i) => a + Number(i.unit_cost ?? 0) * Number(i.qty ?? 0), 0);
   const kProfit = kRevenue - kCogs;
-  const kQty = kantinItems.reduce((a, i) => a + i.qty, 0);
-  const productTally = new Map<string, { qty: number; revenue: number }>();
+  const kTransactions = kantinSales.length;
+  const kQty = kantinItems.reduce((a, i) => a + Number(i.qty ?? 0), 0);
+  const topMap = new Map<string, { qty: number; revenue: number }>();
   for (const i of kantinItems) {
-    const t = productTally.get(i.product_name) ?? { qty: 0, revenue: 0 };
-    t.qty += i.qty;
-    t.revenue += i.unit_price * i.qty;
-    productTally.set(i.product_name, t);
+    const name = String(i.product_name ?? "Lainnya");
+    const cur = topMap.get(name) ?? { qty: 0, revenue: 0 };
+    cur.qty += Number(i.qty ?? 0);
+    cur.revenue += Number(i.unit_price ?? 0) * Number(i.qty ?? 0);
+    topMap.set(name, cur);
   }
-  const kTop = [...productTally.entries()]
+  const kTop: Array<[string, { qty: number; revenue: number }]> = [...topMap.entries()]
     .sort((a, b) => b[1].revenue - a[1].revenue)
     .slice(0, 5);
 
@@ -165,48 +178,89 @@ export default async function LaporanPage({
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/app/laporan?month=${addMonths(month, -1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100"
         >
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-navy-900">
+          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-zinc-900 dark:text-zinc-50">
             <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Laporan
           </h1>
-          <p className="text-xs font-semibold text-navy-700/60">{formatMonthLabel(month)}</p>
+          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{formatMonthLabel(month)}</p>
         </div>
         <Link
           href={`/app/laporan?month=${addMonths(month, 1)}`}
-          className="flex h-9 w-9 items-center justify-center rounded-xl border border-sky-brand-200 bg-white text-navy-800"
+          className="manager-tap flex h-9 w-9 min-h-[40px] min-w-[40px] items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-zinc-800 dark:text-zinc-100"
         >
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
 
-      {/* Summary */}
-      <div className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <div className="flex items-end justify-between">
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-widest text-navy-700/50">
-              Pendapatan kotor
-            </p>
-            <p className="text-2xl font-black text-navy-900">{formatIDR(gross)}</p>
-          </div>
+      {/* Quick Excel — Harian / Bulanan / Tahunan for both owner & staff */}
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3">
+        <p className="mb-2 text-[11px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+          Export Excel — cepat
+        </p>
+        <div className="flex flex-wrap gap-2">
           <a
-            href={`/api/reports/export?month=${month}`}
-            className="inline-flex items-center gap-1 rounded-xl border border-sky-brand-300 px-3 py-2 text-xs font-bold text-sky-brand-600 transition hover:bg-ice-100"
+            href={`/api/reports/export?date=${todayISO()}&format=xlsx`}
+            className="manager-tap inline-flex min-h-[40px] items-center rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
           >
-            <Download className="h-3.5 w-3.5" /> CSV
+            Harian ({todayISO()})
+          </a>
+          <a
+            href={`/api/reports/export?month=${month}&format=xlsx`}
+            className="manager-tap inline-flex min-h-[40px] items-center rounded-xl bg-zinc-900 px-3 py-1.5 text-xs font-bold text-white hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          >
+            Bulanan ({month})
+          </a>
+          <a
+            href={`/api/reports/export?year=${month.slice(0, 4)}&format=xlsx`}
+            className="manager-tap inline-flex min-h-[40px] items-center rounded-xl border border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-3 py-1.5 text-xs font-bold text-zinc-800 dark:text-zinc-100"
+          >
+            Tahunan ({month.slice(0, 4)})
+          </a>
+          <a
+            href={`/api/reports/export?type=kantin&month=${month}&format=xlsx`}
+            className="manager-tap inline-flex min-h-[40px] items-center rounded-xl border border-amber-300 bg-amber-50 px-3 py-1.5 text-xs font-bold text-amber-700"
+          >
+            Kantin {month}
           </a>
         </div>
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
-          <div className="rounded-xl bg-ice-100 py-2">
-            <p className="text-[10px] font-bold uppercase text-navy-700/50">Lapangan</p>
-            <p className="text-sm font-black text-navy-900">{formatIDR(gross)}</p>
+      </div>
+
+      {/* Summary */}
+      <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <div className="flex items-end justify-between">
+          <div>
+            <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-500 dark:text-zinc-400">
+              Pendapatan kotor
+            </p>
+            <p className="text-2xl font-black text-zinc-900 dark:text-zinc-50">{formatIDR(gross)}</p>
           </div>
-          <div className="rounded-xl bg-sky-brand-400/10 py-2">
-            <p className="text-[10px] font-bold uppercase text-sky-brand-600">Kantin</p>
-            <p className="text-sm font-black text-navy-900">{formatIDR(kRevenue)}</p>
+          <div className="flex gap-1.5">
+            <a
+              href={`/api/reports/export?month=${month}`}
+              className="manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 py-2 text-xs font-bold text-zinc-600 dark:text-zinc-300 transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
+            >
+              <Download className="h-3.5 w-3.5" /> CSV
+            </a>
+            <a
+              href={`/api/reports/export?month=${month}&format=xlsx`}
+              className="manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-xl bg-emerald-500 px-3 py-2 text-xs font-black text-white transition hover:bg-emerald-600"
+            >
+              <Download className="h-3.5 w-3.5" /> Excel
+            </a>
+          </div>
+        </div>
+        <div className="mt-3 grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 py-2">
+            <p className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400">Lapangan</p>
+            <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{formatIDR(gross)}</p>
+          </div>
+          <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 py-2">
+            <p className="text-[10px] font-bold uppercase text-zinc-600 dark:text-zinc-300">Kantin</p>
+            <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{formatIDR(kRevenue)}</p>
           </div>
           <div className="rounded-xl bg-red-50 py-2">
             <p className="text-[10px] font-bold uppercase text-red-400">Beban</p>
@@ -219,36 +273,44 @@ export default async function LaporanPage({
           </span>
           <span className="text-lg font-black text-emerald-700">{formatIDR(net)}</span>
         </div>
-        <p className="mt-1 text-right text-[9px] font-medium text-navy-700/40">
+        <p className="mt-1 text-right text-[9px] font-medium text-zinc-500 dark:text-zinc-400">
           lapangan {formatIDR(gross)} + laba kantin {formatIDR(kProfit)} − beban{" "}
           {formatIDR(expenseTotal)}
         </p>
       </div>
 
       {/* Kantin */}
-      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
+      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
             <ShoppingBasket className="h-4 w-4" /> Kantin
           </h2>
-          <a
-            href={`/api/reports/export?type=kantin&month=${month}`}
-            className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-brand-600"
-          >
-            <Download className="h-3 w-3" /> CSV
-          </a>
+          <div className="flex gap-1">
+            <a
+              href={`/api/reports/export?type=kantin&month=${month}`}
+              className="manager-tap inline-flex items-center gap-1 rounded-lg border border-zinc-200 dark:border-zinc-800 px-2 py-1 text-[10px] font-bold text-zinc-600 dark:text-zinc-300"
+            >
+              <Download className="h-3 w-3" /> CSV
+            </a>
+            <a
+              href={`/api/reports/export?type=kantin&month=${month}&format=xlsx`}
+              className="manager-tap inline-flex items-center gap-1 rounded-lg bg-emerald-500 px-2 py-1 text-[10px] font-black text-white"
+            >
+              <Download className="h-3 w-3" /> Excel
+            </a>
+          </div>
         </div>
         {kQty === 0 ? (
-          <p className="text-xs text-navy-700/50">Belum ada penjualan kantin bulan ini.</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Belum ada penjualan kantin bulan ini.</p>
         ) : (
           <div className="space-y-2">
             <div className="grid grid-cols-3 gap-2 text-center">
-              <div className="rounded-xl bg-ice-100 py-2">
-                <p className="text-[10px] font-bold uppercase text-navy-700/50">Omzet</p>
-                <p className="text-sm font-black text-navy-900">{formatIDR(kRevenue)}</p>
+              <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 py-2">
+                <p className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400">Omzet</p>
+                <p className="text-sm font-black text-zinc-900 dark:text-zinc-50">{formatIDR(kRevenue)}</p>
               </div>
-              <div className="rounded-xl bg-ice-100 py-2">
-                <p className="text-[10px] font-bold uppercase text-navy-700/50">Modal</p>
+              <div className="rounded-xl bg-zinc-100 dark:bg-zinc-800 py-2">
+                <p className="text-[10px] font-bold uppercase text-zinc-500 dark:text-zinc-400">Modal</p>
                 <p className="text-sm font-black text-red-500">−{formatIDR(kCogs)}</p>
               </div>
               <div className="rounded-xl bg-emerald-50 py-2">
@@ -256,14 +318,14 @@ export default async function LaporanPage({
                 <p className="text-sm font-black text-emerald-700">{formatIDR(kProfit)}</p>
               </div>
             </div>
-            <p className="text-[10px] font-semibold text-navy-700/40">{kQty} item terjual</p>
+            <p className="text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">{kQty} item · {kTransactions} transaksi</p>
             <ul className="space-y-1">
               {kTop.map(([name, t], idx) => (
                 <li key={name} className="flex items-center gap-2 text-xs">
-                  <span className="w-4 text-center font-black text-accent-500">{idx + 1}</span>
-                  <span className="min-w-0 flex-1 truncate font-semibold text-navy-800">{name}</span>
-                  <span className="text-navy-700/50">{t.qty}×</span>
-                  <span className="w-20 flex-shrink-0 text-right font-bold text-navy-900">
+                  <span className="w-4 text-center font-black text-zinc-500 dark:text-zinc-400">{idx + 1}</span>
+                  <span className="min-w-0 flex-1 truncate font-semibold text-zinc-800 dark:text-zinc-100">{name}</span>
+                  <span className="text-zinc-500 dark:text-zinc-400">{t.qty}×</span>
+                  <span className="w-20 flex-shrink-0 text-right font-bold text-zinc-900 dark:text-zinc-50">
                     {formatIDR(t.revenue)}
                   </span>
                 </li>
@@ -274,12 +336,12 @@ export default async function LaporanPage({
       </section>
 
       {/* Utilization */}
-      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
+      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
         <div className="mb-3 flex items-center justify-between">
-          <h2 className="flex items-center gap-2 text-sm font-extrabold text-navy-900">
+          <h2 className="flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
             <TrendingUp className="h-4 w-4" /> Okupansi
           </h2>
-          <span className="text-xs font-black text-sky-brand-600">{utilization}%</span>
+          <span className="text-xs font-black text-zinc-600 dark:text-zinc-300">{utilization}%</span>
         </div>
         <ul className="space-y-2">
           {courtList.map((c) => {
@@ -290,7 +352,7 @@ export default async function LaporanPage({
             );
             return (
               <li key={c.id}>
-                <div className="mb-0.5 flex justify-between text-[11px] font-semibold text-navy-700/70">
+                <div className="mb-0.5 flex justify-between text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
                   <span className="flex items-center gap-1">
                     <Shuttlecock className="h-3 w-3" />
                     {c.name}
@@ -299,9 +361,9 @@ export default async function LaporanPage({
                     {hrs} jam · {pct}%
                   </span>
                 </div>
-                <div className="h-2 overflow-hidden rounded-full bg-ice-200">
+                <div className="h-2 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700">
                   <div
-                    className="h-full rounded-full bg-sky-brand-400"
+                    className="h-full rounded-full bg-zinc-500 dark:bg-zinc-300"
                     style={{ width: `${pct}%` }}
                   />
                 </div>
@@ -312,18 +374,18 @@ export default async function LaporanPage({
       </section>
 
       {/* Peak hours */}
-      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <h2 className="mb-2 flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
           <Flame className="h-4 w-4" /> Jam Terpopuler
         </h2>
         {peakHours.length === 0 ? (
-          <p className="text-xs text-navy-700/50">Belum ada data bulan ini.</p>
+          <p className="text-xs text-zinc-500 dark:text-zinc-400">Belum ada data bulan ini.</p>
         ) : (
           <div className="flex flex-wrap gap-2">
             {peakHours.map(([h, count]) => (
               <span
                 key={h}
-                className="rounded-full bg-accent-500/10 px-3 py-1.5 text-xs font-bold text-accent-600"
+                className="rounded-full bg-zinc-100 dark:bg-zinc-800 px-3 py-1.5 text-xs font-bold text-zinc-700 dark:text-zinc-200"
               >
                 {String(h).padStart(2, "0")}.00 · {count}×
               </span>
@@ -333,23 +395,23 @@ export default async function LaporanPage({
       </section>
 
       {/* Daily revenue */}
-      <section className="rounded-2xl border border-sky-brand-200 bg-white p-4">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-navy-900">
+      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
+        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
           <Wallet className="h-4 w-4" /> Pendapatan Harian
         </h2>
         <div className="space-y-1">
           {days.map(({ iso, day, value }) => (
             <div key={iso} className="flex items-center gap-2">
-              <span className="w-6 flex-shrink-0 text-right text-[10px] font-semibold text-navy-700/40">
+              <span className="w-6 flex-shrink-0 text-right text-[10px] font-semibold text-zinc-500 dark:text-zinc-400">
                 {day}
               </span>
-              <div className="h-3.5 flex-1 overflow-hidden rounded-md bg-ice-200">
+              <div className="h-3.5 flex-1 overflow-hidden rounded-md bg-zinc-200 dark:bg-zinc-700">
                 <div
                   className={`h-full rounded-md ${value > 0 ? "bg-emerald-400" : ""}`}
                   style={{ width: `${value > 0 ? (value / maxDay) * 100 : 0}%` }}
                 />
               </div>
-              <span className="w-20 flex-shrink-0 text-[10px] font-bold text-navy-700/70">
+              <span className="w-20 flex-shrink-0 text-[10px] font-bold text-zinc-600 dark:text-zinc-300">
                 {value > 0 ? formatIDR(value) : ""}
               </span>
             </div>
