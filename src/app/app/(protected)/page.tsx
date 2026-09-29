@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/proxy/client";
+import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import {
   addDaysISO,
   formatIDR,
@@ -43,6 +44,7 @@ export default async function DashboardPage() {
         .from("bookings")
         .select("*, courts(name)")
         .eq("booking_date", today)
+        .in("status", VISIBLE_ON_SCHEDULE)
         .order("start_time"),
       supabase
         .from("payments")
@@ -130,7 +132,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           icon={Wallet}
           label="Pendapatan"
@@ -156,30 +158,35 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Low stock alert */}
-      {lowStock.length > 0 && (
-        <Link
-          href="/app/kantin/stok"
-          className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/40"
-        >
-          <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
-          <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
-            Stok kantin menipis: <b>{lowStock.map((p) => p.name).join(", ")}</b>
-          </span>
-        </Link>
-      )}
+      {/* Body — single column until xl, then Agenda takes the wide 2/3
+          column and the tools stack in a 1/3 rail beside it. */}
+      <div className="grid gap-5 xl:grid-cols-3 xl:items-start">
+        <div className="space-y-5 xl:col-start-3 xl:row-start-1">
+          {/* Low stock alert */}
+          {lowStock.length > 0 && (
+            <Link
+              href="/app/kantin/stok"
+              className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/40"
+            >
+              <TriangleAlert className="mt-0.5 h-4 w-4 flex-shrink-0 text-amber-500" aria-hidden="true" />
+              <span className="text-xs font-semibold text-amber-700 dark:text-amber-200">
+                Stok kantin menipis: <b>{lowStock.map((p) => p.name).join(", ")}</b>
+              </span>
+            </Link>
+          )}
 
-      {/* Live lapangan — which is in use till when, + nambah jam / kosongkan */}
-      <LiveLapangan bookings={bookings as unknown as Array<{ id: string; court_id: string; courts: { name: string } | null; customer_name: string; start_time: string; end_time: string; status: string }>} />
+          {/* Live lapangan — which is in use till when, + nambah jam / kosongkan */}
+          <LiveLapangan bookings={bookings as unknown as Array<{ id: string; court_id: string; courts: { name: string } | null; customer_name: string; start_time: string; end_time: string; status: string }>} />
 
-      {/* Daily closing nudge (after 20:00 WIB) */}
-      <DailyReportNudge />
+          {/* Daily closing nudge (after 20:00 WIB) */}
+          <DailyReportNudge />
 
-      {/* Owner tools */}
-      <OwnerMenu />
+          {/* Owner tools */}
+          <OwnerMenu />
+        </div>
 
-      {/* Agenda */}
-      <div>
+        {/* Agenda */}
+        <div className="xl:col-start-1 xl:row-start-1 xl:col-span-2">
         <h2 className="mb-2 text-xs font-bold tracking-widest text-zinc-400 uppercase dark:text-zinc-500">
           Agenda Lapangan
         </h2>
@@ -190,7 +197,7 @@ export default async function DashboardPage() {
             </p>
           </div>
         ) : (
-          <ul className="space-y-2.5">
+          <ul className="space-y-2.5 2xl:grid 2xl:grid-cols-2 2xl:gap-2.5 2xl:space-y-0">
             {bookings.map((b) => (
               <li
                 key={b.id}
@@ -264,6 +271,7 @@ export default async function DashboardPage() {
             ))}
           </ul>
         )}
+        </div>
       </div>
     </div>
   );

@@ -3,6 +3,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/proxy/client";
+import {
+  ALL_BOOKING_STATUSES,
+  MUTABLE_BOOKING_STATUSES,
+  OCCUPIES_COURT,
+} from "@/lib/booking-status";
 import { addDaysISO, computePrice, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
 import { rateLimit } from "@/lib/ratelimit";
 
@@ -206,11 +211,18 @@ export async function updateBookingStatus(
   const next = String(formData.get("status") ?? "");
   if (!id || !next) return { error: "Permintaan tidak valid" };
 
+  // Status-change pre-read. The list endpoint defaults to
+  // `status=confirmed`, so without an explicit set a `pending` booking
+  // came back as "not found" and the transition silently did nothing.
   const { data: current, error: curErr } = await supabase
     .from("bookings")
     .select("status,customer_id")
     .eq("id", id)
+    .in("status", MUTABLE_BOOKING_STATUSES)
     .maybeSingle();
+  if (curErr) {
+    return { error: `Gagal memuat booking: ${curErr.message}` };
+  }
   const from = current?.status as string | undefined;
   if (!from) return { error: "Booking tidak ditemukan." };
 
@@ -281,6 +293,7 @@ export async function extendBooking(
     .from("bookings")
     .select("court_id,booking_date,start_time,end_time,status")
     .eq("id", id)
+    .in("status", MUTABLE_BOOKING_STATUSES)
     .maybeSingle();
   if (!cur) return { error: "Booking tidak ditemukan" };
   const curRow = cur as unknown as {
@@ -299,15 +312,15 @@ export async function extendBooking(
   if (newEnd > 23) return { error: "Melebihi jam operasional (23.00)" };
   const newEndStr = `${String(newEnd).padStart(2, "0")}:00`;
 
-  // Check next booking overlap on same court/date
+  // Check next booking overlap on same court/date. Only statuses that
+  // actually hold the court count: a cancelled or no-show slot is free.
   const { data: nexts } = await supabase
     .from("bookings")
     .select("start_time,end_time")
     .eq("court_id", curRow.court_id)
     .eq("booking_date", curRow.booking_date)
-    .neq("id", id)
-    .neq("status", "cancelled")
-    .neq("status", "no_show");
+    .in("status", OCCUPIES_COURT)
+    .neq("id", id);
   const nextList = (nexts ?? []) as Array<{ start_time: string; end_time: string }>;
   for (const n of nextList) {
     const ns = Number(String(n.start_time).slice(0, 2));
@@ -356,6 +369,7 @@ export async function releaseBooking(
     .from("bookings")
     .select("start_time,end_time,status,booking_date")
     .eq("id", id)
+    .in("status", MUTABLE_BOOKING_STATUSES)
     .maybeSingle();
   if (!cur) return { error: "Booking tidak ditemukan" };
   const row = cur as unknown as { start_time: string; end_time: string; status: string; booking_date: string };
@@ -408,11 +422,14 @@ export async function recordPayment(
     return { error: "Terlalu banyak transaksi — coba lagi sebentar." };
   }
 
-  // Reject overpayment against the booking's outstanding balance
+  // Reject overpayment against the booking's outstanding balance. Any
+  // status can be paid, so ask for the full set rather than relying on
+  // the confirmed-only list default.
   const { data: booking } = await supabase
     .from("bookings")
     .select("computed_price,override_price")
     .eq("id", bookingId)
+    .in("status", ALL_BOOKING_STATUSES)
     .maybeSingle();
   if (!booking) return { error: "Booking tidak ditemukan." };
 

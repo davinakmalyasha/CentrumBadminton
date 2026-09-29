@@ -48,10 +48,23 @@ async function getTokens(): Promise<{ session?: string; client?: string }> {
 
 export async function setSession(token: string) {
   const store = await cookies();
-  // NOT httpOnly: the browser connector (landing availability) reads
-  // the same cookie to send X-Session-Token. SameSite=Lax + Secure in
-  // prod mitigate XSS exfiltration; the token is a scoped session.
+  // httpOnly: the token is a bearer credential the proxy accepts
+  // directly as X-Session-Token, scoped to the whole tenant at owner
+  // level, for 30 days. It must not be reachable from document.cookie.
+  //
+  // This used to be deliberately not-httpOnly so the browser connector
+  // (landing availability) could read the same cookie to send
+  // X-Session-Token. That reader is gone: getCookie/browserFetch are
+  // dead code and the one live browser path (get_day_busy) goes through
+  // the same-origin /api/availability route, which never touches the
+  // cookie. So the trade-off no longer buys anything.
+  //
+  // SameSite=Lax still lets a top-level GET from an external link
+  // carry the cookie, which is the normal staff-link-in case; CSRF for
+  // state changes is covered by the SameSite check plus the fact that
+  // every write goes through a server action (POST).
   store.set(SESSION_COOKIE, token, {
+    httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
@@ -129,6 +142,28 @@ export const proxyAuth = {
     }
   },
   async signOut(): Promise<void> {
+    // Revoke server-side first. The proxy has POST /v1/auth/logout,
+    // which DELETEs the session row; without calling it the token
+    // stays valid for the full 30-day SessionTTL after the user
+    // pressed "Keluar", which matters on a shared device where the
+    // next person could restore the cookie from browser history.
+    //
+    // Best-effort: if the proxy is unreachable we still clear the local
+    // cookie, and a stale-but-unused token is far better than a staff
+    // member who cannot log out.
+    try {
+      const { session } = await getTokens();
+      if (session) {
+        await fetch(`${PROXY_URL}/v1/auth/logout`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Session-Token": session },
+          cache: "no-store",
+          signal: AbortSignal.timeout(5_000),
+        });
+      }
+    } catch {
+      // Proxy down or already expired - fall through to local clear.
+    }
     await clearSession();
   },
   async getUser(): Promise<{ data: { user: { id: string; email: string; role?: string } | null } }> {
@@ -212,14 +247,46 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     return this;
   }
 
+  /**
+   * `status IN (...)`.
+   *
+   * The proxy takes a CSV status list (`?status=pending,confirmed`) and
+   * DEFAULTS to `status=confirmed` when the param is absent. That
+   * default is correct for a revenue list and wrong for a schedule
+   * grid, so anything that needs more than confirmed has to say so.
+   *
+   * Before this existed, `eq("status", …)` was accepted and then
+   * silently dropped on the floor (the query builder had no mapping for
+   * it), so every read came back confirmed-only regardless of what the
+   * caller asked for.
+   */
+  in(col: string, vals: readonly (string | number)[]): this {
+    if (vals.length > 0) this.filters[col] = vals.map(String).join(",");
+    return this;
+  }
+
   neq(col: string, val: string | number | boolean): this {
-    this.filters[`${col}.neq`] = val;
+    this.addNeq(col, val);
     return this;
   }
 
   not(col: string, _op: string, val: string | number | boolean | null): this {
-    this.filters[`${col}.neq`] = val as string;
+    this.addNeq(col, val);
     return this;
+  }
+
+  /**
+   * Accumulate `<col>.neq` into a list.
+   *
+   * These used to overwrite a single key, so chaining two of them kept
+   * only the last. That silently changed report queries that excluded
+   * two statuses at once.
+   */
+  private addNeq(col: string, val: string | number | boolean | null): void {
+    if (val === null) return;
+    const key = `${col}.neq`;
+    const cur = this.filters[key];
+    this.filters[key] = cur === undefined ? String(val) : `${cur},${val}`;
   }
 
   upsert(row: Record<string, unknown>, _opts?: unknown): this {
@@ -303,11 +370,20 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
         const id = this.filters["id"] as string | undefined;
         if (!id) return { data: null, error: new ProxyError("write needs id filter", 400) };
         if (this.writeOp.kind === "update") {
-          await proxyFetch(`${feature}/${id}`, {
+          // Return the proxy's confirmation so `.update(...).select(...)`
+          // callers can tell success from "row not found". The proxy
+          // answers 404 for a missing row and validates the status
+          // transition server-side, so a rejected update surfaces as
+          // `error` here and a successful one as a 1-element array.
+          //
+          // Returning `data: null` (as this used to) made every caller
+          // that checks `!data || data.length === 0` report failure
+          // after a write that had already committed.
+          const updated = await proxyFetch<Record<string, unknown>>(`${feature}/${id}`, {
             method: "PATCH",
             body: this.mapRow(this.table, this.writeOp.row ?? {}),
           });
-          return { data: null, error: null };
+          return { data: [updated] as unknown as T[], error: null };
         }
         // delete
         await proxyFetch(`${feature}/${id}`, { method: "DELETE" });
@@ -333,6 +409,8 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     if (this.filters["block_date"] !== undefined) query.date = String(this.filters["block_date"]);
     if (this.filters["spent_at"] !== undefined) query.date = String(this.filters["spent_at"]);
     if (this.filters["is_active"] !== undefined) query.status = "active";
+    if (this.filters["status"] !== undefined) query.status = String(this.filters["status"]);
+    if (this.filters["id"] !== undefined) query.id = String(this.filters["id"]);
     if (this.filters["type"] !== undefined) query.type = String(this.filters["type"]);
     // Forward range/neq filters to proxy when supported; client-side fallback below also handles them
     for (const [k, v] of Object.entries(this.filters)) {
@@ -380,6 +458,13 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
         for (const [k, v] of Object.entries(this.filters)) {
           if (k.endsWith(".neq")) {
             const col = k.slice(0, -4);
+            // CSV list (chained .neq() calls): exclude any of them,
+            // otherwise the compare is against "a,b" and matches
+            // nothing, silently dropping every row from the result.
+            if (typeof v === "string" && v.includes(",")) {
+              if (v.split(",").includes(String(it[col] ?? ""))) return false;
+              continue;
+            }
             if (String(it[col] ?? "") === String(v)) return false;
             continue;
           }
@@ -405,6 +490,13 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
             // For gte/lt variants already handled above, this is fallback exact
             if (k.includes(".gte") || k.includes(".lt") || k.includes(".neq")) continue;
             if (String(it[leaf] ?? it[k] ?? "") !== String(v)) return false;
+            continue;
+          }
+          if (typeof v === "string" && v.includes(",")) {
+            // CSV list (from .in()): membership, not equality. Without
+            // this an `in("status", [...])` would compare the row's
+            // status against the whole "a,b,c" string and match nothing.
+            if (!v.split(",").includes(String(it[k] ?? ""))) return false;
             continue;
           }
           if (it[k] !== v) return false;

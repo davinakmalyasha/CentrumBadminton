@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CalendarDays, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/proxy/client";
+import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import {
   addDaysISO,
   formatIDR,
@@ -39,7 +40,7 @@ export default async function JadwalPage({
       .from("bookings")
       .select("*, courts(name)")
       .eq("booking_date", date)
-      .neq("status", "cancelled")
+      .in("status", VISIBLE_ON_SCHEDULE)
       .order("start_time"),
     // Maintenance / private-event blocks — must be visible on the internal
     // timeline so staff don't book through a closed court.
