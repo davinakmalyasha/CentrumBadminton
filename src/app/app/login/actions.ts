@@ -2,7 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@/lib/proxy/client";
 import { rateLimit, clientIp } from "@/lib/ratelimit";
 
 export type SignInState = { error: string | null };
@@ -32,7 +32,7 @@ export async function signIn(
   });
 
   if (error) {
-    return { error: "Email atau kata sandi salah." };
+    return { error: `Email atau kata sandi salah. (${error.message ?? error.status ?? ""})` };
   }
 
   // redirect() throws internally — must not be inside try/catch

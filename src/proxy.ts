@@ -1,63 +1,31 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { createServerClient } from "@supabase/ssr";
 
 const APP_PREFIX = "/app";
 const LOGIN_PATH = "/app/login";
+const SESSION_COOKIE = "proxy_session";
 
 /**
- * Refreshes the Supabase auth session on every /app request and copies
- * rotated cookies onto the response (prevents "refresh token already
- * used" races / random logouts on multi-tab PWA usage). Also performs
- * the optimistic redirect gate.
- * Real role/is_active validation stays in (protected)/layout.tsx.
+ * Optimistic redirect gate for /app using the proxy session cookie.
+ * Real role/is_active validation stays in (protected)/layout.tsx
+ * (which calls /v1/auth/me). The session is validated there, not in
+ * the middleware — this is just the fast pre-check.
  */
 export async function proxy(request: NextRequest) {
-  let response = NextResponse.next({ request });
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookieOptions: {
-        secure: process.env.NODE_ENV === "production",
-      },
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
-
-  // Refreshes the access token if expired — do not remove.
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
+  const hasSession = Boolean(request.cookies.get(SESSION_COOKIE)?.value);
   const { pathname } = request.nextUrl;
 
-  if (pathname.startsWith(APP_PREFIX) && pathname !== LOGIN_PATH && !user) {
+  if (pathname.startsWith(APP_PREFIX) && pathname !== LOGIN_PATH && !hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = LOGIN_PATH;
     return NextResponse.redirect(url);
   }
 
-  if (pathname === LOGIN_PATH && user) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/app";
-    return NextResponse.redirect(url);
-  }
+  // Do NOT redirect LOGIN -> /app on hasSession. Stale/invalid cookies caused
+  // infinite loop: login (hasSession true) -> /app -> layout 401 -> /app/login -> /app ...
+  // Real validation lives in (protected)/layout.tsx which clears invalid cookies.
+  // If session is valid, the login page's server action will setSession and redirect anyway.
 
-  return response;
+  return NextResponse.next({ request });
 }
 
 export const config = {
