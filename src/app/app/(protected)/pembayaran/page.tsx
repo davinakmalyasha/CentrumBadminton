@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/proxy/client";
+import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import { addDaysISO, formatIDR, todayISO } from "@/lib/availability";
 import type { Booking, PaymentStatus } from "@/lib/types";
 import { Banknote, Check, QrCode, Receipt, User } from "lucide-react";
@@ -51,7 +52,7 @@ export default async function PembayaranPage({
       .from("bookings")
       .select("*, courts(name)")
       .eq("booking_date", date)
-      .neq("status", "cancelled")
+      .in("status", VISIBLE_ON_SCHEDULE)
       .order("start_time"),
     supabase
       .from("payments")
