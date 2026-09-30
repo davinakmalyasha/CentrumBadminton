@@ -12,6 +12,8 @@ import {
 import type { Booking } from "@/lib/types";
 import TimelineGrid, { type Block } from "@/components/app/TimelineGrid";
 import ScheduleRealtime from "@/components/app/ScheduleRealtime";
+import BookingActions from "@/components/app/BookingActions";
+import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 
 type Row = Booking & { courts: { name: string } | null };
 
@@ -58,6 +60,11 @@ export default async function JadwalPage({
     reason: string;
   }>;
   const courts = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
+
+  // A failed read used to be indistinguishable from "no bookings today",
+  // because the data layer returned an empty list for every transport
+  // error. Say so instead of rendering a confidently empty timeline.
+  const readError = firstError(bookingsRes, blocksRes, courtsRes, pricingRes);
 
   const p = pricingRes.data?.[0];
   const pricing: PricingInfo = p
@@ -141,43 +148,76 @@ export default async function JadwalPage({
         </div>
       )}
 
-      {sp.created && (
+      {sp.created === "1" && (
         <div className="rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
           <Check className="mr-1 inline h-3.5 w-3.5" />
           Booking berhasil dibuat
         </div>
       )}
 
-      <ScheduleRealtime dateISO={date} />
+      {readError ? (
+        <DataUnavailable detail={readError} />
+      ) : courts.length === 0 ? (
+        <EmptyState
+          title="Belum ada lapangan"
+          body="Setiap lapangan ditampilkan sebagai satu kolom dan setiap jam sebagai satu baris. Tambahkan lapangan di Pengaturan, lalu booking akan muncul di sini sebagai blok berwarna."
+          action={{ href: "/app/pengaturan", label: "Buka Pengaturan" }}
+        />
+      ) : (
+        <>
+          <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
+            Satu baris per jam, satu kolom per lapangan. Blok berwarna =
+            booking; garis miring = lapangan ditutup (blokir).
+          </p>
 
-      <TimelineGrid
-        courts={courts}
-        blocks={blocks}
-        pricing={pricing}
-        dateISO={date}
-      />
+          <ScheduleRealtime dateISO={date} />
 
-      {/* Agenda */}
-      {bookingBlocks.length > 0 && (
-        <ul className="space-y-2">
-          {[...bookingBlocks]
-            .sort((a, b) => a.startHour - b.startHour)
-            .map((b) => (
-              <li
-                key={`agenda-${b.id}`}
-                className="flex items-center justify-between gap-2 rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <span className="min-w-0 truncate text-xs font-bold text-zinc-900 dark:text-zinc-50">
-                  {String(b.startHour).padStart(2, "0")}.00–
-                  {String(b.endHour).padStart(2, "0")}.00{" "}
-                  <span className="ml-1 font-semibold text-zinc-500 dark:text-zinc-400">{b.label}</span>
-                </span>
-                <span className="flex-shrink-0 text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
-                  {formatIDR(b.price)}
-                </span>
-              </li>
-            ))}
-        </ul>
+          <TimelineGrid
+            courts={courts}
+            blocks={blocks}
+            pricing={pricing}
+            dateISO={date}
+          />
+
+          {bookingBlocks.length === 0 ? (
+            <EmptyState
+              title="Belum ada booking di tanggal ini"
+              body="Semua jam masih kosong. Booking dari WhatsApp atau walk-in bisa dicatat di Booking Baru."
+              action={{ href: "/app/booking/baru", label: "Catat booking" }}
+            />
+          ) : (
+            /* Agenda. Status actions live here because this is where staff
+               look for tomorrow's provisional bookings — the Booking Baru
+               form even tells them to confirm "dari tombol Confirm di
+               jadwal", which did not exist until now. */
+            <ul className="space-y-2">
+              {[...bookingBlocks]
+                .sort((a, b) => a.startHour - b.startHour)
+                .map((b) => (
+                  <li
+                    key={`agenda-${b.id}`}
+                    className="rounded-xl border border-zinc-200 bg-white px-3.5 py-2.5 dark:border-zinc-800 dark:bg-zinc-900"
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="min-w-0 truncate text-xs font-bold text-zinc-900 dark:text-zinc-50">
+                        {String(b.startHour).padStart(2, "0")}.00–
+                        {String(b.endHour).padStart(2, "0")}.00{" "}
+                        <span className="ml-1 font-semibold text-zinc-500 dark:text-zinc-400">
+                          {b.label}
+                        </span>
+                      </span>
+                      <span className="flex-shrink-0 text-[11px] font-bold text-zinc-600 dark:text-zinc-300">
+                        {formatIDR(b.price)}
+                      </span>
+                    </div>
+                    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                      <BookingActions bookingId={b.id} status={b.status} />
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          )}
+        </>
       )}
     </div>
   );

@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { requireStaffPage } from "@/lib/guard";
+import { requireStaffPage, getRole } from "@/lib/guard";
+import ClosingReportCard from "@/components/app/ClosingReportCard";
+import { DataUnavailable, firstError } from "@/components/app/EmptyState";
 import { formatIDR, type PricingRule } from "@/lib/availability";
 import { proxyFetch } from "@/lib/proxy/client";
 import {
@@ -36,6 +38,7 @@ export default async function LaporanPage({
   const endEx = monthEndExclusive(month);
 
   const supabase = await requireStaffPage();
+  const isOwner = (await getRole()) === "owner";
 
   const [pricingForMonth, paymentsRes, bookingsRes, expensesRes, courtsRes, kantinSalesRes] =
     await Promise.all([
@@ -173,6 +176,30 @@ export default async function LaporanPage({
     .sort((a, b) => b[1] - a[1])
     .slice(0, 5);
 
+  // Every figure on this page comes from reads that used to fail silently.
+  // `.neq("status", …)` in particular was serialised as a comma-joined
+  // `status.neq` param, which the bookings handler rejects with 400 — so
+  // utilisation, occupancy and peak hours rendered as a confident 0% or an
+  // empty list with nothing to indicate a failure.
+  const readError = firstError(
+    paymentsRes,
+    bookingsRes,
+    expensesRes,
+    courtsRes,
+    kantinSalesRes,
+    pricingForMonth
+  );
+  if (readError) {
+    return (
+      <div className="space-y-5">
+        <h1 className="flex items-center gap-2 text-base font-black text-zinc-900 dark:text-zinc-50">
+          <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Laporan
+        </h1>
+        <DataUnavailable detail={readError} />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between gap-2">
@@ -195,6 +222,17 @@ export default async function LaporanPage({
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
+
+      {/* Closing report generator. Moved here from /app/ai, where it sat
+          directly above the chat and made the assistant page read as
+          "chat + a bolted-on form". It is a report generator for closing
+          time, so it belongs beside the other owner reports.
+          Laporan is reachable by staff (the nav only shows it to owners, but
+          the page guard is requireStaffPage) and this card has no internal
+          role check — it relied on the check that used to live in ai/page.
+          Without it here a pegawai would get a Generate button whose server
+          action only ever answers "Hanya owner." */}
+      {isOwner && <ClosingReportCard />}
 
       {/* Quick Excel — Harian / Bulanan / Tahunan for both owner & staff */}
       <div className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-3">

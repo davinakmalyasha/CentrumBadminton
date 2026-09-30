@@ -390,12 +390,19 @@ export default function AvailabilityBoard({
                 </span>
               </div>
 
-              {/* Per-range rows */}
+              {/* Per-range rows.
+                  Flatten to plain data first, then render once. The previous
+                  shape was flatMap(... .map(...)) — the keys were present at
+                  runtime, but react/jsx-key only inspects the element returned
+                  directly by the outer callback, so it could not see them and
+                  failed the lint gate on a false positive. Splitting the two
+                  steps makes the key visible and keeps the output identical. */}
               <div className="mt-2 max-h-24 space-y-1 overflow-y-auto pr-1">
-                {courts.flatMap((c) => {
-                  const hours = selection[c.id] ?? [];
-                  if (hours.length === 0) return [];
-                  return groupHours(hours).map(([s, e]) => {
+                {(() => {
+                  const ranges = courts.flatMap((c) =>
+                    groupHours(selection[c.id] ?? []).map(([s, e]) => ({ c, s, e }))
+                  );
+                  return ranges.map(({ c, s, e }) => {
                     const dur = e - s;
                     let rangePrice = 0;
                     for (let h = s; h < e; h++) rangePrice += h >= pricing.dayEndHour ? pricing.priceEvening : pricing.priceDay;
@@ -413,7 +420,7 @@ export default function AvailabilityBoard({
                       </div>
                     );
                   });
-                })}
+                })()}
               </div>
 
               {/* Total summary */}

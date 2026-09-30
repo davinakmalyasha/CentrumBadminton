@@ -1,4 +1,5 @@
 import { requireOwnerPage } from "@/lib/guard";
+import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 import { ShoppingBasket } from "lucide-react";
 import { EditProductRow, NewProductForm } from "@/components/app/kantin/ProductForms";
 
@@ -41,9 +42,11 @@ export default async function KantinProdukPage() {
           <ShoppingBasket className="h-5 w-5" strokeWidth={1.75} /> Produk Kantin
         </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-          {products.length} produk · ketuk nama untuk mengubah harga/modal/stok
+          {products.length} produk · ketuk nama untuk mengubah harga/modal
         </p>
       </div>
+
+      <KantinSubnav active="/app/kantin/produk" />
 
       <NewProductForm />
 

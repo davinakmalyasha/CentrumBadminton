@@ -164,14 +164,21 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
   return (
     <section
       aria-label="Chat AI Asisten"
-      className="flex min-h-[40dvh] flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white sm:min-h-[62dvh] dark:border-zinc-800 dark:bg-zinc-900"
+      /* Fills the viewport between the page header and the shell's bottom
+         padding, so the transcript scrolls inside the card and the composer
+         stays put — the behaviour people expect from a chat. It used to be
+         capped with min-h/max-h percentages, which left a short card with a
+         lot of dead space on a tall screen and pushed the composer off the
+         fold on a short one. `min-h-0` is required for a flex child to be
+         allowed to shrink below its content height. */
+      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
     >
       {/* Messages */}
       <div
         role="log"
         aria-live="polite"
         aria-label="Riwayat chat"
-        className="manager-scroll max-h-[32dvh] flex-1 space-y-3 overflow-y-auto p-3 sm:max-h-[58dvh] sm:p-4"
+        className="manager-scroll min-h-0 flex-1 space-y-3 overflow-y-auto p-3 sm:p-4"
       >
         {messages.length === 0 && (
           <div className="manager-rise rounded-2xl bg-zinc-100 p-3 text-center sm:p-5 dark:bg-zinc-800">

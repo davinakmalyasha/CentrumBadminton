@@ -80,14 +80,32 @@ export async function clearSession() {
 /** Core fetch: attaches auth headers, JSON in/out, ProxyError on non-2xx. */
 export async function proxyFetch<T>(
   path: string,
-  init?: { method?: string; body?: unknown; query?: Record<string, string | undefined> }
+  init?: {
+    method?: string;
+    body?: unknown;
+    /**
+     * A value may be an array to send the key REPEATEDLY
+     * (`?status.neq=a&status.neq=b`) instead of joined with commas. The Go
+     * proxy reads those with `for _, v := range q["status.neq"]`, so a
+     * comma-joined string arrives as one literal value and fails
+     * validation. Array form is the only shape the handlers understand.
+     */
+    query?: Record<string, string | string[] | undefined>;
+  }
 ): Promise<T> {
   const { session, client } = await getTokens();
   let url = PROXY_URL + path;
   if (init?.query) {
     const qs = new URLSearchParams();
     for (const [k, v] of Object.entries(init.query)) {
-      if (v !== undefined && v !== "") qs.set(k, v);
+      if (v === undefined || v === "") continue;
+      if (Array.isArray(v)) {
+        for (const item of v) {
+          if (item !== "") qs.append(k, item);
+        }
+      } else {
+        qs.set(k, v);
+      }
     }
     const s = qs.toString();
     if (s) url += "?" + s;
@@ -218,6 +236,8 @@ type LooseResult = { data: unknown; error: ProxyError | null };
 export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private path: string;
   private filters: Filter = {};
+  /** Column → excluded values. Emitted as repeated `<col>.neq` params. */
+  private neqList: Record<string, (string | number | boolean)[]> = {};
   private orderCol?: string;
   private orderDesc = false;
   private limitN?: number;
@@ -276,17 +296,26 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   }
 
   /**
-   * Accumulate `<col>.neq` into a list.
+   * Accumulate exclusions per column.
    *
-   * These used to overwrite a single key, so chaining two of them kept
-   * only the last. That silently changed report queries that excluded
-   * two statuses at once.
+   * Two bugs lived here. First, this used to overwrite a single key, so
+   * chaining two `.neq()` calls kept only the last — silently changing any
+   * report that excluded two statuses at once. Second, the fix joined
+   * them with a comma into one string, which is worse: the proxy reads
+   * `?status.neq` with `for _, ex := range q["status.neq"]` and validates
+   * EACH value against the status enum, so "cancelled,no_show" arrived as
+   * one unknown literal and the request 400'd. The caller then got an
+   * empty list back and every figure built from it — occupancy, peak
+   * hours, "jadwal ke depan" — was permanently zero with no error shown.
+   *
+   * Kept in a dedicated list (not `filters`, which is scalar-typed) and
+   * emitted as a repeated query key, which is what the handler expects.
    */
   private addNeq(col: string, val: string | number | boolean | null): void {
     if (val === null) return;
-    const key = `${col}.neq`;
-    const cur = this.filters[key];
-    this.filters[key] = cur === undefined ? String(val) : `${cur},${val}`;
+    const list = this.neqList[col] ?? [];
+    if (!list.includes(val)) list.push(val);
+    this.neqList[col] = list;
   }
 
   upsert(row: Record<string, unknown>, _opts?: unknown): this {
@@ -396,7 +425,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     const feature = this.tableMap()[this.table] ?? this.table;
     this.path = `/v1/sports/${feature}/`;
 
-    const query: Record<string, string> = {};
+    const query: Record<string, string | string[]> = {};
     if (this.filters["date"] !== undefined) query.date = String(this.filters["date"]);
     if (this.filters["facility_id"] !== undefined)
       query.facility_id = String(this.filters["facility_id"]);
@@ -412,39 +441,55 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     if (this.filters["status"] !== undefined) query.status = String(this.filters["status"]);
     if (this.filters["id"] !== undefined) query.id = String(this.filters["id"]);
     if (this.filters["type"] !== undefined) query.type = String(this.filters["type"]);
-    // Forward range/neq filters to proxy when supported; client-side fallback below also handles them
+    // Exclusions go out as REPEATED keys — see addNeq(). The handlers
+    // validate each value, so a comma-joined string is rejected outright.
+    for (const [col, values] of Object.entries(this.neqList)) {
+      query[`${col}.neq`] = values.map(String);
+    }
+    // Forward range filters to proxy when supported; client-side fallback below also handles them
     for (const [k, v] of Object.entries(this.filters)) {
-      if (k.includes(".gte") || k.includes(".lt") || k.includes(".neq")) {
+      if (k.endsWith(".gte") || k.endsWith(".lt")) {
         // Keep original key for client-side eval; also send as query for future proxy support
         query[k] = String(v);
       }
     }
-    // Include raw gte/lt from direct calls (paid_at, created_at etc.) for proxy passthrough
-    for (const [k, v] of Object.entries(this.filters)) {
-      if (k.startsWith("paid_at") || k.startsWith("created_at") || k.startsWith("kantin_sales")) {
-        if (v !== undefined && v !== "") query[k] = String(v);
-      }
-    }
-    // Map range filters to the proxy's from/to params (payments/expenses/
-    // kantin honor them server-side; the raw keys above stay as fallback).
-    const gtePaid = this.filters["paid_at.gte"];
-    const ltPaid = this.filters["paid_at.lt"];
-    if (gtePaid !== undefined && gtePaid !== "") query.from = String(gtePaid).slice(0, 10);
-    if (ltPaid !== undefined && ltPaid !== "") query.to = String(ltPaid).slice(0, 10);
-    const gteKantin = this.filters["created_at.gte"];
-    const ltKantin = this.filters["created_at.lt"];
-    if (this.table === "kantin_sales") {
-      if (gteKantin !== undefined && gteKantin !== "") query.from = String(gteKantin).slice(0, 10);
-      if (ltKantin !== undefined && ltKantin !== "") query.to = String(ltKantin).slice(0, 10);
-    }
+    // Map range filters to the proxy's from/to params, which it honours
+    // server-side. Only paid_at (payments) and created_at (kantin_sales)
+    // were mapped before, so an expenses month range never reached the
+    // proxy: it answered with the tenant's newest 500 expenses and the
+    // month was applied afterwards in JS. Past that cap, every month
+    // older than the newest 500 rows silently showed Rp0.
+    const rangeTo = (col: string) => {
+      const gte = this.filters[`${col}.gte`];
+      const lt = this.filters[`${col}.lt`];
+      if (gte !== undefined && gte !== "") query.from = String(gte).slice(0, 10);
+      if (lt !== undefined && lt !== "") query.to = String(lt).slice(0, 10);
+    };
+    rangeTo("paid_at");
+    if (this.table === "kantin_sales") rangeTo("created_at");
+    if (this.table === "expenses") rangeTo("spent_at");
+    // Bookings take a date RANGE (from inclusive / to exclusive). Without
+    // this the range keys were shipped as ?booking_date.gte=…, which no
+    // handler reads, so a "show me everything still unpaid" query came
+    // back as the tenant's oldest 500 bookings and recent invoices were
+    // invisible.
+    if (this.table === "bookings") rangeTo("booking_date");
     if (this.orderCol) query.order = this.orderCol + (this.orderDesc ? " desc" : "");
     if (this.limitN) query.limit = String(this.limitN);
-    // Public landing reads go through without a session — proxy uses
+    // Public landing reads go through without a session — the proxy uses
     // ?tenant_id= to resolve. Authenticated reads ignore it.
-    // Centrum is badminton-only — filter type, keep shared sports table for other tenants.
+    //
+    // The tenant is the isolation boundary, so courts/pricing are pinned to
+    // it. This used to ALSO pin `type=badminton`, which was a silent
+    // invisibility trap: sports_facilities.type defaults to 'other', and
+    // anything inserted without that column — a psql insert, a script, an
+    // older row — matched no court on the dashboard, the schedule, the
+    // booking form, the reports or the landing availability board, with no
+    // error and no hint why. The handler filters by tenant alone when
+    // `type` is absent (facilities/feature.go:175), which is both correct
+    // for a single-venue arena and impossible to trip by accident.
     if (this.table === "courts" || this.table === "pricing_rules") {
       query.tenant_id = TENANT_ID;
-      if (!query.type) query.type = "badminton";
     }
 
     try {
@@ -453,21 +498,9 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
       // Reshape proxy rows into the Supabase shapes the UI expects
       // (e.g. facility_name → courts: { name }, price → computed_price).
       const shaped = items.map((row) => shapeRow(this.table, row));
-      // Apply client-side filters the proxy doesn't understand (including gte/lt/neq)
+      // Apply client-side filters the proxy doesn't understand (gte/lt/neq)
       const filtered = shaped.filter((it) => {
         for (const [k, v] of Object.entries(this.filters)) {
-          if (k.endsWith(".neq")) {
-            const col = k.slice(0, -4);
-            // CSV list (chained .neq() calls): exclude any of them,
-            // otherwise the compare is against "a,b" and matches
-            // nothing, silently dropping every row from the result.
-            if (typeof v === "string" && v.includes(",")) {
-              if (v.split(",").includes(String(it[col] ?? ""))) return false;
-              continue;
-            }
-            if (String(it[col] ?? "") === String(v)) return false;
-            continue;
-          }
           if (k.endsWith(".gte")) {
             const col = k.slice(0, -4);
             // paid_at/created_at ranges are authoritative server-side
@@ -487,8 +520,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
             // Handle joined filters like kantin_sales.created_at.gte — extract leaf col
             const parts = k.split(".");
             const leaf = parts[parts.length - 2] ?? parts[parts.length - 1];
-            // For gte/lt variants already handled above, this is fallback exact
-            if (k.includes(".gte") || k.includes(".lt") || k.includes(".neq")) continue;
+            if (k.includes(".gte") || k.includes(".lt")) continue;
             if (String(it[leaf] ?? it[k] ?? "") !== String(v)) return false;
             continue;
           }
@@ -501,16 +533,30 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
           }
           if (it[k] !== v) return false;
         }
+        // Exclusions, from neqList (see addNeq). Handlers that validate
+        // each value (bookings) reject the whole request on an unknown
+        // literal, so keep this as a belt-and-braces client pass.
+        for (const [col, values] of Object.entries(this.neqList)) {
+          if (values.map(String).includes(String(it[col] ?? ""))) return false;
+        }
         return true;
       });
       // Client-side sort when the proxy doesn't order.
       let out = filtered;
       if (this.orderCol) {
         const dir = this.orderDesc ? -1 : 1;
+        const col = this.orderCol;
         out = [...filtered].sort((a, b) => {
-          const av = a[this.orderCol!];
-          const bv = b[this.orderCol!];
-          return String(av ?? "").localeCompare(String(bv ?? "")) * dir;
+          const av = a[col];
+          const bv = b[col];
+          // Compare numbers numerically. `localeCompare` on strings made
+          // sort_order sort as 1, 10, 2 and — worse — re-sorted rows the
+          // proxy had already ordered correctly by its own SQL.
+          if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
+          if (av === bv) return 0;
+          if (av === null || av === undefined) return 1; // nulls last
+          if (bv === null || bv === undefined) return -1;
+          return String(av).localeCompare(String(bv)) * dir;
         });
       }
       if (this.singleMode) {
@@ -518,8 +564,18 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
       }
       return { data: out as T[], error: null };
     } catch (e) {
-      if (this.singleMode) return { data: null as T | null, error: null };
-      return { data: [] as T[], error: null };
+      // Report the failure instead of disguising it as "no rows".
+      //
+      // This used to return `{data: [], error: null}` for EVERY fault —
+      // unreachable proxy, 401, 403, 500, timeout, malformed JSON — so an
+      // outage rendered as a cheerful empty page on every screen and no
+      // page could ever show a data-layer error. `error` is part of
+      // QueryResult and callers are free to ignore it; pages now check it
+      // and render a "data unavailable" state (see DataUnavailable).
+      return {
+        data: this.singleMode ? (null as T | null) : ([] as T[]),
+        error: e instanceof ProxyError ? e : new ProxyError(String((e as Error)?.message ?? e), 0),
+      };
     }
   }
 
