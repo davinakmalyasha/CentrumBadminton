@@ -10,8 +10,6 @@ import {
 } from "lucide-react";
 import { askAi, type ChatMsg } from "@/app/app/(protected)/ai/actions";
 
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
-
 const OWNER_SUGGESTIONS = [
   "Ringkas pendapatan hari ini",
   "Buatkan laporan Excel bulan ini",
@@ -76,13 +74,16 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
     // capture group. A /g regex makes String.match return whole matches
     // instead, which silently produced href=".../undefined" — a button that
     // looked correct and downloaded nothing.
-    const xlsxRe = /XLSX:(\/v1\/reports\/[0-9a-f]{64}\.xlsx)/;
+    //
+    // The capture is the bare 64-hex token, not the full proxy path, so the
+    // link can point at our own origin (see the href below).
+    const xlsxRe = /XLSX:\/v1\/reports\/([0-9a-f]{64})\.xlsx/;
     const xlsxStrip = new RegExp(xlsxRe.source, "g");
     const lines = text.split("\n");
     return lines.map((line, i) => {
       const hit = line.match(xlsxRe);
       if (hit) {
-        const path = hit[1];
+        const token = hit[1];
         // The model often wraps the marker as a markdown link, e.g.
         // "[Unduh laporan](XLSX:/v1/reports/….xlsx)". Drop the link
         // text too, otherwise the button is preceded by a duplicate
@@ -98,7 +99,15 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
           <span key={`${keyPrefix}-${i}`} className="block">
             {prose ? prose : null}
             <a
-              href={`${PROXY_URL}${path}`}
+              // Same-origin on purpose. Linking the proxy directly was a
+              // cross-origin download, so Chrome ignored the proxy's
+              // Content-Disposition and saved the file under the URL's
+              // last segment — the 64-hex token. Relaying through our own
+              // origin (/api/reports/download) makes the header stick.
+              // `download` is left valueless on purpose: a valued
+              // download attribute would override the server filename
+              // and reintroduce the same bug.
+              href={`/api/reports/download/${token}.xlsx`}
               download
               className="manager-tap mt-1.5 inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[13px] font-bold text-white transition hover:bg-emerald-700"
             >
