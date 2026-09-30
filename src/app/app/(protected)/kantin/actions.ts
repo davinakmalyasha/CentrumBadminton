@@ -27,22 +27,62 @@ async function requireOwner() {
   return { supabase, user };
 }
 
+/**
+ * Turn a backend failure into Indonesian.
+ *
+ * This matched the OLD Supabase-RPC error vocabulary (`OUT_OF_STOCK:`,
+ * `BAD_QTY`, `SALE_NOT_FOUND`, …). The Go proxy answers in lowercase
+ * sentences instead — `out of stock: NAME`, `bad qty`, `sale not found`,
+ * `product not found: <uuid>` — so nine of the ten branches were dead and
+ * raw English, including a raw UUID, reached the UI.
+ *
+ * Matched case-insensitively on the lowercase forms the handlers actually
+ * emit, in the order they can apply.
+ */
 function friendlyError(msg: string): string {
-  if (msg.startsWith("OUT_OF_STOCK:")) return `Stok habis: ${msg.split(":").slice(1).join(":")}`;
-  if (msg.startsWith("NEGATIVE_STOCK:"))
-    return `Stok tidak bisa minus: ${msg.split(":").slice(1).join(":")}`;
-  if (msg.startsWith("NOT_TRACKED:"))
-    return `Pelacakan stok belum aktif untuk ${msg.split(":").slice(1).join(":")}.`;
-  if (msg.includes("PRODUCT_NOT_FOUND")) return "Ada produk yang sudah tidak tersedia — muat ulang halaman.";
-  if (msg.includes("EMPTY_CART")) return "Keranjang kosong.";
-  if (msg.includes("BAD_QTY")) return "Jumlah tidak valid.";
-  if (msg.includes("BAD_REASON")) return "Alasan tidak valid.";
-  if (msg.includes("NO_CHANGE")) return "Tidak ada perubahan stok.";
-  if (msg.includes("SALE_NOT_FOUND")) return "Penjualan sudah dihapus atau tidak ditemukan.";
-  if (msg.includes("FORBIDDEN")) {
-    return "Hanya staf yang bisa mencatat penjualan.";
+  const m = msg.toLowerCase();
+
+  // Order matters: "insufficient stock or product not found" contains both
+  // an insufficient-stock phrase and a not-found phrase.
+  if (m.includes("insufficient stock")) {
+    return "Stok tidak cukup untuk transaksi ini. Perbarui stok atau kurangi jumlah.";
   }
-  return `Gagal memproses: ${msg.slice(0, 120)}`;
+  if (m.includes("out of stock")) {
+    const name = msg.split(":").slice(1).join(":").trim();
+    return name ? `Stok ${name} habis.` : "Stok habis untuk salah satu item.";
+  }
+  if (m.includes("not tracked") || m.includes("track_stock")) {
+    return "Pelacakan stok belum aktif untuk produk itu.";
+  }
+  if (m.includes("product not found")) {
+    // Never echo the UUID — it is noise for the operator and leaks an id.
+    return "Ada produk yang sudah tidak tersedia — muat ulang halaman.";
+  }
+  if (m.includes("sale not found")) {
+    return "Penjualan sudah dihapus atau tidak ditemukan.";
+  }
+  if (m.includes("empty cart") || m.includes("cart is empty")) {
+    return "Keranjang kosong.";
+  }
+  if (m.includes("bad qty") || m.includes("qty")) return "Jumlah tidak valid.";
+  if (m.includes("bad reason") || m.includes("reason")) return "Alasan tidak valid.";
+  if (m.includes("non-zero")) return "Tidak ada perubahan stok.";
+  if (m.includes("count must be")) return "Hasil hitung fisik tidak boleh negatif.";
+  if (m.includes("invalid json")) return "Permintaan tidak terbaca — muat ulang halaman.";
+  if (m.includes("invalid limit")) return "Jumlah data terlalu besar.";
+  if (m.includes("forbidden")) {
+    return "Hanya owner yang bisa mengubah data kantin.";
+  }
+  if (m.includes("slot already booked")) return "Slot bentrok — sudah ada booking di jam tersebut.";
+  if (m === "internal" || m.includes("status 500")) {
+    return "Server sedang bermasalah. Coba lagi sebentar.";
+  }
+  if (m.includes("status 401") || m.includes("status 403")) {
+    return "Sesi habis — silakan login ulang.";
+  }
+  // Unknown: still don't dump a raw identifier at the user.
+  const cleaned = msg.replace(/[0-9a-f]{8}-[0-9a-f-]{27,}/gi, "…").slice(0, 120);
+  return `Gagal memproses: ${cleaned}`;
 }
 
 /* ------------------------------------------------------------------ */

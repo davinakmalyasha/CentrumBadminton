@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Check, Trash2 } from "lucide-react";
 import {
   deleteProduct,
@@ -18,8 +18,37 @@ const field =
 const label = "mb-1 block text-xs font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400";
 
 export function NewProductForm() {
+  // sports_kantin_products has no unique constraint on name, so a form that
+  // kept its values after a successful submit let a second tap create a
+  // duplicate product. Remount on success to clear the fields.
+  const [formKey, setFormKey] = useState(0);
+  const [justAdded, setJustAdded] = useState(false);
+  return (
+    <NewProductFields
+      key={formKey}
+      onSaved={() => {
+        setJustAdded(true);
+        setFormKey((k) => k + 1);
+      }}
+      justAdded={justAdded}
+    />
+  );
+}
+
+function NewProductFields({
+  onSaved,
+  justAdded,
+}: {
+  onSaved: () => void;
+  justAdded: boolean;
+}) {
   const [state, formAction, pending] = useActionState(upsertProduct, initial);
   const [track, setTrack] = useState(false);
+
+  useEffect(() => {
+    if (state.ok) onSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.ok]);
 
   return (
     <form
@@ -88,7 +117,9 @@ export function NewProductForm() {
         </div>
       )}
       {state.error && <p className="text-xs font-semibold text-red-500">{state.error}</p>}
-      {state.ok && <p className="text-xs font-semibold text-emerald-600">Produk ditambahkan</p>}
+      {justAdded && (
+        <p className="text-xs font-semibold text-emerald-600">Produk ditambahkan</p>
+      )}
       <button
         type="submit"
         disabled={pending}
