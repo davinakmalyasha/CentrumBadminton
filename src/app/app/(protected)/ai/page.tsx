@@ -2,7 +2,6 @@ import Link from "next/link";
 import { requireStaffPage, getRole } from "@/lib/guard";
 import { ArrowLeft, Bot } from "lucide-react";
 import AiChat from "@/components/app/AiChat";
-import ClosingReportCard from "@/components/app/ClosingReportCard";
 
 export const metadata = { title: "AI Asisten · Centrum Manager" };
 
@@ -11,7 +10,11 @@ export default async function AiPage() {
   const role = await getRole();
 
   return (
-    <div className="manager-rise space-y-3">
+    /* A chat page should own the viewport: header pinned, transcript
+       scrolling, composer always reachable. The 9rem/8rem deductions cover
+       the shell's pt/pb plus this header, so the card ends flush with the
+       bottom nav on mobile and the viewport on desktop. */
+    <div className="manager-rise flex h-[calc(100dvh-9rem)] min-h-[26rem] flex-col gap-3 lg:h-[calc(100dvh-8rem)]">
       <div className="space-y-1">
         <Link
           href="/app"
@@ -37,7 +40,11 @@ export default async function AiPage() {
         </div>
       </div>
 
-      {role === "owner" && <ClosingReportCard />}
+      {/* The Closing Report card used to sit directly above the chat, which
+          made this page read as "chat + a form bolted on" and pushed the
+          actual conversation below the fold. It is a report generator, not a
+          chat feature, so it now lives with the other owner reports in
+          /app/laporan. This page is just a chat. */}
       <AiChat role={role} />
     </div>
   );

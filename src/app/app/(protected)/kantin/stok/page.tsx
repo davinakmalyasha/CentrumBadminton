@@ -1,4 +1,5 @@
 import { requireOwnerPage } from "@/lib/guard";
+import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 import { PackageSearch, TriangleAlert } from "lucide-react";
 import { StockAdjustForm } from "@/components/app/kantin/StockForms";
 import { lowStockProducts } from "@/lib/kantin";
@@ -67,6 +68,8 @@ export default async function KantinStokPage() {
           {tracked.length} produk dilacak · stok berkurang otomatis saat terjual
         </p>
       </div>
+
+      <KantinSubnav active="/app/kantin/stok" />
 
       {low.length > 0 && (
         <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 dark:border-amber-900/50 dark:bg-amber-950/40">

@@ -1,4 +1,5 @@
 import { requireOwnerPage } from "@/lib/guard";
+import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 import { addMonths, currentMonthKey } from "@/lib/months";
 import { Settings, Users, Wallet } from "lucide-react";
 import Shuttlecock from "@/components/icons/Shuttlecock";
@@ -52,6 +53,7 @@ export default async function PengaturanPage() {
   const rules = (pricingRes.data ?? []) as PriceRow[];
   const profiles = (profilesRes.data ?? []) as ProfileRow[];
   const activeRule = rules[0];
+  const readError = firstError(courtsRes, pricingRes, profilesRes);
 
   return (
     <div className="space-y-5">
@@ -61,21 +63,43 @@ export default async function PengaturanPage() {
         </h1>
       </div>
 
-      {/* Courts */}
-      <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
-        <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
-          <Shuttlecock className="h-4 w-4" /> Lapangan
-        </h2>
-        <ul className="mb-3 space-y-1.5">
-          {courts.map((c) => (
-            <li key={c.id} className="group flex items-center gap-2 rounded-xl bg-zinc-100 dark:bg-zinc-800 px-2.5 py-2">
-              <RenameCourtForm courtId={c.id} name={c.name} sortOrder={c.sort_order} />
-              <ToggleCourtActiveButton courtId={c.id} active={c.is_active} />
-            </li>
-          ))}
-        </ul>
-        <NewCourtForm />
-      </section>
+      {readError ? (
+        <DataUnavailable detail={readError} />
+      ) : (
+        <>
+          {/* Courts. This list used to render an empty <ul> with no message
+              at all, so a tenant with no courts looked identical to one whose
+              courts failed to load — and every other page then rendered
+              empty too, which reads as "the app is broken". */}
+          <section className="rounded-2xl border border-zinc-200 bg-white p-4 dark:border-zinc-800 dark:bg-zinc-900">
+            <h2 className="mb-3 flex items-center gap-2 text-sm font-extrabold text-zinc-900 dark:text-zinc-50">
+              <Shuttlecock className="h-4 w-4" /> Lapangan
+            </h2>
+            {courts.length === 0 ? (
+              <EmptyState
+                title="Belum ada lapangan"
+                body="Mulai dari sini — tambah lapangan dulu, baru bisa membuat booking, melihat jadwal dan menghitung pendapatan."
+              />
+            ) : (
+              <ul className="mb-3 space-y-1.5">
+                {courts.map((c) => (
+                  <li
+                    key={c.id}
+                    className="group flex items-center gap-2 rounded-xl bg-zinc-100 px-2.5 py-2 dark:bg-zinc-800"
+                  >
+                    <RenameCourtForm courtId={c.id} name={c.name} sortOrder={c.sort_order} />
+                    <ToggleCourtActiveButton courtId={c.id} active={c.is_active} />
+                  </li>
+                ))}
+              </ul>
+            )}
+            <NewCourtForm />
+          </section>
+        </>
+      )}
+
+      {!readError && (
+        <>
 
       {/* Pricing */}
       <section className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 p-4">
@@ -144,6 +168,8 @@ export default async function PengaturanPage() {
           ))}
         </ul>
       </section>
+        </>
+      )}
     </div>
   );
 }

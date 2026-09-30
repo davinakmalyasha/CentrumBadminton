@@ -1,12 +1,26 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Banknote, QrCode } from "lucide-react";
 import { recordPayment, type ActionState } from "@/app/app/(protected)/actions";
 import { formatIDR } from "@/lib/availability";
 
 const initial: ActionState = { error: null };
 
+/**
+ * Payment entry for one booking.
+ *
+ * The form used to render a permanent "Pembayaran terekam" label the moment
+ * `state.ok` became true. Because the action calls revalidatePath, the RSC
+ * refresh reused the same keyed client component and `state.ok` survived —
+ * so after recording a DP the form never came back, and the settlement had
+ * to wait for a manual page reload. That is the normal two-tranche flow the
+ * ½ DP button exists to support.
+ *
+ * The fix is the standard React shape for resetting a reducer-ish hook:
+ * the stateful part lives in `PaymentFields`, and success increments a key
+ * that remounts it, giving a clean `useActionState` with a fresh balance.
+ */
 export default function PaymentForm({
   bookingId,
   outstanding,
@@ -14,20 +28,50 @@ export default function PaymentForm({
   bookingId: string;
   outstanding: number;
 }) {
+  const [formKey, setFormKey] = useState(0);
+  const [justPaid, setJustPaid] = useState(false);
+
+  return (
+    <div className="mt-2">
+      {justPaid ? (
+        <p className="mb-1.5 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300">
+          Pembayaran tercatat
+        </p>
+      ) : null}
+      <PaymentFields
+        key={`${bookingId}:${formKey}`}
+        bookingId={bookingId}
+        outstanding={outstanding}
+        onPaid={() => {
+          setJustPaid(true);
+          setFormKey((k) => k + 1);
+        }}
+      />
+    </div>
+  );
+}
+
+function PaymentFields({
+  bookingId,
+  outstanding,
+  onPaid,
+}: {
+  bookingId: string;
+  outstanding: number;
+  onPaid: () => void;
+}) {
   const [state, formAction, pending] = useActionState(recordPayment, initial);
   const [amount, setAmount] = useState(String(outstanding));
   const [method, setMethod] = useState<"cash" | "qris">("cash");
 
-  if (state.ok) {
-    return (
-      <p className="mt-2 rounded-lg bg-emerald-50 px-3 py-2 text-xs font-bold text-emerald-700">
-        Pembayaran tercatat
-      </p>
-    );
-  }
+  useEffect(() => {
+    if (state.ok) onPaid();
+    // `onPaid` is stable enough here: it only bumps a key in the parent.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.ok]);
 
   return (
-    <form action={formAction} className="mt-2.5">
+    <form action={formAction}>
       <input type="hidden" name="booking_id" value={bookingId} />
       <input type="hidden" name="method" value={method} />
 

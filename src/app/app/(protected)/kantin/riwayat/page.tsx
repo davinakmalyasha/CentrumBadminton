@@ -1,4 +1,5 @@
 import { createClient, proxyFetch } from "@/lib/proxy/client";
+import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { addDaysISO, formatIDR, todayISO } from "@/lib/availability";
@@ -91,6 +92,8 @@ export default async function KantinRiwayatPage({
           <ChevronRight className="h-4 w-4" />
         </Link>
       </div>
+
+      <KantinSubnav active="/app/kantin/riwayat" />
 
       <div className="rounded-2xl border border-zinc-800 bg-zinc-900 p-4 text-white dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-50">
         <p className="text-[11px] font-bold uppercase tracking-widest text-zinc-300/80">

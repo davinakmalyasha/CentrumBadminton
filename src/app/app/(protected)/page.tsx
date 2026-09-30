@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/proxy/client";
+import { getRole } from "@/lib/guard";
 import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import {
   addDaysISO,
@@ -35,6 +36,7 @@ type Row = Booking & { courts: { name: string } | null };
 
 export default async function DashboardPage() {
   const supabase = await createClient();
+  const role = await getRole();
   const today = todayISO();
   const tomorrow = addDaysISO(today, 1);
 
@@ -178,8 +180,11 @@ export default async function DashboardPage() {
           {/* Live lapangan — which is in use till when, + nambah jam / kosongkan */}
           <LiveLapangan bookings={bookings as unknown as Array<{ id: string; court_id: string; courts: { name: string } | null; customer_name: string; start_time: string; end_time: string; status: string }>} />
 
-          {/* Daily closing nudge (after 20:00 WIB) */}
-          <DailyReportNudge />
+          {/* Daily closing nudge (after 20:00 WIB). Owner-only: the closing
+              report generator now lives in /app/laporan and is gated there,
+              so a pegawai tapping "Buat" would land on a page with no
+              Generate button and no explanation. */}
+          {role === "owner" && <DailyReportNudge />}
 
           {/* Owner tools */}
           <OwnerMenu />

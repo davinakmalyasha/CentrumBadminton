@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/proxy/client";
+import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 import { MessageCircle, Phone, UserX, Users } from "lucide-react";
 import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
@@ -30,6 +31,7 @@ export default async function PelangganPage() {
 
   const customers = (customersRes.data ?? []) as C[];
   const statRows = (statsRes.data ?? []) as unknown as StatsRow[];
+  const readError = firstError(customersRes, statsRes);
 
   const stats = new Map<string, { visits: number; last?: string }>();
   for (const s of statRows) {
@@ -50,10 +52,14 @@ export default async function PelangganPage() {
         </p>
       </div>
 
-      {customers.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-8 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Belum ada pelanggan. Daftar terisi otomatis saat membuat booking.
-        </p>
+      {readError ? (
+        <DataUnavailable detail={readError} />
+      ) : customers.length === 0 ? (
+        <EmptyState
+          title="Belum ada pelanggan"
+          body="Daftar terisi otomatis begitu ada booking yang mencantumkan nama dan nomor. Tidak perlu ditambah manual."
+          action={{ href: "/app/booking/baru", label: "Catat booking pertama" }}
+        />
       ) : (
         <ul className="space-y-2">
           {customers.map((c) => {

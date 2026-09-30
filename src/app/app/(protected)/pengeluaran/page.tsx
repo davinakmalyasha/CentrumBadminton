@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
 import { requireOwnerPage } from "@/lib/guard";
+import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 import { formatIDR, todayISO } from "@/lib/availability";
 import { addMonths, currentMonthKey, monthEndExclusive, monthStart, formatMonthLabel } from "@/lib/months";
 import ExpenseForm from "@/components/app/ExpenseForm";
@@ -26,7 +27,7 @@ export default async function PengeluaranPage({
   const month = /^\d{4}-\d{2}$/.test(sp.month ?? "") ? sp.month! : currentMonthKey();
 
   const supabase = await requireOwnerPage();
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("expenses")
     .select("id,category,amount,note,spent_at")
     .gte("spent_at", monthStart(month))
@@ -35,6 +36,7 @@ export default async function PengeluaranPage({
 
   const rows = (data ?? []) as ERow[];
   const total = rows.reduce((a, b) => a + Number(b.amount), 0);
+  const readError = firstError({ error });
 
   return (
     <div className="space-y-4">
@@ -68,10 +70,13 @@ export default async function PengeluaranPage({
         <span className="text-xl font-black text-white">{formatIDR(total)}</span>
       </div>
 
-      {rows.length === 0 ? (
-        <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-          Belum ada pengeluaran bulan ini.
-        </p>
+      {readError ? (
+        <DataUnavailable detail={readError} />
+      ) : rows.length === 0 ? (
+        <EmptyState
+          title="Belum ada pengeluaran bulan ini"
+          body="Catat biaya listrik, gaji, atau pengeluaran lain di form atas supaya laba bersih di Laporan akurat."
+        />
       ) : (
         <ul className="divide-y divide-zinc-200 dark:divide-zinc-800 overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900">
           {rows.map((e) => (

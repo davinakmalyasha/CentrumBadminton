@@ -58,7 +58,7 @@ export default function DailyReportNudge() {
         </p>
       </div>
       <Link
-        href="/app/ai"
+        href="/app/laporan"
         className="manager-tap flex-shrink-0 rounded-xl bg-zinc-900 px-3 py-2 text-xs font-bold text-white transition hover:bg-zinc-700 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
       >
         Buat
