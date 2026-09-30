@@ -221,6 +221,70 @@ describe("sign-out", () => {
   });
 });
 
+describe("is_staff is a real check", () => {
+  // The shim used to be `await cachedGetUser(); return { data: true }`:
+  // the session was fetched and discarded, so every caller got "yes".
+  // The payment-ledger export gated on this, which made the gate a
+  // no-op. These tests pin the answer to the session that was resolved.
+  it("is true for an owner session", async () => {
+    stubFetch({ user: { id: "u1", email: "o@x.dev", role: "owner" } });
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(true);
+  });
+
+  it("is true for a pegawai session", async () => {
+    stubFetch({ user: { id: "u2", email: "p@x.dev", role: "pegawai" } });
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(true);
+  });
+
+  it("is false when nobody is signed in", async () => {
+    stubFetch({ user: null });
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(false);
+  });
+
+  it("is false when /v1/auth/me omits the user entirely", async () => {
+    // cachedGetUser passes `me.user` straight through, so a body with no
+    // `user` key yields undefined rather than null. A `user !== null`
+    // guard would have let this through.
+    stubFetch({});
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(false);
+  });
+
+  it("is false for an unknown role", async () => {
+    stubFetch({ user: { id: "u3", email: "x@x.dev", role: "admin" } });
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(false);
+  });
+
+  it("is false when the proxy is unreachable", async () => {
+    vi.stubGlobal("fetch", async () => {
+      throw new TypeError("fetch failed");
+    });
+    const supabase = await createClient();
+    const { data } = await supabase.rpc("is_staff");
+    expect(data).toBe(false);
+  });
+
+  it("stays consistent with is_owner", async () => {
+    stubFetch({ user: { id: "u1", email: "o@x.dev", role: "owner" } });
+    const supabase = await createClient();
+    const [owner, staff] = await Promise.all([
+      supabase.rpc("is_owner"),
+      supabase.rpc("is_staff"),
+    ]);
+    expect(owner.data).toBe(true);
+    expect(staff.data).toBe(true);
+  });
+});
+
 describe("booking status sets", () => {
   it("schedule view includes no_show but not cancelled", () => {
     // A cancelled slot is free again and must not paint the grid busy;
