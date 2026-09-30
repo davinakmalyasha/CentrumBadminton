@@ -441,6 +441,11 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     if (this.filters["status"] !== undefined) query.status = String(this.filters["status"]);
     if (this.filters["id"] !== undefined) query.id = String(this.filters["id"]);
     if (this.filters["type"] !== undefined) query.type = String(this.filters["type"]);
+    // recorded_by scopes payments and kantin sales to one staff member's
+    // own rows. "me" is resolved to the session user by the proxy, so a
+    // caller cannot pass somebody else's id to read their takings.
+    if (this.filters["recorded_by"] !== undefined)
+      query.recorded_by = String(this.filters["recorded_by"]);
     // Exclusions go out as REPEATED keys — see addNeq(). The handlers
     // validate each value, so a comma-joined string is rejected outright.
     for (const [col, values] of Object.entries(this.neqList)) {
