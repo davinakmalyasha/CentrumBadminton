@@ -186,6 +186,15 @@ export async function createBooking(
     if (error.code === DB_OVERLAP_CODE) {
       return { error: "Slot bentrok — sudah ada booking di jam tersebut." };
     }
+    // A 400 from this API is a refusal on business grounds, not a
+    // failure: "belum ada aturan harga untuk tanggal ini", "booking
+    // outside facility hours". The proxy already sends a complete
+    // sentence meant for the owner, so prefixing it with "Gagal membuat
+    // booking:" turns an actionable instruction into what looks like a
+    // system error. Anything else keeps the prefix.
+    if (error.status === 400) {
+      return { error: error.message };
+    }
     return { error: `Gagal membuat booking: ${error.message}` };
   }
 
@@ -366,7 +375,13 @@ export async function extendBooking(
     .from("bookings")
     .update({ end_time: newEndStr })
     .eq("id", id);
-  if (error) return { error: `Gagal nambah jam: ${error.message}` };
+  if (error) {
+    // As with create, a 400 is a business-rule refusal carrying a
+    // sentence the owner can act on (no pricing rule for that date), and
+    // the server has already repriced the booking for the longer window.
+    if (error.status === 400) return { error: error.message };
+    return { error: `Gagal nambah jam: ${error.message}` };
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/jadwal");
