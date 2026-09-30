@@ -4,7 +4,8 @@ import { monthEndExclusive, monthStart } from "@/lib/months";
 
 /**
  * GET /api/reports/export?month=YYYY-MM[&type=kantin]
- * Owner-only CSV export of payments (or kantin sales) in the given month.
+ * CSV/XLSX export of payments (or kantin sales) in the given month.
+ * Owner exports the whole ledger; staff export only their own rows.
  * Backed by the proxy connector (was Supabase).
  */
 
@@ -40,12 +41,18 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  // Both owner and staff can export — owner sees all, staff sees same tenant data (single tenant centrum)
+  // Owner sees the whole ledger. Staff see only the money they actually
+  // took — the "same tenant data (single tenant centrum)" comment that used
+  // to sit here described a gate that was not one: is_staff returned true
+  // for any signed-in browser, so any staff member could export every
+  // payment in the tenant. The scope is pushed down to the proxy, which
+  // resolves "me" to the session user server-side.
   const { data: isOwner } = await supabase.rpc("is_owner");
   const { data: isStaff } = await supabase.rpc("is_staff");
   if (isOwner !== true && isStaff !== true) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+  const ownOnly = isOwner !== true;
 
   const url = new URL(request.url);
   const type = url.searchParams.get("type") === "kantin" ? "kantin" : "lapangan";
@@ -91,7 +98,9 @@ export async function GET(request: Request) {
     // created_at.gte/lt → ?from/&to for kantin_sales, so only the
     // requested rows cross the wire instead of the tenant's whole
     // history filtered in JS afterwards.
-    const sales = await supabase.from("kantin_sales").gte("created_at", from).lt("created_at", to);
+    const salesQ = supabase.from("kantin_sales").gte("created_at", from).lt("created_at", to);
+    if (ownOnly) salesQ.eq("recorded_by", "me");
+    const sales = await salesQ;
     const inMonth = ((sales as unknown as { data: Array<Record<string, unknown>> }).data ?? []) as Array<{
       id: string;
       total: number;
@@ -174,7 +183,9 @@ export async function GET(request: Request) {
   // ledger — while bookings (small: per-court daily rows) are fetched
   // whole so the join can resolve payments that reference bookings
   // from adjacent days/prior months too. Bounded by ?limit.
-  const payRes = await supabase.from("payments").gte("paid_at", from).lt("paid_at", to);
+  const payQ = supabase.from("payments").gte("paid_at", from).lt("paid_at", to);
+  if (ownOnly) payQ.eq("recorded_by", "me");
+  const payRes = await payQ;
   const payments = ((payRes as unknown as { data: Array<Record<string, unknown>> }).data ?? []) as Array<{
     id: string;
     booking_id: string;

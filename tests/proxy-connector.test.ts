@@ -96,6 +96,25 @@ describe("query builder: status reaches the proxy", () => {
 
     expect(lastQuery().get("id")).toBe("b-123");
   });
+
+  it("forwards recorded_by so a staff export can be scoped to its own rows", async () => {
+    // The payment ledger export lets a staff member see only the money they
+    // took. The scope has to reach the proxy as a query param, or the
+    // export silently returns the whole tenant again.
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    await supabase.from("payments").eq("recorded_by", "me");
+
+    expect(lastQuery().get("recorded_by")).toBe("me");
+  });
+
+  it("forwards recorded_by for kantin sales too", async () => {
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    await supabase.from("kantin_sales").eq("recorded_by", "me");
+
+    expect(lastQuery().get("recorded_by")).toBe("me");
+  });
 });
 
 describe("query builder: client-side filtering still holds", () => {
