@@ -60,25 +60,51 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
     autoresize();
   }, [input]);
 
-  // Render bot replies: an XLSX:/v1/reports/... marker line becomes a real
+  // Render bot replies: an XLSX:/v1/reports/... marker becomes a real
   // download button (token-authed, no session needed); bare URLs linkify.
   // Logic identical — only colors changed to monochrome.
   function renderReply(text: string, keyPrefix: string) {
     const urlSplit = /(https?:\/\/[^\s)]+)/g;
     const urlTest = /^https?:\/\/[^\s)]+$/;
+    // The marker is matched ANYWHERE in a line, not as a whole line. It was
+    // anchored to the full line, and the system prompt tells the model to
+    // present it "along with its one-line summary" — which invites exactly
+    // the inline form, so the button silently never appeared for any reply
+    // that did what it was asked.
+    //
+    // Two regexes on purpose: `xlsxRe` has no /g so `match()[1]` yields the
+    // capture group. A /g regex makes String.match return whole matches
+    // instead, which silently produced href=".../undefined" — a button that
+    // looked correct and downloaded nothing.
+    const xlsxRe = /XLSX:(\/v1\/reports\/[0-9a-f]{64}\.xlsx)/;
+    const xlsxStrip = new RegExp(xlsxRe.source, "g");
     const lines = text.split("\n");
     return lines.map((line, i) => {
-      const marker = line.trim().match(/^XLSX:(\/v1\/reports\/[0-9a-f]{64}\.xlsx)$/);
-      if (marker) {
+      const hit = line.match(xlsxRe);
+      if (hit) {
+        const path = hit[1];
+        // The model often wraps the marker as a markdown link, e.g.
+        // "[Unduh laporan](XLSX:/v1/reports/….xlsx)". Drop the link
+        // text too, otherwise the button is preceded by a duplicate
+        // "Download this report (Download Excel)" fragment.
+        const prose = line
+          .replace(/\[[^\]]*\]\(\s*XLSX:[^)]*\)/gi, "")
+          .replace(xlsxStrip, "")
+          .replace(/[[\]]/g, "")
+          .replace(/\(\s*/g, "")
+          .replace(/\s{2,}/g, " ")
+          .trim();
         return (
-          <a
-            key={`${keyPrefix}-${i}`}
-            href={`${PROXY_URL}${marker[1]}`}
-            download
-            className="manager-tap mt-1.5 inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[13px] font-bold text-white transition hover:bg-emerald-700"
-          >
-            <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Download Excel (.xlsx)
-          </a>
+          <span key={`${keyPrefix}-${i}`} className="block">
+            {prose ? prose : null}
+            <a
+              href={`${PROXY_URL}${path}`}
+              download
+              className="manager-tap mt-1.5 inline-flex min-h-[40px] items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-2 text-[13px] font-bold text-white transition hover:bg-emerald-700"
+            >
+              <FileSpreadsheet className="h-4 w-4" aria-hidden="true" /> Download Excel (.xlsx)
+            </a>
+          </span>
         );
       }
       const parts = line.split(urlSplit);
