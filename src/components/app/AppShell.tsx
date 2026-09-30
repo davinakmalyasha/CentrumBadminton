@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import LogoutDialog from "./LogoutDialog";
+import Sidebar from "./Sidebar";
 import { useRole } from "./RoleContext";
 import ThemeToggle from "./ThemeToggle";
 import { drawerSections, isActivePath } from "./AppNav";
@@ -50,11 +51,19 @@ export default function AppShell({
   const sections = drawerSections(isOwner);
 
   return (
-    <div className="min-h-svh bg-zinc-100 text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100">
+    <div className="min-h-svh bg-zinc-100 text-zinc-900 lg:pl-64 dark:bg-zinc-950 dark:text-zinc-100">
+      {/* Desktop rail — fixed, so it never participates in page flow */}
+      <Sidebar
+        displayName={displayName}
+        roleLabel={roleLabel}
+        onLogout={() => setLogoutOpen(true)}
+      />
+
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5">
-          <div className="flex min-w-0 items-center gap-2.5">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5 lg:max-w-7xl lg:justify-end lg:px-6 2xl:max-w-[1700px]">
+          {/* Brand repeats the sidebar header, so hide it on desktop */}
+          <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
             <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:ring-white/20">
               <Image
                 src="/centrumLOGO-circle.png"
@@ -96,7 +105,7 @@ export default function AppShell({
               aria-label="Buka menu navigasi"
               aria-expanded={menuOpen}
               aria-controls="manager-drawer"
-              className="manager-tap flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none active:scale-95 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
+              className="manager-tap flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 bg-white text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none active:scale-95 lg:hidden dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
               <Menu className="h-[18px] w-[18px]" aria-hidden="true" />
             </button>
@@ -104,14 +113,17 @@ export default function AppShell({
         </div>
       </header>
 
-      <main className="mx-auto max-w-3xl px-4 pt-4 pb-32">{children}</main>
+      <main className="mx-auto max-w-3xl px-4 pt-4 pb-28 lg:max-w-7xl lg:px-6 lg:pb-12 2xl:max-w-[1700px]">
+        {children}
+      </main>
 
-      {/* Bottom bar — minimal, rata tengah */}
+      {/* Bottom bar — mobile only; the desktop rail owns navigation. Menu
+          button removed: the header hamburger already opens the same drawer. */}
       <nav
         aria-label="Navigasi utama"
-        className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/95"
+        className="fixed inset-x-0 bottom-0 z-30 border-t border-zinc-200 bg-white/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden dark:border-zinc-800 dark:bg-zinc-950/95"
       >
-        <div className="mx-auto grid max-w-3xl grid-cols-3 items-end px-4">
+        <div className="mx-auto grid max-w-3xl grid-cols-2 items-end px-4">
           {(() => {
             const homeActive = pathname === "/app";
             const bookingActive = isActivePath(pathname, "/app/booking/baru");
@@ -157,17 +169,6 @@ export default function AppShell({
                     Booking
                   </span>
                 </Link>
-                <button
-                  type="button"
-                  onClick={() => setMenuOpen(true)}
-                  aria-label="Buka semua menu"
-                  aria-expanded={menuOpen}
-                  aria-controls="manager-drawer"
-                  className="manager-tap flex min-h-[60px] flex-col items-center justify-center gap-1 py-2 text-[10px] font-semibold text-zinc-400 transition hover:text-zinc-700 dark:text-zinc-500 dark:hover:text-zinc-300"
-                >
-                  <Menu className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
-                  Menu
-                </button>
               </>
             );
           })()}
