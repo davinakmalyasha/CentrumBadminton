@@ -16,11 +16,16 @@ type PRow = {
 
 type MRow = {
   id: string;
+  product_id: string;
+  /** Flat product name, joined by the proxy. This table used to be read
+   *  from the products endpoint, which had no delta, no reason, no note —
+   *  so every cell rendered blank or "?" and the product's creation date
+   *  stood in for the movement time. */
+  product: string;
   delta: number;
   reason: string;
   note: string | null;
   created_at: string;
-  kantin_products: { name: string } | null;
 };
 
 const REASON_LABEL: Record<string, string> = {
@@ -41,7 +46,7 @@ export default async function KantinStokPage() {
       .order("name"),
     supabase
       .from("kantin_stock_movements")
-      .select("id,delta,reason,note,created_at,kantin_products(name)")
+      .select("id,product_id,product,delta,reason,note,created_at")
       .order("created_at", { ascending: false })
       .limit(50),
   ]);
@@ -120,14 +125,14 @@ export default async function KantinStokPage() {
             {movements.map((m) => (
               <li key={m.id} className="flex items-center gap-2 py-2 text-xs">
                 <span
-                  className={`w-10 flex-shrink-0 text-right font-black ${
-                    m.delta > 0 ? "text-emerald-600" : "text-red-500"
+                  className={`w-12 flex-shrink-0 text-right font-black ${
+                    m.delta > 0 ? "text-emerald-600" : m.delta < 0 ? "text-red-500" : "text-zinc-400"
                   }`}
                 >
-                  {m.delta > 0 ? `+${m.delta}` : m.delta}
+                  {m.delta > 0 ? `+${m.delta}` : m.delta < 0 ? `−${Math.abs(m.delta)}` : "0"}
                 </span>
                 <span className="min-w-0 flex-1 truncate">
-                  <b className="text-zinc-900 dark:text-zinc-50">{m.kantin_products?.name ?? "?"}</b>
+                  <b className="text-zinc-900 dark:text-zinc-50">{m.product}</b>
                   <span className="text-zinc-500 dark:text-zinc-400">
                     {" "}
                     · {REASON_LABEL[m.reason] ?? m.reason}

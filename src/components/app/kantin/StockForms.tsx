@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import {
   adjustStock,
   type KantinActionState,
@@ -18,7 +18,44 @@ export function StockAdjustForm({
   productId: string;
   stock: number;
 }) {
+  // The qty/note inputs are uncontrolled, so a successful submit left
+  // their values in place AND left state.ok set: pressing "Simpan" again
+  // applied the very same adjustment a second time — restocking 24 twice
+  // added 48. Remount on success so the fields clear and the confirmation
+  // is a flash rather than a permanent state.
+  const [formKey, setFormKey] = useState(0);
+  const [justSaved, setJustSaved] = useState(false);
+  return (
+    <StockAdjustFields
+      key={`${productId}:${formKey}`}
+      productId={productId}
+      stock={stock}
+      onSaved={() => {
+        setJustSaved(true);
+        setFormKey((k) => k + 1);
+      }}
+      justSaved={justSaved}
+    />
+  );
+}
+
+function StockAdjustFields({
+  productId,
+  stock,
+  onSaved,
+  justSaved,
+}: {
+  productId: string;
+  stock: number;
+  onSaved: () => void;
+  justSaved: boolean;
+}) {
   const [state, formAction, pending] = useActionState(adjustStock, initial);
+
+  useEffect(() => {
+    if (state.ok) onSaved();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state.ok]);
 
   return (
     <form action={formAction} className="mt-2 space-y-2 border-t border-zinc-200 pt-2.5 dark:border-zinc-800">
@@ -27,14 +64,14 @@ export function StockAdjustForm({
         <select name="reason" className={`${field} py-2 text-xs`} defaultValue="restock">
           <option value="restock">+ Restock</option>
           <option value="waste">− Rusak/Habis</option>
-          <option value="correction">= Stok opname</option>
+          <option value="correction">= Stok opname (hasil hitung)</option>
         </select>
         <input
           name="qty"
           inputMode="numeric"
           required
           placeholder={String(stock)}
-          title="Restock/waste: jumlah. Opname: hasil hitung fisik."
+          title="Restock/rusak: jumlah yang bertambah atau berkurang. Opname: hasil hitung fisik — sistem menghitung selisihnya."
           className={`${field} py-2 text-xs`}
         />
         <button
@@ -51,7 +88,9 @@ export function StockAdjustForm({
         className={`${field} py-1.5 text-[11px]`}
       />
       {state.error && <p className="text-[10px] font-semibold text-red-500">{state.error}</p>}
-      {state.ok && <p className="text-[10px] font-semibold text-emerald-600">Stok diperbarui</p>}
+      {justSaved && (
+        <p className="text-[10px] font-semibold text-emerald-600">Stok diperbarui</p>
+      )}
     </form>
   );
 }

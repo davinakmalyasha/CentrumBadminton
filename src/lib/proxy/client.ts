@@ -590,8 +590,13 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
       courts: "facilities",
       kantin_products: "kantin/products",
       kantin_sales: "kantin/sales",
-      kantin_sale_items: "kantin/sales", // proxy sales list doesn't expose items; client aggregates via sales total instead
-      kantin_stock_movements: "kantin/products", // no separate movements list; stok page uses proxy fallback
+kantin_sale_items: "kantin/sales", // proxy sales list doesn't expose items; client aggregates via sales total instead
+  // Used to point at "kantin/products" because no movements endpoint
+  // existed, which made the stock page render PRODUCT rows as movements:
+  // no delta, no reason, no note, and the product's creation date as the
+  // movement time. It looked like plausible data, so the fabrication went
+  // unnoticed. The ledger now has its own endpoint.
+  kantin_stock_movements: "kantin/movements",
       pricing_rules: "pricing",
       profiles: "users",
     };
@@ -788,19 +793,31 @@ async function rpcLoose(
           error: null,
         };
       }
-      case "adjust_kantin_stock": {
-        const pid = String(args?.p_product_id ?? args?.p_productId ?? "");
-        const deltaRaw = Number(args?.p_delta ?? 0);
-        const reason = String(args?.p_reason ?? "correction");
-        const note = (args?.p_note as string | null) ?? undefined;
-        // DB RPC applied sign by reason (waste = -); proxy expects signed delta
-        const delta = reason === "waste" ? -Math.abs(deltaRaw) : Math.abs(deltaRaw);
-        const res = await proxyFetch<{ stock: number; id: string }>("/v1/sports/kantin/products/" + pid + "/stock", {
-          method: "POST",
-          body: { delta, reason, note },
-        });
-        return { data: (res.stock ?? null) as unknown, error: null };
+case "adjust_kantin_stock": {
+      const pid = String(args?.p_product_id ?? args?.p_productId ?? "");
+      const reason = String(args?.p_reason ?? "correction");
+      const note = (args?.p_note as string | null) ?? undefined;
+      const body: Record<string, unknown> = { reason, note };
+      if (reason === "correction") {
+        // "Stok opname" is a physical count: the operator counted N units,
+        // so send that level and let the backend record the difference.
+        // It used to send an ordinary additive delta, so counting 3 when
+        // the system believed 20 produced 23 — and the stock page's
+        // promise that "sistem menghitung selisihnya otomatis" was false.
+        const count = Number(args?.p_count ?? args?.p_qty ?? args?.p_delta ?? 0);
+        body.count = Math.max(0, Math.trunc(count));
+      } else {
+        const deltaRaw = Number(args?.p_delta ?? args?.p_qty ?? 0);
+        // The DB RPC applied sign by reason (waste = -); the proxy expects
+        // a signed delta.
+        body.delta = reason === "waste" ? -Math.abs(deltaRaw) : Math.abs(deltaRaw);
       }
+      const res = await proxyFetch<{ stock: number; id: string }>(
+        "/v1/sports/kantin/products/" + pid + "/stock",
+        { method: "POST", body }
+      );
+      return { data: (res.stock ?? null) as unknown, error: null };
+    }
       case "void_kantin_sale": {
         const sid = String(args?.p_sale_id ?? args?.p_saleId ?? "");
         await proxyFetch("/v1/sports/kantin/sales/" + sid + "/void", { method: "POST" });
