@@ -1,26 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import {
-  Ban,
-  BarChart3,
-  Bot,
-  FolderKanban,
-  Receipt,
-  Repeat,
-  Settings,
-} from "lucide-react";
+import { FolderKanban } from "lucide-react";
+import { OWNER_NAV, PRIMARY_NAV, SETTINGS_NAV } from "./AppNav";
 import { useRole } from "./RoleContext";
 
-const OWNER_LINKS = [
-  { href: "/app/laporan", label: "Laporan", icon: BarChart3, desc: "Omzet & rekap" },
-  { href: "/app/pengeluaran", label: "Pengeluaran", icon: Receipt, desc: "Biaya operasional" },
-  { href: "/app/series", label: "Langganan", icon: Repeat, desc: "Jadwal rutin" },
-  { href: "/app/blokir", label: "Blokir", icon: Ban, desc: "Tutup slot" },
-  { href: "/app/pengaturan", label: "Pengaturan", icon: Settings, desc: "Harga & staff" },
-] as const;
-
-const AI_LINK = { href: "/app/ai", label: "AI Asisten", icon: Bot } as const;
+// Nav data is owned by AppNav so the sidebar, the mobile drawer and this
+// card can never drift apart. Only the AI label suffix is local.
+const AI_LINK = PRIMARY_NAV.find((i) => i.href === "/app/ai")!;
+const OWNER_LINKS = [...OWNER_NAV, ...SETTINGS_NAV];
 
 export default function OwnerMenu() {
   const { role } = useRole();

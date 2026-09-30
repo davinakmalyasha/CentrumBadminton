@@ -40,6 +40,9 @@
 
 html {
   scroll-behavior: smooth;
+  /* Reserve the scrollbar gutter so the fixed desktop sidebar and the
+     content column never shift sideways as page length changes. */
+  scrollbar-gutter: stable;
 }
 
 body {
@@ -73,6 +76,19 @@ body {
   }
 }
 
+/* Desktop left rail — mirrors manager-slide-in but enters from the left,
+   since .manager-drawer is right-anchored. */
+@keyframes manager-slide-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
 @keyframes manager-rise-in {
   from {
     opacity: 0;
@@ -97,6 +113,10 @@ body {
 
 .manager-drawer {
   animation: manager-slide-in 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.manager-sidebar {
+  animation: manager-slide-in-left 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .manager-backdrop {
@@ -160,6 +180,7 @@ body {
 
 @media (prefers-reduced-motion: reduce) {
   .manager-drawer,
+  .manager-sidebar,
   .manager-backdrop,
   .manager-modal,
   .manager-rise,
