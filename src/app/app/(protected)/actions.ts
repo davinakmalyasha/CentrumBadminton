@@ -268,11 +268,28 @@ export async function deleteBooking(
 ): Promise<ActionState> {
   const { supabase } = await requireUser();
   if (!(await isOwner(supabase)))
-    return { error: "Hanya owner yang bisa menghapus booking." };
+    return { error: "Hanya owner yang bisa membatalkan booking." };
 
   const id = String(formData.get("booking_id") ?? "");
   const { error } = await supabase.from("bookings").delete().eq("id", id);
-  if (error) return { error: `Gagal hapus: ${error.message}` };
+  if (error) {
+    // The proxy answers a cancel on a terminal booking with 409 and an
+    // English state-machine message ("... not in a cancellable state:
+    // current status is completed"). Translate it here rather than
+    // showing the backend's wording — this is the only place the user
+    // reads it, and the button used to claim "Hapus permanen" while the
+    // row was in fact kept.
+    if (error.status === 409) {
+      const done = /current status is (\w+)/.exec(error.message)?.[1];
+      return {
+        error: done
+          ? `Booking sudah berstatus ${done} dan tidak bisa dibatalkan.`
+          : "Booking tidak bisa dibatalkan dari status sekarang.",
+      };
+    }
+    if (error.status === 404) return { error: "Booking tidak ditemukan." };
+    return { error: `Gagal membatalkan booking: ${error.message}` };
+  }
 
   revalidatePath("/app");
   revalidatePath("/app/jadwal");

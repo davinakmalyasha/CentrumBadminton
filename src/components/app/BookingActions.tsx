@@ -117,7 +117,11 @@ export default function BookingActions({
             type="submit"
             disabled={delPending}
             className={`${btn} text-zinc-400 hover:bg-zinc-100 hover:text-red-500 dark:text-zinc-500 dark:hover:bg-zinc-800`}
-            title="Hapus permanen (owner)"
+            // "Hapus permanen" was a lie: the proxy sets status='cancelled'
+            // and keeps the row, because deleting it would cascade into
+            // sports_payments and destroy the ledger entry. Say what it
+            // actually does, and which states accept it.
+            title="Batalkan booking (owner) — booking tetap tersimpan dengan status dibatalkan"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>

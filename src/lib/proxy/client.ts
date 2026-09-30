@@ -717,14 +717,26 @@ async function rpcLoose(
 ): Promise<LooseResult> {
   try {
     switch (name) {
-            case "is_owner": {
+      case "is_owner": {
         const me = await cachedGetUser();
         return { data: me.data.user?.role === "owner", error: null };
       }
       case "is_staff": {
-        await cachedGetUser();
-        return { data: true, error: null };
-      }      case "get_pricing_for": {
+        // This was `await cachedGetUser(); return { data: true }` — the
+        // session lookup was awaited and then thrown away, so the answer
+        // was "yes" for everyone, including a signed-out browser. Any
+        // gate built on it (the payment-ledger export) was therefore not
+        // a gate at all.
+        //
+        // Test the role rather than the user object: /v1/auth/me can come
+        // back without a `user` key at all, which surfaces as
+        // `undefined` — and `undefined !== null` would have let a missing
+        // user through a null check.
+        const me = await cachedGetUser();
+        const role = me.data.user?.role;
+        return { data: role === "owner" || role === "pegawai", error: null };
+      }
+      case "get_pricing_for": {
         const date = String(args?.p_date ?? "");
         const rules = await proxyFetch<{ items: Array<Record<string, unknown>> }>(
           "/v1/sports/pricing/",
