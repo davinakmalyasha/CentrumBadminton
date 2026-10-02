@@ -6,6 +6,10 @@ const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? "centrum";
 const SESSION_COOKIE = "proxy_session";
 const CLIENT_COOKIE = "proxy_client_token";
 
+// Every channel created by the realtime shim, so removeChannel() can stop
+// all of them. Without this a channel outlives the component that made it.
+const channels = new Set<unknown>();
+
 function getCookie(name: string): string | undefined {
   if (typeof document === "undefined") return undefined;
   const m = document.cookie
@@ -120,28 +124,53 @@ export const proxyBrowser = {
       visible = !document.hidden;
       document.addEventListener("visibilitychange", onVis);
     }
-    return {
+    // stop() tears down the timer and the visibility listener. It used to
+    // be inline, and `unsubscribe()` returned an empty object -- so a
+    // component that called the RETURNED unsubscribe (rather than the
+    // channel's own) leaked a live 5s poller that kept calling its
+    // callbacks forever.
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      timer = null;
+      if (typeof document !== "undefined") {
+        document.removeEventListener("visibilitychange", onVis);
+      }
+    };
+    const ch = {
       on(_event: string, _cfg: unknown, cb: (payload: unknown) => void) {
         cbs.push(cb);
-        return this;
+        return ch;
       },
       subscribe() {
         if (!timer && cbs.length > 0) {
           timer = setInterval(tick, 5000);
         }
-        return { unsubscribe: () => {} };
+        return { unsubscribe: stop };
       },
-      unsubscribe() {
-        if (timer) clearInterval(timer);
-        timer = null;
-        if (typeof document !== "undefined") {
-          document.removeEventListener("visibilitychange", onVis);
-        }
-      },
+      unsubscribe: stop,
     };
+    // Tracked so removeChannel can stop it. The old removeChannel was an
+    // empty async no-op, so every channel a component created — and did not
+    // unsubscribe from by the exact object identity it held — kept polling
+    // for the life of the tab. In /app/jadwal that meant a fresh 5s poller
+    // (and four proxy queries per tick) on every mount and every
+    // navigation.
+    channels.add(ch);
+    return ch;
   },
 
-  async removeChannel(_channel?: unknown) {},
+  async removeChannel(channel?: unknown) {
+    if (channel) {
+      (channel as { unsubscribe?: () => void }).unsubscribe?.();
+      channels.delete(channel);
+      return;
+    }
+    // No argument: stop everything this module started.
+    for (const ch of [...channels]) {
+      (ch as { unsubscribe?: () => void }).unsubscribe?.();
+    }
+    channels.clear();
+  },
 };
 
 // Shim for legacy imports — `createClient` from the old Supabase browser layer.
