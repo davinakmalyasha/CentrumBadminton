@@ -1294,8 +1294,14 @@ export async function createStaff(
 
   // Create the staff account via the proxy (owner session is attached
   // automatically by the connector). Was Supabase admin.createUser.
-  // phone is collected for display but not stored in sports_users yet
-  // (proxy migrates phone column later); forward anyway for future compat.
+  //
+  // phone used to be collected here, forwarded, and dropped by the backend:
+  // the register handler bound it and then INSERTed without it. Migration
+  // 040 gives the column and the handler stores it, so this is finally
+  // worth sending.
+  //
+  // Digits only, matching how customer WhatsApp numbers are stored
+  // elsewhere in the app, so "+62 812-3456" reads as "628123456".
   const { proxyRegister } = await import("@/lib/proxy/register");
   const { data, error } = await proxyRegister({
     email,
