@@ -280,7 +280,7 @@ export async function adjustStock(
 }
 
 /* ------------------------------------------------------------------ */
-/* Owner: void a sale (atomic delete + stock restore via RPC)          */
+/* Owner: void a sale (atomic: restore stock + mark voided via RPC)     */
 /* ------------------------------------------------------------------ */
 
 export async function voidSale(
@@ -298,9 +298,14 @@ export async function voidSale(
   const saleId = String(formData.get("sale_id") ?? "");
   if (!saleId) return { error: "Penjualan tidak valid." };
 
-  // One atomic call: locks the sale, restores tracked stock, writes void
-  // movements, then deletes the sale. Fixes double-void races and silent
-  // restore failures of the previous per-item loop.
+  // One atomic call: locks the sale, refuses if it is already voided,
+  // restores tracked stock, writes void movements, then marks the sale
+  // voided. Fixes double-void races and silent restore failures of the
+  // previous per-item loop.
+  //
+  // The sale is not deleted. It is marked: a sale is money, and a voided
+  // one still has to be readable as history. Revenue queries exclude
+  // voided rows; the history list shows them struck through.
   const { error } = await supabase.rpc("void_kantin_sale", {
     p_sale_id: saleId,
   });
