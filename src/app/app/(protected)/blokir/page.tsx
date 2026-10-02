@@ -3,6 +3,7 @@ import { todayISO } from "@/lib/availability";
 import { Ban } from "lucide-react";
 import BlockForm from "@/components/app/BlockForm";
 import DeleteBlockButton from "@/components/app/DeleteBlockButton";
+import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 
 export const metadata = { title: "Blokir Jadwal · Centrum Manager" };
 
@@ -13,7 +14,6 @@ type BlockRow = {
   start_time: string;
   end_time: string;
   reason: string;
-  courts: { name: string } | null;
 };
 
 export default async function BlokirPage() {
@@ -24,13 +24,38 @@ export default async function BlokirPage() {
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
     supabase
       .from("court_blocks")
-      .select("*, courts(name)")
+      .select("*")
       .gte("block_date", today)
       .order("block_date")
       .order("start_time"),
   ]);
 
+  // Without this, a proxy outage rendered "Tidak ada blokir mendatang." —
+  // the same words as a genuinely empty list, so a failed read looked like
+  // a quiet calendar.
+  const readError = firstError(courtsRes, blocksRes);
+  if (readError) {
+    return (
+      <div className="space-y-4">
+        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
+          <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
+        </h1>
+        <DataUnavailable detail={readError} />
+      </div>
+    );
+  }
+
   const blocks = (blocksRes.data ?? []) as BlockRow[];
+  const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
+  // Resolve the court name from the list we already loaded.
+  //
+  // The query used to ask for `courts(name)` as an embedded relation, but
+  // `.select()` is a no-op in this connector and the court_blocks row
+  // shape carries no court name, so every block rendered as the literal
+  // fallback "Lapangan" — including blocks on Court 2, which the owner
+  // could not tell apart.
+  const courtName = (id: string | null) =>
+    id ? courtList.find((c) => c.id === id)?.name ?? "Lapangan" : "Semua lapangan";
 
   return (
     <div className="space-y-4">
@@ -39,7 +64,8 @@ export default async function BlokirPage() {
           <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
         </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-          Maintenance / private event — langsung hilang dari jadwal publik.
+          Maintenance / private event — booking di jam ini akan ditolak, dan
+          disappear dari jadwal publik.
         </p>
       </div>
 
@@ -50,9 +76,10 @@ export default async function BlokirPage() {
           Aktif ({blocks.length})
         </h2>
         {blocks.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-zinc-300 bg-white p-6 text-center text-sm text-zinc-500 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-400">
-            Tidak ada blokir mendatang.
-          </p>
+          <EmptyState
+            title="Tidak ada blokir mendatang"
+            body="Kalau ada lapangan yang perlu diperbaiki atau disewa untuk acara pribadi, blokir di sini — booking pada jam itu akan ditolak."
+          />
         ) : (
           <ul className="space-y-2">
             {blocks.map((b) => {
@@ -72,8 +99,7 @@ export default async function BlokirPage() {
                       {d} · {String(b.start_time).slice(0, 5)}–{String(b.end_time).slice(0, 5)}
                     </p>
                     <p className="text-[11px] font-semibold text-zinc-600 dark:text-zinc-300">
-                      {b.court_id ? (b.courts?.name ?? "Lapangan") : "Semua lapangan"} ·{" "}
-                      {b.reason}
+                      {b.court_id ? courtName(b.court_id) : courtName(null)} · {b.reason}
                     </p>
                   </div>
                   <DeleteBlockButton blockId={b.id} />
