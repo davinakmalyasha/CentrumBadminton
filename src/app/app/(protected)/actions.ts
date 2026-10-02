@@ -666,6 +666,13 @@ export async function deleteBlock(
 
 const MAX_WEEKS = 12;
 
+/** Postgres renders `time` as HH:MM:SS; the APIs that take a time want HH:MM. */
+function hhmm(t: string): string {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t ?? ""));
+  if (!m) return String(t ?? "");
+  return `${String(m[1]).padStart(2, "0")}:${m[2]}`;
+}
+
 type SeriesBookingRow = {
   court_id: string;
   booking_date: string;
@@ -683,28 +690,90 @@ type SeriesBookingRow = {
 };
 
 /**
- * Insert weekly instances. Batch first (1 round-trip); on any overlap,
- * fall back to per-week inserts so conflicting weeks are skipped.
+ * Insert weekly instances.
+ *
+ * Batch first (1 round-trip); on any failure, fall back to per-week inserts
+ * so only the genuinely conflicting weeks are skipped.
+ *
+ * Returns why each failure happened rather than a bare count. A generated
+ * week can now be refused for two very different reasons — someone else
+ * booked it, or the court is blocked for maintenance — and "6 skipped
+ * (collision)" when four were actually blocked would send the owner hunting
+ * for a booking that does not exist.
  */
+type InstanceResult = {
+  created: number;
+  attempted: number;
+  skipped: number;
+  blocked: number;
+  taken: number;
+  /** Distinct failure messages, so a real error is never reported as a clash. */
+  reasons: string[];
+};
+
+/**
+ * What one refused week was refused FOR.
+ *
+ * Collapsing everything into "collision" is what hid a 400: the backend
+ * rejecting each insert for some unrelated reason was reported to the owner
+ * as eight weeks that already had a booking, which is a thing they can look
+ * for and will not find. 409 with the block's reason is a block; 409 is a
+ * clash; anything else is a failure and says so.
+ */
+function classifyRefusal(err: { message?: string; status?: number }): "blocked" | "taken" | "failed" {
+  const m = (err.message ?? "").toLowerCase();
+  const status = typeof err.status === "number" ? err.status : undefined;
+  if (status === 409 || m.includes("blocked") || m.includes("diblokir"))
+    return m.includes("blocked") || m.includes("diblokir") ? "blocked" : "taken";
+  return "failed";
+}
+
 async function insertSeriesInstances(
   supabase: Awaited<ReturnType<typeof createClient>>,
   rows: SeriesBookingRow[]
-): Promise<number> {
-  if (rows.length === 0) return 0;
+): Promise<InstanceResult> {
+  const empty: InstanceResult = {
+    created: 0,
+    attempted: rows.length,
+    skipped: 0,
+    blocked: 0,
+    taken: 0,
+    reasons: [],
+  };
+  if (rows.length === 0) return empty;
 
   const { data, error } = await supabase.from("bookings").insert(rows);
   // QueryBuilder array insert returns {created} with partial success
   if (!error && data && typeof (data as { created?: number }).created === "number") {
-    return (data as { created: number }).created;
+    const n = (data as { created: number }).created;
+    return { ...empty, created: n, skipped: rows.length - n, taken: rows.length - n };
   }
-  if (!error) return rows.length;
+  if (!error) return { ...empty, created: rows.length };
 
   let created = 0;
+  let blocked = 0;
+  let taken = 0;
+  const reasons: string[] = [];
   for (const row of rows) {
     const { error: rowError } = await supabase.from("bookings").insert(row);
-    if (!rowError) created++;
+    if (!rowError) {
+      created++;
+      continue;
+    }
+    const kind = classifyRefusal(rowError);
+    if (kind === "blocked") blocked++;
+    else if (kind === "taken") taken++;
+    const msg = rowError.message ?? "unknown";
+    if (!reasons.includes(msg)) reasons.push(msg);
   }
-  return created;
+  return {
+    created,
+    attempted: rows.length,
+    skipped: rows.length - created,
+    blocked,
+    taken,
+    reasons,
+  };
 }
 
 export async function createSeries(
@@ -805,16 +874,49 @@ export async function createSeries(
   return {
     error: null,
     ok: true,
-    info: `${created} jadwal mingguan dibuat${dates.length - created > 0 ? `, ${dates.length - created} dilewati (bentrok)` : ""}`,
+    info: describeGeneration(created, dates.length),
   };
+}
+
+/**
+ * Report what a generation run actually did.
+ *
+ * Every part of this used to be a bare count with "(collision)" bolted on
+ * unconditionally, so a week skipped because the court was blocked, or
+ * because the series has run past its end date, was reported to the owner
+ * as a collision with another booking — which is not something they can go
+ * and look for.
+ */
+function describeGeneration(r: InstanceResult, planned: number): string {
+  const parts = [`${r.created} jadwal dibuat`];
+  if (r.blocked > 0) parts.push(`${r.blocked} dilewati (lapangan diblokir)`);
+  if (r.taken > 0) parts.push(`${r.taken} dilewati (sudah ada booking)`);
+  // Neither "blocked" nor "taken": the weeks fell outside the subscription's
+  // own end date, so they were never eligible.
+  const past = planned - r.attempted;
+  if (past > 0) parts.push(`${past} di luar tanggal akhir langganan`);
+  // Anything left over was a real failure, and the owner is the only one who
+  // can fix it -- so pass the backend's own words rather than a tidy lie.
+  const unexplained = r.skipped - r.blocked - r.taken;
+  if (unexplained > 0)
+    parts.push(
+      `${unexplained} gagal: ${r.reasons.slice(0, 2).join("; ") || "alasan tidak diketahui"}`
+    );
+  return parts.join(", ") + ".";
 }
 
 export type SeriesState = ActionState & { info?: string };
 
+/**
+ * Pause or end a subscription.
+ *
+ * Returns SeriesState, not ActionState, because pausing releases the
+ * courts the series was holding and the owner is told how many were freed.
+ */
 export async function setSeriesStatus(
-  _prev: ActionState,
+  _prev: SeriesState,
   formData: FormData
-): Promise<ActionState> {
+): Promise<SeriesState> {
   let ctx;
   try {
     ctx = await requireOwner();
@@ -828,14 +930,35 @@ export async function setSeriesStatus(
   if (!id || !["active", "paused", "ended"].includes(next))
     return { error: "Permintaan tidak valid." };
 
-  const { error } = await supabase
+  // The proxy's PATCH returns cancelled_bookings: the number of future
+  // slots it released in the same transaction as the status change. Reading
+  // it from there rather than re-counting keeps the message honest — a second
+  // query would also count bookings that were cancelled by some other route.
+  const { data: updated, error } = await supabase
     .from("recurring_series")
     .update({ status: next })
-    .eq("id", id);
+    .eq("id", id)
+    .select("id")
+    .single();
   if (error) return { error: `Gagal update langganan: ${error.message}` };
 
   revalidatePath("/app/series");
-  return { error: null, ok: true };
+  revalidatePath("/app/jadwal");
+
+  // Pausing or ending releases the courts it was holding, and the owner
+  // needs to know how many were freed — otherwise the schedule silently
+  // empties and they have to work out why.
+  let info: string | undefined;
+  if (next !== "active") {
+    const n = Number(
+      (updated as { cancelled_bookings?: unknown } | null)?.cancelled_bookings ?? 0
+    );
+    info =
+      next === "paused"
+        ? `Langganan dijeda. ${n} jadwal yang belum berjalan dibatalkan.`
+        : `Langganan diakhiri. ${n} jadwal yang belum berjalan dibatalkan.`;
+  }
+  return { error: null, ok: true, info };
 }
 
 /** Extend an existing series by generating more weekly instances */
@@ -865,18 +988,25 @@ export async function extendSeries(
   if (s.status !== "active")
     return { error: "Aktifkan langganan dulu sebelum menambah jadwal." };
 
-  // Find furthest generated instance to continue from
+  // Find furthest generated instance to continue from.
+  //
+  // The column comes back as `date`, not `booking_date`: booking_date is the
+  // connector's name for it on the way IN and in filters, but a read returns
+  // the proxy's own column name. Asking for `booking_date` here and reading
+  // that key silently produced undefined, so every extension treated the
+  // series as empty, restarted from start_date, and collided with the weeks
+  // already there -- reporting "0 created, 8 skipped" instead of adding 8.
   const { data: lastBooking } = await supabase
     .from("bookings")
-    .select("booking_date")
+    .select("date")
     .eq("recurring_series_id", id)
     .neq("status", "cancelled")
-    .order("booking_date", { ascending: false })
+    .order("date", { ascending: false })
     .limit(1);
 
-  const hasInstances = Boolean(lastBooking?.[0]?.booking_date);
-  const baseDate =
-    (lastBooking?.[0]?.booking_date as string | undefined) ?? (s.start_date as string);
+  const furthest = (lastBooking?.[0]?.date as string | undefined) ?? null;
+  const hasInstances = Boolean(furthest);
+  const baseDate = furthest ?? (s.start_date as string);
   const weeks = 8;
   const endDate = s.end_date as string | null;
 
@@ -899,8 +1029,14 @@ export async function extendSeries(
     dates.map((d) => ({
       court_id: s.court_id as string,
       booking_date: d,
-      start_time: s.start_time as string,
-      end_time: s.end_time as string,
+      // Normalise to HH:MM. The series row comes back from the proxy as
+      // "19:00:00" -- a Postgres `time` rendered with seconds -- while the
+      // bookings API accepts HH:MM only. Creation built its times by hand as
+      // `${hh}:00` so it always matched; copying the stored value straight
+      // into the instances meant every extended week was rejected with
+      // "start_time must be HH:MM" and reported as a silent skip.
+      start_time: hhmm(s.start_time as string),
+      end_time: hhmm(s.end_time as string),
       status: "confirmed",
       source: "walk_in",
       customer_id: (s.customer_id as string) || null,
@@ -921,7 +1057,7 @@ export async function extendSeries(
     info:
       dates.length === 0
         ? "Semua jadwal sampai tanggal akhir sudah ada."
-        : `${created} jadwal ditambahkan${dates.length - created > 0 ? `, ${dates.length - created} dilewati (bentrok)` : ""}`,
+        : describeGeneration(created, dates.length),
   };
 }
 

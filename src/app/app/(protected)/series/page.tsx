@@ -18,7 +18,6 @@ type SeriesRow = {
   start_date: string;
   end_date: string | null;
   status: string;
-  courts: { name: string } | null;
 };
 
 const DAY_NAMES = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
@@ -30,25 +29,41 @@ export default async function SeriesPage() {
   const [seriesRes, upcomingRes, courtsRes] = await Promise.all([
     supabase
       .from("recurring_series")
-      .select("*, courts(name)")
+      .select("*")
       .neq("status", "ended")
       .order("created_at", { ascending: false }),
     supabase
       .from("bookings")
-      .select("recurring_series_id,booking_date")
+      .select("recurring_series_id,date")
       .gte("booking_date", today)
       .neq("status", "cancelled")
       .neq("status", "no_show")
-      .not("recurring_series_id", "is", null),
+      .not("recurring_series_id", "is", null)
+      // The row cap is 500 and this counts in memory. Without asking for
+      // headroom, a venue with a lot of weekly play undercounts silently and
+      // the number is simply wrong.
+      .limit(2000),
     supabase.from("courts").select("id,name").eq("is_active", true).order("sort_order"),
   ]);
 
   const series = (seriesRes.data ?? []) as SeriesRow[];
+  const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
+  // Same trap as the Blokir page: `courts(name)` as an embedded relation is
+  // a no-op in this connector, so every row rendered with an empty court
+  // name. The list is already loaded, so resolve from it.
+  const courtName = (cid: string) =>
+    courtList.find((c) => c.id === cid)?.name ?? "Lapangan";
   const upcoming =
     (upcomingRes.data ?? []) as Array<{
       recurring_series_id: string | null;
-      booking_date: string;
+      // The proxy returns `date`; booking_date is only the connector's name
+      // for it on writes and in filters. Typing it as booking_date here let
+      // a read return undefined and the grouping below quietly mis-count.
+      date: string;
     }>;
+  // If the proxy hit its cap, the counts below are a floor, not a total.
+  // Say so rather than presenting a partial count as the whole thing.
+  const upcomingTruncated = upcomingRes.truncated === true;
 
   const futureCount = new Map<string, number>();
   for (const b of upcoming) {
@@ -110,7 +125,7 @@ export default async function SeriesPage() {
                         {DAY_NAMES[s.weekday]} · {String(s.start_time).slice(0, 5)}–
                         {String(s.end_time).slice(0, 5)} ·{" "}
                         <Shuttlecock className="mr-1 inline h-3 w-3" />
-                        {s.courts?.name ?? ""}
+                        {courtName(s.court_id)}
                         {s.end_date
                           ? ` · s.d. ${new Intl.DateTimeFormat("id-ID", {
                               day: "numeric",
@@ -122,7 +137,13 @@ export default async function SeriesPage() {
                         <span className="font-bold text-zinc-600 dark:text-zinc-300">
                           {count} jadwal ke depan
                         </span>
-                      </p>
+                        {upcomingTruncated ? (
+                          <span className="text-amber-600 dark:text-amber-400">
+                            {" "}
+                            (Sebagian terpotong — angka mungkin kurang)
+                          </span>
+                        ) : null}
+                        </p>
                     </div>
                   </div>
                   <div className="mt-2.5">
