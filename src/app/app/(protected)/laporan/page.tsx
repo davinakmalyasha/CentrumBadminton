@@ -84,6 +84,21 @@ export default async function LaporanPage({
   const expenses = (expensesRes.data ?? []) as Array<{ amount: number }>;
   const courtList = (courtsRes.data ?? []) as Array<{ id: string; name: string }>;
   const kantinSales = (kantinSalesRes.data ?? []) as Array<{ id: string; total: number; created_at: string }>;
+
+  // Every figure below is a sum over one of those lists. Each list is
+  // capped by the proxy, and a capped sum is a wrong number that looks
+  // right — "Pendapatan kotor Rp0" is indistinguishable from "Rp0 of the
+  // rows we happened to fetch". So the report says which of its inputs
+  // were shortened instead of presenting a partial total as final.
+  const cappedBy = {
+    pembayaran: paymentsRes.truncated,
+    booking: bookingsRes.truncated,
+    pengeluaran: expensesRes.truncated,
+    kantin: kantinSalesRes.truncated,
+  };
+  const capped = Object.entries(cappedBy)
+    .filter(([, wasCapped]) => wasCapped)
+    .map(([name]) => name);
   // Real COGS + top products via GET /kantin/sales/{id}/items
   // (one sale at a time; month scope is small — cap at 500 sales).
   const kantinItems: Array<{ qty: number; unit_price: number; unit_cost: number; product_name: string }> = [];
@@ -202,6 +217,17 @@ export default async function LaporanPage({
 
   return (
     <div className="space-y-5">
+      {capped.length > 0 && (
+        <p
+          role="status"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          Data {capped.join(", ")} untuk bulan ini melebihi batas tampilan, jadi angka di
+          bawah hanya menghitung {capped.length === 1 ? "bagian yang terambil" : "bagian yang terambil"}.
+          Bulatkan dengan kolom <code className="font-mono">from</code>/<code className="font-mono">to</code> yang lebih
+          sempit.
+        </p>
+      )}
       <div className="flex items-center justify-between gap-2">
         <Link
           href={`/app/laporan?month=${addMonths(month, -1)}`}

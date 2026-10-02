@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import { createClient, proxyFetch } from "@/lib/proxy/client";
 import { monthEndExclusive, monthStart } from "@/lib/months";
+import { ALL_BOOKING_STATUSES } from "@/lib/booking-status";
+
+// The proxy caps a single list request at 2000 rows (bookings) and 5000
+// (payments). Exporting a year therefore needs more than one page, and
+// asking for more than the cap does not error — the proxy just returns
+// the first page, so the export would be quietly short.
+const PROXY_PAGE_MAX = 2000;
 
 /**
  * GET /api/reports/export?month=YYYY-MM[&type=kantin]
@@ -21,6 +28,17 @@ function esc(v: string | number | null | undefined): string {
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
   if (/[",;\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
   return s;
+}
+
+/**
+ * Did the proxy shorten this list?
+ *
+ * The bookings and payments endpoints report `truncated` when the row cap
+ * was hit. Without this check a month with more payments than the cap
+ * exports as a shorter ledger that still looks legitimate.
+ */
+function truncated(res: unknown): boolean {
+  return (res as { truncated?: boolean } | null)?.truncated === true;
 }
 
 /**
@@ -214,7 +232,45 @@ export async function GET(request: Request) {
     return t >= new Date(from).getTime() && t < new Date(to).getTime();
   });
 
-  const bkRes = await supabase.from("bookings").limit(2000);
+  // Refuse to export a ledger the proxy has silently shortened. Without
+  // this the file looks complete and the totals under-report, which is the
+  // worst failure mode for a document people keep for their records.
+  if (truncated(payRes)) {
+    return NextResponse.json(
+      { error: "Terlalu banyak pembayaran pada periode ini — ekspor per bulan, bukan per tahun." },
+      { status: 409 }
+    );
+  }
+
+// The join source has to cover every status, not just confirmed.
+  //
+  // This used to be an unfiltered `.limit(2000)`. Two things then went
+  // wrong at once: the proxy defaults to status=confirmed when no status
+  // param is sent, so completed, checked_in, pending, cancelled and
+  // no_show bookings were all missing from the join; and the list is
+  // ordered, so an arbitrary 2000-row page is not "the ledger". Either
+  // way `bookings.find(x => x.id === p.booking_id)` missed, and the
+  // exported row came out with a blank Tanggal Main, Jam, Pelanggan,
+  // Telepon and Lapangan — an export that looks fine and is wrong.
+  //
+  // No date filter: a payment can settle a booking from an adjacent day
+  // (booked late, paid at midnight), and the payments above are already
+  // filtered to the requested window. Widening the booking side costs a few
+  // rows and avoids blanking a legitimate row over a midnight boundary.
+  const bkQ = supabase
+    .from("bookings")
+    .in("status", ALL_BOOKING_STATUSES)
+    .limit(PROXY_PAGE_MAX);
+  const bkRes = await bkQ;
+  if (truncated(bkRes)) {
+    return NextResponse.json(
+      {
+        error:
+          "Data booking terlalu banyak untuk diekspor sekaligus — ekspor per bulan atau per quarter, bukan per tahun.",
+      },
+      { status: 409 }
+    );
+  }
   const bookings = ((bkRes as unknown as { data: Array<Record<string, unknown>> }).data ?? []) as Array<{
     id: string;
     facility_id?: string;
@@ -230,6 +286,11 @@ export async function GET(request: Request) {
     id: string;
     name: string;
   }>;
+  // The bookings list already carries facility_name (the proxy JOINs
+  // sports_facilities), so prefer it over a second lookup table. Looking
+  // the court up by id against a list of ACTIVE courts returned "" for any
+  // court that had since been paused — the export then dropped a column it
+  // already had.
   const facName = (id: string) => facilities.find((f) => f.id === id)?.name ?? "";
 
   const lHeaders = ["Tanggal Bayar", "Metode", "Tanggal Main", "Jam", "Pelanggan", "Telepon", "Lapangan", "Nominal"];
@@ -243,7 +304,7 @@ export async function GET(request: Request) {
       `${String(b?.start_time ?? "").slice(0, 5)}-${String(b?.end_time ?? "").slice(0, 5)}`,
       String(b?.customer_name ?? ""),
       String(b?.customer_phone ?? ""),
-      String(b ? facName(b.facility_id ?? "") : ""),
+      String(b?.facility_name ?? facName(b?.facility_id ?? "")),
       Number(p.amount),
     ]);
   }
@@ -270,10 +331,23 @@ export async function GET(request: Request) {
       (c as unknown as { width: number }).width = 16;
     });
     // Header row plus every added row.
+    //
+    // `cell.type` is getter-only on ExcelJS's Cell — assigning to it
+    // throws "Cannot set property type of [object Object] which has only
+    // a getter" and the whole export 500s. Typing the cells up front, via
+    // the row's `values` tuple, is the supported way and avoids the
+    // property entirely.
     for (let rowNo = 2; rowNo <= lRows.length + 1; rowNo++) {
-      ws.getRow(rowNo).eachCell((cell, colNo) => {
-        if (isText(lRows[rowNo - 2][colNo - 1])) {
-          (cell as unknown as { type: unknown }).type = ExcelJS.ValueType.String;
+      const row = ws.getRow(rowNo);
+      row.eachCell((cell) => {
+        if (typeof cell.value === "string" && cell.value.startsWith("=")) {
+          // Belt and braces: the apostrophe prefix above already makes
+          // this inert, but a formula would be stored as a formula
+          // regardless of a leading quote in some readers.
+          (cell as unknown as { model: Record<string, unknown> }).model = {
+            type: "str",
+            value: cell.value,
+          };
         }
       });
     }

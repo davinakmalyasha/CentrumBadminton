@@ -174,6 +174,38 @@ describe("query builder: client-side filtering still holds", () => {
 
 // single() and maybeSingle() were the same method returning rows[0] ?? null,
 // so nothing ever reported "no row" or "too many rows" distinctly.
+// A capped list and a complete one return the same shape and the same
+// data type. `[]` is a legitimate empty result, so a summing caller
+// cannot tell "Rp0 collected" from "Rp0 of the rows we fetched" unless
+// the proxy says so.
+describe("truncation is reported, not silent", () => {
+  it("passes truncated: true through to the caller", async () => {
+    stubFetch({ items: [{ id: "1" }], truncated: true });
+    const supabase = await createClient();
+    const res = await supabase.from("payments").gte("paid_at", "2026-09-01");
+
+    expect(res.truncated).toBe(true);
+  });
+
+  it("is false for a complete list", async () => {
+    stubFetch({ items: [{ id: "1" }], truncated: false });
+    const supabase = await createClient();
+    const res = await supabase.from("payments");
+
+    expect(res.truncated).toBe(false);
+  });
+
+  it("is false when the proxy omits the field entirely", async () => {
+    // Older or unrelated endpoints will not send it; absence must not be
+    // read as "truncated", or every list looks capped.
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    const res = await supabase.from("customers");
+
+    expect(res.truncated).toBe(false);
+  });
+});
+
 describe("single() and maybeSingle() keep Supabase's distinct contracts", () => {
   it(".single() errors when the row is missing", async () => {
     stubFetch({ items: [] });
