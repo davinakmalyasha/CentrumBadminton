@@ -15,13 +15,22 @@ type SRow = {
   note: string | null;
   created_at: string;
   recorded_by: string | null;
+  /**
+   * The recorder's name, joined by the backend.
+   *
+   * This used to come from an embedded `profiles(full_name)` relation, which
+   * this connector never resolved -- every row rendered "Dicatat: —" as if
+   * nobody had rung it up. Voiding now also records who voided it.
+   */
+  recorded_by_name: string | null;
+  voided_at: string | null;
+  voided_by: string | null;
   kantin_sale_items: Array<{
     id: string;
     product_name: string;
     qty: number;
     unit_price: number;
   }>;
-  profiles: { full_name: string } | null;
 };
 
 export default async function KantinRiwayatPage({
@@ -36,10 +45,10 @@ export default async function KantinRiwayatPage({
 
   const supabase = await createClient();
   const [salesRes, ownerRes] = await Promise.all([
-    supabase
+supabase
       .from("kantin_sales")
       .select(
-        "id,total,method,customer_name,note,created_at,recorded_by,kantin_sale_items(product_name,qty,unit_price,id),profiles(full_name)"
+        "id,total,method,customer_name,note,created_at,recorded_by,recorded_by_name,voided_at,voided_by"
       )
       .gte("created_at", `${date}T00:00:00+07:00`)
       .lt("created_at", `${next}T00:00:00+07:00`)
@@ -48,11 +57,17 @@ export default async function KantinRiwayatPage({
   ]);
   const owner = ownerRes.data === true;
 
+  // Voided sales stay in this list -- it is the record of what happened --
+  // but they are not part of the day's takings. Counting them was possible
+  // only because voiding used to delete the row, so the total quietly grew
+  // by exactly the amounts the owner had just given back.
   const rawSales = (salesRes.data ?? []) as unknown as SRow[];
+  const voidedCount = rawSales.filter((s) => s.voided_at).length;
   // Line items live behind GET /kantin/sales/{id}/items — fetch per
   // recent sale (one day's worth; cap 100) instead of the dead join.
-  const sales = await Promise.all(
-    rawSales.slice(0, 100).map(async (s) => {
+const sales = await Promise.all(
+    (salesRes.data ?? []).slice(0, 100).map(async (sRaw: unknown) => {
+      const s = sRaw as SRow;
       try {
         const res = await proxyFetch<{
           items: Array<{ id: string; product_name: string; qty: number; unit_price: number }>;
@@ -63,8 +78,18 @@ export default async function KantinRiwayatPage({
       }
     })
   );
-  const dayTotal = sales.reduce((a, s) => a + Number(s.total), 0);
-  const cash = sales.filter((s) => s.method === "cash").reduce((a, s) => a + Number(s.total), 0);
+  // Sorted live-only first so the day's takings lead, then the corrections
+  // underneath them.
+  const ordered = [...sales].sort(
+    (a, b) => Number(Boolean(a.voided_at)) - Number(Boolean(b.voided_at))
+  );
+  // Only the live sales count towards the day's takings.
+  const dayTotal = sales
+    .filter((s) => !s.voided_at)
+    .reduce((a, s) => a + Number(s.total), 0);
+  const cash = sales
+    .filter((s) => !s.voided_at && s.method === "cash")
+    .reduce((a, s) => a + Number(s.total), 0);
 
   return (
     <div className="space-y-4">
@@ -100,8 +125,9 @@ export default async function KantinRiwayatPage({
           Total penjualan kantin
         </p>
         <p className="mt-1 text-3xl font-black tracking-tight">{formatIDR(dayTotal)}</p>
-        <p className="mt-1 text-xs font-semibold text-zinc-300/80">
+<p className="mt-1 text-xs font-semibold text-zinc-300/80">
           Cash {formatIDR(cash)} · QRIS {formatIDR(dayTotal - cash)} · {sales.length} transaksi
+          {voidedCount > 0 ? ` · ${voidedCount} dibatalkan` : ""}
         </p>
       </div>
 
@@ -111,23 +137,48 @@ export default async function KantinRiwayatPage({
         </p>
       ) : (
         <ul className="space-y-2">
-          {sales.map((s) => {
-            const items = s.kantin_sale_items ?? [];
+{ordered.map((s) => {
+            const items = (s.kantin_sale_items ?? []) as SRow["kantin_sale_items"];
             const time = new Intl.DateTimeFormat("id-ID", {
               hour: "2-digit",
               minute: "2-digit",
               timeZone: "Asia/Jakarta",
             }).format(new Date(s.created_at));
+            const voidTime = s.voided_at
+              ? new Intl.DateTimeFormat("id-ID", {
+                  hour: "2-digit",
+                  minute: "2-digit",
+                  timeZone: "Asia/Jakarta",
+                }).format(new Date(s.voided_at))
+              : null;
             return (
-              <li key={s.id} className="rounded-2xl border border-zinc-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900">
+              <li
+                key={s.id}
+                className={`rounded-2xl border p-3.5 dark:bg-zinc-900 ${
+                  s.voided_at
+                    ? "border-zinc-200 bg-zinc-50 opacity-70 dark:border-zinc-800"
+                    : "border-zinc-200 bg-white dark:border-zinc-800"
+                }`}
+              >
                 <div className="flex items-center justify-between gap-2">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-black text-zinc-900 dark:text-zinc-50">
-                      {formatIDR(Number(s.total))}
+                      {s.voided_at ? (
+                        <span className="line-through decoration-zinc-400">
+                          {formatIDR(Number(s.total))}
+                        </span>
+                      ) : (
+                        formatIDR(Number(s.total))
+                      )}
                       <span className="ml-2 rounded-full bg-zinc-100 px-2 py-0.5 text-[9px] font-bold uppercase text-zinc-500 dark:bg-zinc-800 dark:text-zinc-400">
                         {s.method}
                       </span>
                       <span className="ml-1 text-[10px] font-medium text-zinc-500 dark:text-zinc-400">· {time}</span>
+                      {s.voided_at && (
+                        <span className="ml-2 rounded-full bg-red-100 px-2 py-0.5 text-[9px] font-bold uppercase text-red-700 dark:bg-red-950 dark:text-red-300">
+                          dibatalkan {voidTime}
+                        </span>
+                      )}
                     </p>
                     <p className="truncate text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
                       {items.map((i) => `${i.product_name} ×${i.qty}`).join(", ")}
@@ -136,11 +187,13 @@ export default async function KantinRiwayatPage({
                     {s.note && (
                       <p className="truncate text-[10px] italic text-zinc-500 dark:text-zinc-400">{s.note}</p>
                     )}
-                    <p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
-                      Dicatat: {s.profiles?.full_name ?? "—"}
+<p className="text-[10px] font-medium text-zinc-500 dark:text-zinc-400">
+                      Dicatat: {s.recorded_by_name ?? "—"}
                     </p>
                   </div>
-                  {owner && <VoidSaleButton saleId={s.id} />}
+                  {/* Already corrected; offering the button again would only
+                      produce a conflict. */}
+                  {owner && !s.voided_at && <VoidSaleButton saleId={s.id} />}
                 </div>
               </li>
             );
