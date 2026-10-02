@@ -164,6 +164,11 @@ export async function createBooking(
 
   // Owner-only manual price override
   const overridePrice = owner && overrideRaw ? Number(overrideRaw) : null;
+  // Computed here only to PREVIEW the price to the customer. The proxy
+  // recomputes it server-side from the pricing rule and ignores this
+  // field, so the committed figure is always the server's. The two agree
+  // because both walk the window hour by hour at the day/evening rate
+  // (see pricing.PriceFor).
   const computedPrice = computePrice(pricing, startH, endH);
 
   const { error } = await supabase.from("bookings").insert({
@@ -405,8 +410,23 @@ export async function releaseBooking(
     .maybeSingle();
   if (!cur) return { error: "Booking tidak ditemukan" };
   const row = cur as unknown as { start_time: string; end_time: string; status: string; booking_date: string };
-  if (row.status !== "confirmed" && row.status !== "checked_in") {
-    return { error: "Hanya yang sedang main bisa dikosongkan." };
+  // "Kosongkan" completes a booking early, and the proxy's state machine
+  // only allows completed from checked_in — completed is unreachable from
+  // confirmed. So the button used to fail with a 409
+  // ("cannot change status from confirmed to completed") on every
+  // walk-in, which is the common case, because nobody had pressed
+  // "Tandai masuk" first.
+  //
+  // Rather than widen the state machine to skip check-in, the release now
+  // requires it. A player who has arrived is checked in; one who has not
+  // arrived is not "being released early", and the button should say so.
+  if (row.status !== "checked_in") {
+    return {
+      error:
+        row.status === "confirmed"
+          ? "Tandai masuk dulu, baru kosongkan."
+          : "Hanya yang sedang main bisa dikosongkan.",
+    };
   }
   const nowMin = wibNowMinutes();
   const sMin = Number(String(row.start_time).slice(0, 2)) * 60 + Number(String(row.start_time).slice(3, 5) || 0);

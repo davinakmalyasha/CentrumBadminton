@@ -19,7 +19,23 @@ const WIB_TIME = new Intl.DateTimeFormat("id-ID", {
 function esc(v: string | number | null | undefined): string {
   let s = String(v ?? "");
   if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
-  return /[",;\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  if (/[",;\n]/.test(s)) return `"${s.replace(/"/g, '""')}"`;
+  return s;
+}
+
+/**
+ * Neutralise a leading formula character for the XLSX path.
+ *
+ * XLSX cells are formulas by default when they start with = + - @, and
+ * Excel evaluates them on open. An apostrophe prefix is the standard
+ * neutraliser; the cell is additionally typed as String below so the
+ * character survives as visible text rather than being swallowed.
+ *
+ * A leading apostrophe that the user actually typed is left alone -- it
+ * is already inert.
+ */
+function xlsxSafe(s: string): string {
+  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
 }
 
 function day(iso: string | undefined | null): string {
@@ -238,10 +254,29 @@ export async function GET(request: Request) {
     const ws = wb.addWorksheet("Laporan");
     ws.addRow(lHeaders);
     ws.getRow(1).font = { bold: true } as unknown as never;
-    lRows.forEach((r) => ws.addRow(r));
+    // Strings get the same formula-injection guard the CSV path applies,
+    // and are marked as literal text so Excel cannot reinterpret them.
+    //
+    // A customer named "=1+1" or "+62811" is stored verbatim in the
+    // database, and XLSX cells are evaluated on open: without this the
+    // export handed the recipient a workbook that tried to compute its
+    // own contents from whatever the payer typed into a name field. The
+    // CSV path already escaped this; the XLSX path did not, so the same
+    // data was safe in one format and not the other.
+    const isText = (v: unknown) => typeof v === "string";
+    const guard = (v: unknown) => (isText(v) ? xlsxSafe(v as string) : v);
+    lRows.forEach((r) => ws.addRow(r.map(guard)));
     ws.columns.forEach((c) => {
       (c as unknown as { width: number }).width = 16;
     });
+    // Header row plus every added row.
+    for (let rowNo = 2; rowNo <= lRows.length + 1; rowNo++) {
+      ws.getRow(rowNo).eachCell((cell, colNo) => {
+        if (isText(lRows[rowNo - 2][colNo - 1])) {
+          (cell as unknown as { type: unknown }).type = ExcelJS.ValueType.String;
+        }
+      });
+    }
     const buf = await wb.xlsx.writeBuffer();
     return new NextResponse(buf as unknown as BodyInit, {
       headers: {

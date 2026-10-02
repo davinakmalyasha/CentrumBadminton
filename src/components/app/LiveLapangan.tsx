@@ -75,17 +75,34 @@ export default function LiveLapangan({ bookings }: { bookings: LiveBooking[] }) 
                     <Plus className="h-3.5 w-3.5" aria-hidden="true" /> +1 jam
                   </button>
                 </form>
-                <form action={relAction}>
-                  <input type="hidden" name="booking_id" value={b.id} />
-                  <button
-                    type="submit"
-                    disabled={extPending || relPending}
-                    className="manager-tap inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-600 transition hover:bg-amber-50 disabled:opacity-50 dark:border-amber-900/60 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-950/40"
-                    title="Kosongkan sekarang — set selesai, uang tetap dihitung, slot jadi free"
+{b.status === "checked_in" ? (
+                  <form action={relAction}>
+                    <input type="hidden" name="booking_id" value={b.id} />
+                    <button
+                      type="submit"
+                      disabled={extPending || relPending}
+                      className="manager-tap inline-flex min-h-[36px] items-center gap-1 rounded-lg border border-amber-300 bg-white px-2.5 py-1.5 text-xs font-bold text-amber-600 transition hover:bg-amber-50 disabled:opacity-50 dark:border-amber-900/60 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-950/40"
+                      title="Kosongkan sekarang — set selesai, uang tetap dihitung, slot jadi free"
+                    >
+                      <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Kosongkan
+                    </button>
+                  </form>
+                ) : (
+                  // "Kosongkan" completes a booking, and completed is only
+                  // reachable from checked_in. Offering it on a `confirmed`
+                  // booking -- the normal walk-in, before anyone pressed
+                  // "Tandai masuk" -- submitted a transition the proxy
+                  // refuses, so the button always failed. The status
+                  // actions elsewhere in the row already offer "Tandai
+                  // masuk"; showing the release only where it works beats
+                  // showing it and failing.
+                  <span
+                    className="inline-flex min-h-[36px] items-center rounded-lg border border-zinc-200 px-2.5 text-[10px] font-semibold text-zinc-400 dark:border-zinc-800 dark:text-zinc-600"
+                    title="Tandai masuk dulu untuk bisa dikosongkan lebih awal"
                   >
-                    <LogOut className="h-3.5 w-3.5" aria-hidden="true" /> Kosongkan
-                  </button>
-                </form>
+                    Belum masuk
+                  </span>
+                )}
               </div>
             </li>
           );
