@@ -97,6 +97,19 @@ describe("query builder: status reaches the proxy", () => {
     expect(lastQuery().get("id")).toBe("b-123");
   });
 
+  it("does not send a status filter alongside an id lookup", async () => {
+    // The proxy defaults to status=confirmed when the param is absent, so
+    // an id lookup that also carried `status=confirmed` would 200-with-no-
+    // rows for a booking that is checked_in or completed — which is
+    // exactly the row a caller re-reads after updating it.
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    await supabase.from("bookings").eq("id", "b-123");
+
+    expect(lastQuery().get("id")).toBe("b-123");
+    expect(lastQuery().has("status")).toBe(false);
+  });
+
   it("forwards recorded_by so a staff export can be scoped to its own rows", async () => {
     // The payment ledger export lets a staff member see only the money they
     // took. The scope has to reach the proxy as a query param, or the
@@ -156,6 +169,74 @@ describe("query builder: client-side filtering still holds", () => {
 
     const ids = (data as { id: string }[]).map((r) => r.id);
     expect(ids).toEqual(["1"]);
+  });
+});
+
+// single() and maybeSingle() were the same method returning rows[0] ?? null,
+// so nothing ever reported "no row" or "too many rows" distinctly.
+describe("single() and maybeSingle() keep Supabase's distinct contracts", () => {
+  it(".single() errors when the row is missing", async () => {
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .eq("id", "nope")
+      .single();
+
+    // Previously data was null and error was null, so the caller's
+    // "if (!data) return not found" branch still ran but any caller
+    // checking error first saw success.
+    expect(data).toBeNull();
+    expect(error).not.toBeNull();
+  });
+
+  it(".maybeSingle() returns null with NO error when the row is missing", async () => {
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .eq("id", "nope")
+      .maybeSingle();
+
+    expect(data).toBeNull();
+    expect(error).toBeNull();
+  });
+
+  it("both error when the filter matched more than one row", async () => {
+    // The rows must carry the filtered column, because the shim also
+    // re-applies eq client-side — a row without `phone` would be dropped
+    // and the test would be asserting on zero rows, not two.
+    const rows = [
+      { id: "1", phone: "628" },
+      { id: "2", phone: "628" },
+    ];
+    stubFetch({ items: rows });
+    const supabase = await createClient();
+
+    const strict = await supabase.from("bookings").eq("phone", "628").single();
+    expect(strict.data).toBeNull();
+    expect(strict.error?.message).toBe("Expected one row, got 2");
+
+    stubFetch({ items: rows });
+    const supabase2 = await createClient();
+    const lenient = await supabase2
+      .from("bookings")
+      .eq("phone", "628")
+      .maybeSingle();
+    expect(lenient.data).toBeNull();
+    expect(lenient.error?.message).toBe("Expected one row, got 2");
+  });
+
+  it("returns the single row with no error", async () => {
+    stubFetch({ items: [{ id: "b-1" }] });
+    const supabase = await createClient();
+    const { data, error } = await supabase
+      .from("bookings")
+      .eq("id", "b-1")
+      .single();
+
+    expect(error).toBeNull();
+    expect((data as { id: string }).id).toBe("b-1");
   });
 });
 

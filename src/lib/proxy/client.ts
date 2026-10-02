@@ -242,6 +242,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private orderDesc = false;
   private limitN?: number;
   private singleMode = false;
+  private strictSingle = false;
   private writeOp?: { kind: "insert" | "update" | "delete"; row?: Record<string, unknown> };
 
   constructor(private table: string) {
@@ -344,13 +345,28 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     return this;
   }
 
+  /**
+   * `.maybeSingle()` — exactly one row, or null. More than one is an
+   * error, because "which one?" has no safe answer.
+   *
+   * Supabase's two methods are distinct and both were implemented as the
+   * same thing here: `.single()` returned `rows[0] ?? null` with no
+   * complaint. A caller that relied on `.single()` erroring when the row
+   * was missing got `null` instead and carried on — and a caller that
+   * relied on it erroring when the filter matched too much got whichever
+   * row happened to come first. `.single()` is the strict form; see
+   * `strictSingle`.
+   */
   maybeSingle(): Promise<QueryResult<T>> {
     this.singleMode = true;
+    this.strictSingle = false;
     return this.execute() as Promise<QueryResult<T>>;
   }
 
+  /** `.single()` — exactly one row, or an error. */
   single(): Promise<QueryResult<T>> {
     this.singleMode = true;
+    this.strictSingle = true;
     return this.execute() as Promise<QueryResult<T>>;
   }
 
@@ -565,7 +581,26 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
         });
       }
       if (this.singleMode) {
-        return { data: (out[0] ?? null) as T | null, error: null };
+        // Distinguish "no row", "one row" and "too many". Collapsing all
+        // three into rows[0] ?? null is what let a missing booking read as
+        // a clean null instead of an error the caller could handle.
+        if (out.length > 1) {
+          return {
+            data: null as T | null,
+            error: new ProxyError(
+              `Expected one row, got ${out.length}`,
+              // 406, matching postgrest's "PGRST116" range.
+              406
+            ),
+          };
+        }
+        if (out.length === 0) {
+          if (this.strictSingle) {
+            return { data: null as T | null, error: new ProxyError("No rows returned", 406) };
+          }
+          return { data: null as T | null, error: null };
+        }
+        return { data: out[0] as T, error: null };
       }
       return { data: out as T[], error: null };
     } catch (e) {
