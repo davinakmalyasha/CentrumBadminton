@@ -276,6 +276,56 @@ export async function updateBookingStatus(
   return { error: null, ok: true };
 }
 
+/**
+ * Apply venue opening hours to the active pricing rule AND every court, in
+ * one transaction.
+ *
+ * Opening hours lived in two tables with two different defaults —
+ * sports_facilities 06:00-22:00, sports_pricing_rules 07:00-23:00 — and
+ * the booking form offered slots from the RULE while the backend enforced
+ * the FACILITY, so a 22:30 slot could be priced and then refused. Editing
+ * one table just moved the disagreement into the other, which is why this
+ * is one owner-facing control rather than two fields.
+ *
+ * A court can still be closed early on purpose afterwards; that is a
+ * deliberate per-court override rather than a stale default.
+ */
+export async function applyVenueHours(
+  _prev: ActionState,
+  formData: FormData
+): Promise<ActionState> {
+  const { supabase } = await requireUser();
+  if (!(await isOwner(supabase))) {
+    return { error: "Hanya owner yang bisa mengubah jam operasional." };
+  }
+  const openTime = String(formData.get("open_time") ?? "").trim();
+  const closeTime = String(formData.get("close_time") ?? "").trim();
+  if (!/^\d{2}:\d{2}$/.test(openTime) || !/^\d{2}:\d{2}$/.test(closeTime)) {
+    return { error: "Jam harus format HH:MM." };
+  }
+  if (openTime >= closeTime) {
+    return { error: "Jam tutup harus setelah jam buka." };
+  }
+
+  const { proxyFetch } = await import("@/lib/proxy/client");
+  try {
+    // proxyFetch throws ProxyError on any non-2xx, so this is where a
+    // refused write lands rather than a returned error field.
+    await proxyFetch("/v1/sports/pricing/apply_hours", {
+      method: "POST",
+      body: { open_time: openTime, close_time: closeTime },
+    });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { error: `Gagal menyimpan jam operasional: ${msg}` };
+  }
+
+  revalidatePath("/app/pengaturan");
+  revalidatePath("/app/jadwal");
+  revalidatePath("/");
+  return { error: null, ok: true };
+}
+
 export async function deleteBooking(
   _prev: ActionState,
   formData: FormData

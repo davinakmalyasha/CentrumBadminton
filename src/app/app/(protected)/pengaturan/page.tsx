@@ -10,6 +10,7 @@ import {
   RenameCourtForm,
 } from "@/components/app/SettingsForms";
 import { ToggleCourtActiveButton, ToggleStaffActiveButton } from "@/components/app/SettingsControls";
+import { VenueHoursFields } from "@/components/app/SettingsForms";
 
 export const metadata = { title: "Pengaturan · Centrum Manager" };
 
@@ -119,6 +120,16 @@ export default async function PengaturanPage() {
             </span>
           </p>
         </div>
+        {/* One control for opening hours. They used to be two independent
+            settings with two different defaults (facilities 06:00-22:00,
+            pricing rules 07:00-23:00), and the booking form offered slots
+            from the rule while the backend enforced the facility — so a
+            22:30 slot priced fine and was then refused. Editing one just
+            moved the disagreement into the other. */}
+        <VenueHoursFields
+          openTime={String(activeRule?.open_time ?? "07:00").slice(0, 5)}
+          closeTime={String(activeRule?.close_time ?? "23:00").slice(0, 5)}
+        />
         <PricingRuleForm nextMonth={addMonths(currentMonthKey(), 1)} />
         {rules.length > 1 && (
           <div className="mt-3 space-y-1">
