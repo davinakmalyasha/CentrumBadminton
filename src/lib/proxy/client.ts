@@ -221,7 +221,18 @@ export async function currentUserId(): Promise<string | null> {
 
 export type Filter = Record<string, string | number | boolean | null>;
 
-export type QueryResult<T> = { data: T; error: ProxyError | null };
+export type QueryResult<T> = {
+  data: T;
+  error: ProxyError | null;
+  /**
+   * True when the proxy reported hitting its row cap.
+   *
+   * A caller summing `data` has a partial total and no way to know it
+   * from the type — `[]` is a legitimate empty result and the same
+   * shape. Reports and exports check this.
+   */
+  truncated?: boolean;
+};
 
 /**
  * Internal result of one request. Deliberately loose: the Supabase chain
@@ -231,7 +242,7 @@ export type QueryResult<T> = { data: T; error: ProxyError | null };
  * typed as `T` here. Callers see `QueryResult<T>`; `then()` reconciles the
  * two in a single documented cast.
  */
-type LooseResult = { data: unknown; error: ProxyError | null };
+type LooseResult = { data: unknown; error: ProxyError | null; truncated?: boolean };
 
 export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private path: string;
@@ -243,6 +254,8 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private limitN?: number;
   private singleMode = false;
   private strictSingle = false;
+  /** True when the proxy reported hitting its row cap on the last read. */
+  private listTruncated = false;
   private writeOp?: { kind: "insert" | "update" | "delete"; row?: Record<string, unknown> };
 
   constructor(private table: string) {
@@ -462,6 +475,10 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     // caller cannot pass somebody else's id to read their takings.
     if (this.filters["recorded_by"] !== undefined)
       query.recorded_by = String(this.filters["recorded_by"]);
+
+    // `truncated` is the proxy's admission that it hit the row cap. It is
+    // not a filter, so it must not become a query param.
+    this.listTruncated = false;
     // Exclusions go out as REPEATED keys — see addNeq(). The handlers
     // validate each value, so a comma-joined string is rejected outright.
     for (const [col, values] of Object.entries(this.neqList)) {
@@ -514,7 +531,12 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     }
 
     try {
-      const body = await proxyFetch<{ items: T[] }>(this.path, { query });
+      const body = await proxyFetch<{ items: T[]; truncated?: boolean }>(this.path, { query });
+      // The proxy reports hitting its row cap. Recorded here rather than
+      // discarded so a caller can tell a complete list from a shortened
+      // one — the difference between "Rp0 collected" and "Rp0 of the rows
+      // we happened to fetch".
+      this.listTruncated = body.truncated === true;
       const items = (body.items ?? []) as Record<string, unknown>[];
       // Reshape proxy rows into the Supabase shapes the UI expects
       // (e.g. facility_name → courts: { name }, price → computed_price).
@@ -602,7 +624,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
         }
         return { data: out[0] as T, error: null };
       }
-      return { data: out as T[], error: null };
+      return { data: out as T[], error: null, truncated: this.listTruncated };
     } catch (e) {
       // Report the failure instead of disguising it as "no rows".
       //
@@ -907,9 +929,32 @@ case "adjust_kantin_stock": {
           const needLast = rows.some((r) => !r.last_visit);
           if (needLast) {
             try {
-              // Fetch recent bookings (confirmed/checked_in/completed) to derive max date per customer
-              const bookings = await proxyFetch<{ items: Array<Record<string, unknown>> }>("/v1/sports/bookings/", {
-                query: { limit: "500" },
+              // Ask for the bookings that can actually inform a "last
+              // visit".
+              //
+              // This used to request `limit=500` and nothing else, which
+              // hit two problems at once. The bookings list defaulted to
+              // status=confirmed, so completed and checked_in bookings
+              // never appeared; and with no date range it returned the
+              // OLDEST 500 bookings in the tenant's history. So for any
+              // customer whose recent activity was not in that page,
+              // "terakhir" showed a stale old date or nothing at all —
+              // while looking like a real answer.
+              //
+              // Now: every status that represents a visit, newest first,
+              // and explicitly bounded to a recent window.
+              const recent = new Date(Date.now() - 365 * 86_400_000)
+                .toISOString()
+                .slice(0, 10);
+              const bookings = await proxyFetch<{
+                items: Array<Record<string, unknown>>;
+                truncated?: boolean;
+              }>("/v1/sports/bookings/", {
+                query: {
+                  status: "confirmed,checked_in,completed,pending,no_show",
+                  from: recent,
+                  limit: "2000",
+                },
               });
               const byCustomerId = new Map<string, string>();
               const byName = new Map<string, string>();
@@ -940,8 +985,17 @@ case "adjust_kantin_stock": {
             for (const r of rows) delete (r as Record<string, unknown>)._name;
           }
           return { data: rows, error: null };
-        } catch {
-          return { data: [], error: null };
+        } catch (e) {
+          // This outer catch used to return `{ data: [], error: null }`,
+          // which is the exact failure the rest of this connector was
+          // fixed to avoid: an unreachable proxy rendered the Pelanggan
+          // screen as "nobody has any visits" instead of showing that the
+          // numbers are unknown. Surface it.
+          return {
+            data: [],
+            error:
+              e instanceof ProxyError ? e : new ProxyError(String((e as Error)?.message ?? e), 0),
+          };
         }
       }
       default:
