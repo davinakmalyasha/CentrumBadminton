@@ -249,8 +249,9 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private filters: Filter = {};
   /** Column → excluded values. Emitted as repeated `<col>.neq` params. */
   private neqList: Record<string, (string | number | boolean)[]> = {};
-  private orderCol?: string;
-  private orderDesc = false;
+  // Every order() call, in order, each with its direction. Supabase
+  // accumulates; this used to keep only the last.
+  private orderList: string[] = [];
   private limitN?: number;
   private singleMode = false;
   private strictSingle = false;
@@ -348,8 +349,12 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   }
 
   order(col: string, opts?: { ascending?: boolean }): this {
-    this.orderCol = col;
-    this.orderDesc = opts?.ascending === false;
+    // Supabase ACCUMULATES order clauses; this kept only the last, so
+    // `.order("block_date").order("start_time")` silently sorted by
+    // start_time alone and the rows interleaved across days. Ordering is a
+    // list, and each call appends to it.
+    const dir = opts?.ascending === false ? " desc" : " asc";
+    this.orderList.push(col + dir);
     return this;
   }
 
@@ -512,7 +517,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     // back as the tenant's oldest 500 bookings and recent invoices were
     // invisible.
     if (this.table === "bookings") rangeTo("booking_date");
-    if (this.orderCol) query.order = this.orderCol + (this.orderDesc ? " desc" : "");
+    if (this.orderList.length > 0) query.order = this.orderList.join(",");
     if (this.limitN) query.limit = String(this.limitN);
     // Public landing reads go through without a session — the proxy uses
     // ?tenant_id= to resolve. Authenticated reads ignore it.
@@ -584,22 +589,35 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
         }
         return true;
       });
-      // Client-side sort when the proxy doesn't order.
+      // Client-side sort when the proxy doesn't order. Applies every
+      // clause in order, so `.order("block_date").order("start_time")`
+      // sorts by date then time — previously only the last clause was
+      // honoured, which is why blocked slots on different days interleaved.
       let out = filtered;
-      if (this.orderCol) {
-        const dir = this.orderDesc ? -1 : 1;
-        const col = this.orderCol;
+      if (this.orderList.length > 0) {
+        const clauses = this.orderList.map((spec) => {
+          const desc = spec.endsWith(" desc");
+          return { col: spec.replace(/ (asc|desc)$/, ""), dir: desc ? -1 : 1 };
+        });
         out = [...filtered].sort((a, b) => {
-          const av = a[col];
-          const bv = b[col];
-          // Compare numbers numerically. `localeCompare` on strings made
-          // sort_order sort as 1, 10, 2 and — worse — re-sorted rows the
-          // proxy had already ordered correctly by its own SQL.
-          if (typeof av === "number" && typeof bv === "number") return (av - bv) * dir;
-          if (av === bv) return 0;
-          if (av === null || av === undefined) return 1; // nulls last
-          if (bv === null || bv === undefined) return -1;
-          return String(av).localeCompare(String(bv)) * dir;
+          for (const { col, dir } of clauses) {
+            const av = a[col];
+            const bv = b[col];
+            // Compare numbers numerically. `localeCompare` on strings made
+            // sort_order sort as 1, 10, 2 and — worse — re-sorted rows the
+            // proxy had already ordered correctly by its own SQL.
+            if (typeof av === "number" && typeof bv === "number") {
+              const d = (av - bv) * dir;
+              if (d !== 0) return d;
+              continue;
+            }
+            if (av === bv) continue;
+            if (av === null || av === undefined) return 1; // nulls last
+            if (bv === null || bv === undefined) return -1;
+            const d = String(av).localeCompare(String(bv)) * dir;
+            if (d !== 0) return d;
+          }
+          return 0;
         });
       }
       if (this.singleMode) {
