@@ -17,7 +17,7 @@ export default function SeriesControls({
   seriesId: string;
   status: string;
 }) {
-  const [, statusAction, statusPending] = useActionState(setSeriesStatus, initial);
+  const [statusState, statusAction, statusPending] = useActionState(setSeriesStatus, initial);
   const [extState, extAction, extPending] = useActionState(extendSeries, initial);
 
   const btn =
@@ -66,6 +66,15 @@ export default function SeriesControls({
             </button>
           </form>
         </>
+      )}
+      {/* Pausing or ending releases the courts the series was holding.
+          The result was thrown away, so the buttons gave no feedback at
+          all and the schedule silently emptied. */}
+      {statusState.ok && statusState.info && (
+        <span className="text-[10px] font-bold text-emerald-600">{statusState.info}</span>
+      )}
+      {statusState.error && (
+        <span className="text-[10px] font-semibold text-red-500">{statusState.error}</span>
       )}
       {extState.ok && extState.info && (
         <span className="text-[10px] font-bold text-emerald-600">{extState.info}</span>
