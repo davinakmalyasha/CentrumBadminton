@@ -78,14 +78,66 @@ export function hourLabel(hour: number): string {
   return `${String(hour).padStart(2, "0")}.00`;
 }
 
+/**
+ * Parse a stored `time` into minutes since midnight. Accepts "HH:MM",
+ * "HH:MM:SS" and unpadded "H:MM" — Postgres renders `time` as
+ * "19:00:00" while the bookings API only accepts "19:00", so both shapes
+ * show up on the same code path.
+ *
+ * Returns 0 for anything unparseable. Every call site guards the value
+ * against `wibNowMinutes()` or a close time, so a bad parse degrades to
+ * "already started" / "before close" rather than to a wrong price.
+ *
+ * This exists because every call site used to hand-roll
+ * `Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))`, and several of
+ * them dropped the minutes entirely — which is how a booking ending 08:30
+ * was treated as finished at 08:00, and how a "tambah 1 jam" on a 20:30
+ * booking wrote back 21:00 instead of 21:30.
+ */
+export function minutesOf(t: string): number {
+  const m = /^(\d{1,2}):(\d{2})/.exec(String(t ?? ""));
+  if (!m) return 0;
+  return Number(m[1]) * 60 + Number(m[2]);
+}
+
+/** Minutes since midnight → the "HH:MM" the bookings API accepts. */
+export function minutesToHHMM(min: number): string {
+  const clamped = Math.max(0, Math.min(Math.round(min), 24 * 60 - 1));
+  return `${String(Math.floor(clamped / 60)).padStart(2, "0")}:${String(clamped % 60).padStart(2, "0")}`;
+}
+
+/** Minutes since midnight → "HH.MM" for display. Matches {@link timeLabel}. */
+export function minutesToLabel(min: number): string {
+  return `${minutesToHHMM(min).replace(":", ".")}`;
+}
+
+/**
+ * A stored `time` → "HH.MM" for display. Unlike {@link hourLabel}, which
+ * takes a whole hour and always renders ".00", this keeps the minutes —
+ * a 07:30 booking must not render as "07.00".
+ */
+export function timeLabel(t: string): string {
+  return minutesToLabel(minutesOf(t));
+}
+
+/** Fractional hours between two stored times, floored at 0. */
+export function durationHours(start: string, end: string): number {
+  return Math.max(minutesOf(end) - minutesOf(start), 0) / 60;
+}
+
+/** Hours with an Indonesian decimal separator when needed: 12 → "12", 12.5 → "12,5". */
+export function formatHours(h: number): string {
+  return (Math.round(h * 10) / 10).toLocaleString("id-ID");
+}
+
 function overlaps(
   busyStart: string,
   busyEnd: string,
   slotStartH: number,
   slotEndH: number
 ): boolean {
-  const bs = Number(busyStart.slice(0, 2)) * 60 + Number(busyStart.slice(3, 5));
-  const be = Number(busyEnd.slice(0, 2)) * 60 + Number(busyEnd.slice(3, 5));
+  const bs = minutesOf(busyStart);
+  const be = minutesOf(busyEnd);
   const ss = slotStartH * 60;
   const se = slotEndH * 60;
   return bs < se && be > ss;
