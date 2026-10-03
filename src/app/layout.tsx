@@ -14,10 +14,25 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+// metadataBase must never throw at build time: an empty or malformed
+// NEXT_PUBLIC_SITE_URL (e.g. a placeholder left in Vercel env) used to
+// crash "Collecting page data" with ERR_INVALID_URL. Trim, validate,
+// and fall back to localhost so a bad env value degrades OG URLs
+// instead of failing the deploy.
+function siteUrl(): URL {
+  const raw = (process.env.NEXT_PUBLIC_SITE_URL || "").trim();
+  if (raw !== "") {
+    try {
+      return new URL(raw);
+    } catch {
+      // Fall through to the dev fallback below.
+    }
+  }
+  return new URL("http://localhost:3000");
+}
+
 export const metadata: Metadata = {
-  metadataBase: new URL(
-    process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"
-  ),
+  metadataBase: siteUrl(),
   title: "Centrum Badminton Arena",
   description:
     "GOR badminton indoor 2 lapangan di Cirebon. Booking mudah, harga transparan, buka setiap hari 07.00–23.00 WIB.",
