@@ -5,14 +5,19 @@ export default function StatCard({
   label,
   value,
   sub,
+  className,
 }: {
   icon: ComponentType<{ className?: string }>;
   label: string;
   value: ReactNode;
   sub?: ReactNode;
+  /** Merged last, so a caller can span the card across grid columns. */
+  className?: string;
 }) {
   return (
-    <div className="rounded-2xl border border-zinc-200 bg-white p-4 transition dark:border-zinc-800 dark:bg-zinc-900">
+    <div
+      className={`rounded-2xl border border-zinc-200 bg-white p-4 transition dark:border-zinc-800 dark:bg-zinc-900${className ? ` ${className}` : ""}`}
+    >
       <p className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-zinc-500 uppercase dark:text-zinc-400">
         <Icon className="h-4 w-4" />
         {label}
