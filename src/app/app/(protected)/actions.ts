@@ -8,7 +8,7 @@ import {
   MUTABLE_BOOKING_STATUSES,
   OCCUPIES_COURT,
 } from "@/lib/booking-status";
-import { addDaysISO, computePrice, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
+import { addDaysISO, computePrice, minutesOf, minutesToHHMM, minutesToLabel, timeLabel, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
 import { rateLimit } from "@/lib/ratelimit";
 
 export async function signOut() {
@@ -41,21 +41,22 @@ async function getActivePricing(
 ) {
   const { data } = await supabase.rpc<PricingRule[]>("get_pricing_for", { p_date: dateISO });
   const p = data?.[0];
-  if (!p) {
-    return {
-      openHour: 7,
-      closeHour: 23,
-      dayEndHour: 17,
-      priceDay: 40000,
-      priceEvening: 50000,
-    };
-  }
+  // The fallback values are the historical defaults. `createBooking` only
+  // uses this to PREVIEW the price (the proxy recomputes and refuses a date
+  // with no rule), so a silent default is safe there — but `openMin` /
+  // `closeMin` below are also a booking-window guard, which is why they are
+  // read from the same parsed string rather than re-sliced at the call site.
+  const openTime = String(p?.open_time ?? "07:00:00");
+  const closeTime = String(p?.close_time ?? "23:00:00");
+  const dayEnd = String(p?.day_end ?? "17:00:00");
   return {
-    openHour: Number(p.open_time.slice(0, 2)),
-    closeHour: Number(p.close_time.slice(0, 2)),
-    dayEndHour: Number(p.day_end.slice(0, 2)),
-    priceDay: Number(p.price_day),
-    priceEvening: Number(p.price_evening),
+    openHour: Number(openTime.slice(0, 2)),
+    closeHour: Number(closeTime.slice(0, 2)),
+    dayEndHour: Number(dayEnd.slice(0, 2)),
+    openMin: minutesOf(openTime),
+    closeMin: minutesOf(closeTime),
+    priceDay: p ? Number(p.price_day) : 40000,
+    priceEvening: p ? Number(p.price_evening) : 50000,
   };
 }
 
@@ -367,7 +368,7 @@ export async function extendBooking(
 ): Promise<ActionState> {
   const { supabase } = await requireUser();
   const id = String(formData.get("booking_id") ?? "");
-  const hours = Math.min(Math.max(Number(formData.get("hours") ?? 1), 1), 3);
+  const hours = Math.trunc(Math.min(Math.max(Number(formData.get("hours") ?? 1), 1), 3));
   if (!id) return { error: "Booking tidak valid" };
 
   const { data: cur } = await supabase
@@ -387,11 +388,25 @@ export async function extendBooking(
   if (curRow.status !== "confirmed" && curRow.status !== "checked_in") {
     return { error: "Hanya booking aktif yang bisa ditambah jam." };
   }
-  const sHour = Number(String(curRow.start_time).slice(0, 2));
-  const eHour = Number(String(curRow.end_time).slice(0, 2));
-  const newEnd = eHour + hours;
-  if (newEnd > 23) return { error: "Melebihi jam operasional (23.00)" };
-  const newEndStr = `${String(newEnd).padStart(2, "0")}:00`;
+  // Add N hours from the booking's ACTUAL end time, not from end_hour.
+  // Reading only the hour meant a booking ending 20:30 extended by "1 jam"
+  // was written back as 21:00 — the customer asked for 60 more minutes and
+  // got 30. Minutes have to survive the round trip, so every comparison
+  // below is in minutes too.
+  //
+  // The window cap is the venue's real closing time from the pricing rule,
+  // not the hardcoded 23.00 it used to refuse against — a venue closing at
+  // 22.00 would accept an extension to 22.30 and then have the bookings
+  // handler refuse it, while one closing at midnight was refused here.
+  const pricing = await getActivePricing(supabase, String(curRow.booking_date));
+  const endMin = minutesOf(String(curRow.end_time));
+  const newEndMin = endMin + hours * 60;
+  if (newEndMin > pricing.closeMin) {
+    return {
+      error: `Melebihi jam operasional (tutup ${minutesToLabel(pricing.closeMin)}).`,
+    };
+  }
+  const newEndStr = minutesToHHMM(newEndMin);
 
   // Check next booking overlap on same court/date. Only statuses that
   // actually hold the court count: a cancelled or no-show slot is free.
@@ -404,12 +419,12 @@ export async function extendBooking(
     .neq("id", id);
   const nextList = (nexts ?? []) as Array<{ start_time: string; end_time: string }>;
   for (const n of nextList) {
-    const ns = Number(String(n.start_time).slice(0, 2));
-    const ne = Number(String(n.end_time).slice(0, 2));
-    if (ns < newEnd && ne > eHour) {
+    const ns = minutesOf(String(n.start_time));
+    const ne = minutesOf(String(n.end_time));
+    if (ns < newEndMin && ne > endMin) {
       // suggest next free slot after ne
       return {
-        error: `Bentrok dengan booking ${String(n.start_time).slice(0, 5)}-${String(n.end_time).slice(0, 5)}. Next free ${String(ne).padStart(2, "0")}:00`,
+        error: `Bentrok dengan booking ${timeLabel(String(n.start_time))}-${timeLabel(String(n.end_time))}. Slot kosong berikutnya ${minutesToLabel(ne)}`,
       };
     }
   }
@@ -421,9 +436,13 @@ export async function extendBooking(
     .eq("court_id", curRow.court_id)
     .eq("block_date", curRow.booking_date);
   for (const b of (blocks ?? []) as Array<{ start_time: string; end_time: string }>) {
-    const bs = Number(String(b.start_time).slice(0, 2));
-    const be = Number(String(b.end_time).slice(0, 2));
-    if (bs < newEnd && be > eHour) return { error: `Bentrok dengan blokir ${String(b.start_time).slice(0, 5)}-${String(b.end_time).slice(0, 5)}` };
+    const bs = minutesOf(String(b.start_time));
+    const be = minutesOf(String(b.end_time));
+    if (bs < newEndMin && be > endMin) {
+      return {
+        error: `Bentrok dengan blokir ${timeLabel(String(b.start_time))}-${timeLabel(String(b.end_time))}`,
+      };
+    }
   }
 
   const { error } = await supabase
@@ -479,18 +498,15 @@ export async function releaseBooking(
     };
   }
   const nowMin = wibNowMinutes();
-  const sMin = Number(String(row.start_time).slice(0, 2)) * 60 + Number(String(row.start_time).slice(3, 5) || 0);
-  const eMin = Number(String(row.end_time).slice(0, 2)) * 60 + Number(String(row.end_time).slice(3, 5) || 0);
+  const sMin = minutesOf(String(row.start_time));
+  const eMin = minutesOf(String(row.end_time));
   if (nowMin < sMin) return { error: "Belum mulai — batalkan saja." };
   if (nowMin >= eMin) return { error: "Sudah selesai." };
-
-  const nowHour = Math.floor(nowMin / 60);
-  const nowStr = `${String(nowHour).padStart(2, "0")}:${String(nowMin % 60).padStart(2, "0")}`;
 
   // Kosongkan = completed early, keep money, free slot now->end
   const { error } = await supabase
     .from("bookings")
-    .update({ end_time: nowStr, status: "completed" })
+    .update({ end_time: minutesToHHMM(nowMin), status: "completed" })
     .eq("id", id);
   if (error) return { error: `Gagal kosongkan: ${error.message}` };
 
@@ -665,13 +681,6 @@ export async function deleteBlock(
 /* ------------------------------------------------------------------ */
 
 const MAX_WEEKS = 12;
-
-/** Postgres renders `time` as HH:MM:SS; the APIs that take a time want HH:MM. */
-function hhmm(t: string): string {
-  const m = /^(\d{1,2}):(\d{2})/.exec(String(t ?? ""));
-  if (!m) return String(t ?? "");
-  return `${String(m[1]).padStart(2, "0")}:${m[2]}`;
-}
 
 type SeriesBookingRow = {
   court_id: string;
@@ -1035,8 +1044,8 @@ export async function extendSeries(
       // `${hh}:00` so it always matched; copying the stored value straight
       // into the instances meant every extended week was rejected with
       // "start_time must be HH:MM" and reported as a silent skip.
-      start_time: hhmm(s.start_time as string),
-      end_time: hhmm(s.end_time as string),
+      start_time: minutesToHHMM(minutesOf(String(s.start_time))),
+      end_time: minutesToHHMM(minutesOf(String(s.end_time))),
       status: "confirmed",
       source: "walk_in",
       customer_id: (s.customer_id as string) || null,
