@@ -3,9 +3,15 @@ import {
   addDaysISO,
   buildSlots,
   computePrice,
+  durationHours,
+  formatHours,
   formatIDR,
   formatK,
   groupHours,
+  minutesOf,
+  minutesToHHMM,
+  minutesToLabel,
+  timeLabel,
   type PricingInfo,
 } from "../src/lib/availability";
 
@@ -68,6 +74,74 @@ describe("groupHours", () => {
   });
   it("returns empty for empty input", () => {
     expect(groupHours([])).toEqual([]);
+  });
+});
+
+describe("minutesOf", () => {
+  it("parses every shape a stored `time` shows up in", () => {
+    expect(minutesOf("08:30:00")).toBe(510);
+    expect(minutesOf("08:30")).toBe(510);
+    expect(minutesOf("00:00:00")).toBe(0);
+    expect(minutesOf("23:59")).toBe(1439);
+    expect(minutesOf("9:05")).toBe(545); // unpadded hour
+  });
+  it("keeps the minutes — dropping them was the bug", () => {
+    expect(minutesOf("20:30:00")).toBe(1230);
+    expect(minutesOf("20:30:00")).not.toBe(minutesOf("20:00:00"));
+    expect(minutesOf("08:30:00") - minutesOf("07:00:00")).toBe(90);
+  });
+  it("returns 0 for junk rather than NaN", () => {
+    expect(minutesOf("")).toBe(0);
+    expect(minutesOf("not a time")).toBe(0);
+  });
+});
+
+describe("minutesToHHMM", () => {
+  it("round-trips minutesOf", () => {
+    expect(minutesToHHMM(510)).toBe("08:30");
+    expect(minutesToHHMM(minutesOf("20:30:00"))).toBe("20:30");
+    expect(minutesToHHMM(0)).toBe("00:00");
+    expect(minutesToHHMM(1439)).toBe("23:59");
+  });
+  it("is what a +1 jam extend writes back", () => {
+    // Regression: extend used to read end_hour only, so 20:30 + "1 jam"
+    // wrote 21:00 and the customer got 30 of the 60 minutes they paid for.
+    const end = minutesOf("20:30:00");
+    expect(minutesToHHMM(end + 60)).toBe("21:30");
+    expect(minutesToHHMM(end + 60)).not.toBe("21:00");
+    // Whole-hour ends were always right; keep them right.
+    expect(minutesToHHMM(minutesOf("19:00:00") + 60)).toBe("20:00");
+  });
+  it("clamps instead of emitting a time the API would refuse", () => {
+    expect(minutesToHHMM(-30)).toBe("00:00");
+    expect(minutesToHHMM(24 * 60)).toBe("23:59");
+  });
+});
+
+describe("minutesToLabel / timeLabel", () => {
+  it("renders the dot form the rest of the UI uses", () => {
+    expect(minutesToLabel(510)).toBe("08.30");
+    expect(timeLabel("20:30:00")).toBe("20.30");
+    expect(timeLabel("19:00:00")).toBe("19.00");
+    expect(timeLabel("07:30")).toBe("07.30");
+  });
+});
+
+describe("durationHours", () => {
+  it("keeps partial hours", () => {
+    expect(durationHours("07:00:00", "07:30:00")).toBe(0.5);
+    expect(durationHours("07:00:00", "09:00:00")).toBe(2);
+  });
+  it("never goes negative", () => {
+    expect(durationHours("09:00:00", "07:00:00")).toBe(0);
+  });
+});
+
+describe("formatHours", () => {
+  it("uses an Indonesian decimal separator only when needed", () => {
+    expect(formatHours(12)).toBe("12");
+    expect(formatHours(12.5)).toBe("12,5");
+    expect(formatHours(0)).toBe("0");
   });
 });
 
