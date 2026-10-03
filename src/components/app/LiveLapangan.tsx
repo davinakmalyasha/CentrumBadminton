@@ -3,7 +3,7 @@
 import { Clock, LogOut, Plus, Timer } from "lucide-react";
 import { useActionState } from "react";
 import { extendBooking, releaseBooking, type ActionState } from "@/app/app/(protected)/actions";
-import { hourLabel, wibNowMinutes } from "@/lib/availability";
+import { minutesOf, timeLabel, wibNowMinutes } from "@/lib/availability";
 
 type LiveBooking = {
   id: string;
@@ -24,9 +24,7 @@ export default function LiveLapangan({ bookings }: { bookings: LiveBooking[] }) 
 
   const live = bookings.filter((b) => {
     if (b.status !== "confirmed" && b.status !== "checked_in") return false;
-    const s = Number(b.start_time.slice(0, 2)) * 60 + Number(b.start_time.slice(3, 5));
-    const e = Number(b.end_time.slice(0, 2)) * 60 + Number(b.end_time.slice(3, 5));
-    return nowMin >= s && nowMin < e;
+    return nowMin >= minutesOf(b.start_time) && nowMin < minutesOf(b.end_time);
   });
 
   const err = extState.error || relState.error;
@@ -49,9 +47,9 @@ export default function LiveLapangan({ bookings }: { bookings: LiveBooking[] }) 
       </p>
       <ul className="mt-3 space-y-2">
         {live.map((b) => {
-          const endMin = Number(b.end_time.slice(0, 2)) * 60 + Number(b.end_time.slice(3, 5));
+          const endMin = minutesOf(b.end_time);
           const remain = Math.max(endMin - nowMin, 0);
-          const till = hourLabel(Number(b.end_time.slice(0, 2)));
+          const till = timeLabel(b.end_time);
           return (
             <li key={b.id} className="flex items-center justify-between gap-2 rounded-xl bg-white px-3 py-2 shadow-sm dark:bg-zinc-900">
               <div className="min-w-0">
