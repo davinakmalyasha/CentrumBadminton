@@ -1,21 +1,24 @@
 import { createClient } from "@/lib/proxy/client";
 import { getRole } from "@/lib/guard";
-import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
+import { OCCUPIES_COURT, VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import {
   addDaysISO,
+  durationHours,
+  formatHours,
   formatIDR,
-  hourLabel,
+  minutesOf,
+  timeLabel,
   todayISO,
   wibNowMinutes,
   type PricingRule,
 } from "@/lib/availability";
+import { DataUnavailable, firstError } from "@/components/app/EmptyState";
 import type { Booking } from "@/lib/types";
 import {
   ArrowUpRight,
   BarChart3,
   Footprints,
   MessageCircle,
-  SkipForward,
   TrendingUp,
   TriangleAlert,
   User,
@@ -26,9 +29,10 @@ import Shuttlecock from "@/components/icons/Shuttlecock";
 import StatCard from "@/components/app/StatCard";
 import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
-import OwnerMenu from "@/components/app/OwnerMenu";
+import AiNudge from "@/components/app/AiNudge";
 import DailyReportNudge from "@/components/app/DailyReportNudge";
 import LiveLapangan from "@/components/app/LiveLapangan";
+import NextBookingCard from "@/components/app/NextBookingCard";
 
 export const metadata = { title: "Dashboard · Centrum Manager" };
 
@@ -67,16 +71,58 @@ export default async function DashboardPage() {
         .order("name"),
     ]);
 
+  const heading = (
+    <h1 className="flex flex-wrap items-center gap-2 text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+      <BarChart3 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" /> Hari Ini{" "}
+      <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
+        {new Intl.DateTimeFormat("id-ID", {
+          weekday: "long",
+          day: "numeric",
+          month: "short",
+          timeZone: "Asia/Jakarta",
+        }).format(new Date(`${today}T00:00:00+07:00`))}
+      </span>
+    </h1>
+  );
+
+  // Every figure below is a sum or a count over one of these reads. The
+  // data layer reports a failed read in `error` rather than quietly handing
+  // back an empty list, and this page used to ignore it — an unreachable
+  // proxy rendered a confident "Okupansi 0%", "Tidak ada lagi" and "Belum
+  // ada booking hari ini", which is indistinguishable from a quiet Sunday.
+  const readError = firstError(
+    bookingsRes,
+    paymentsRes,
+    courtsRes,
+    pricingRes,
+    kantinRes,
+    lowStockRes
+  );
+  if (readError) {
+    return (
+      <div className="manager-rise space-y-5">
+        {heading}
+        <DataUnavailable detail={readError} />
+      </div>
+    );
+  }
+
+  // Each list is capped by the proxy. A capped sum is a wrong number that
+  // looks right, so say which inputs were shortened instead of presenting a
+  // partial total as final.
+  const capped = Object.entries({
+    booking: bookingsRes.truncated,
+    pembayaran: paymentsRes.truncated,
+    kantin: kantinRes.truncated,
+  })
+    .filter(([, wasCapped]) => wasCapped)
+    .map(([name]) => name);
+
   const bookings = (bookingsRes.data ?? []) as Row[];
   const payments = (paymentsRes.data ?? []) as Array<{
     amount: number;
     method: string;
   }>;
-  const courtCount = Math.max(courtsRes.data?.length ?? 0, 1);
-  const p = pricingRes.data?.[0];
-  const openHours =
-    (p ? Number(p.close_time.slice(0, 2)) - Number(p.open_time.slice(0, 2)) : 16) ||
-    16;
 
   // Revenue stats
   const cash = payments
@@ -85,24 +131,6 @@ export default async function DashboardPage() {
   const qris = payments
     .filter((x) => x.method === "qris")
     .reduce((a, b) => a + Number(b.amount), 0);
-
-  // Occupancy: booked hours vs capacity
-  const activeBookings = bookings.filter(
-    (b) => b.status !== "cancelled" && b.status !== "no_show"
-  );
-  const bookedHours = activeBookings.reduce((sum, b) => {
-    const s = Number(b.start_time.slice(0, 2));
-    const e = Number(b.end_time.slice(0, 2));
-    return sum + Math.max(e - s, 0);
-  }, 0);
-  const occupancy = Math.round((bookedHours / (courtCount * openHours)) * 100);
-
-  // Next up: first active booking whose end is in the future
-  const nowMin = wibNowMinutes();
-  const nextUp = activeBookings.find((b) => {
-    const endMin = Number(b.end_time.slice(0, 2)) * 60;
-    return endMin > nowMin && (b.status === "confirmed" || b.status === "checked_in");
-  });
 
   // Kantin: revenue today + low-stock alert
   const kantinToday = ((kantinRes.data ?? []) as Array<{ total: number }>).reduce(
@@ -117,25 +145,79 @@ export default async function DashboardPage() {
     }>
   ).filter((p) => p.stock <= p.low_stock_threshold);
 
+  // Booking status breakdown. The count is everything on the books today;
+  // the sub-line is the part that still needs someone to do something.
+  const pendingCount = bookings.filter((b) => b.status === "pending").length;
+  const liveCount = bookings.filter((b) => b.status === "checked_in").length;
+  const bookingSub =
+    pendingCount > 0
+      ? `${pendingCount} menunggu konfirmasi`
+      : liveCount > 0
+        ? `${liveCount} sedang main`
+        : "Semua sudah dikonfirmasi";
+
+  // Occupancy. OCCUPIES_COURT is exactly the set whose hours the venue
+  // could not have sold to anyone else — a cancelled slot is free again and
+  // a no-show never took the court — so it is the honest numerator. Minutes
+  // are kept because truncating to whole hours discarded a 07:00-07:30
+  // booking as "0 jam terpakai".
+  const occupiesCourt = bookings.filter((b) =>
+    (OCCUPIES_COURT as readonly string[]).includes(b.status)
+  );
+  const bookedHours = occupiesCourt.reduce(
+    (sum, b) => sum + durationHours(b.start_time, b.end_time),
+    0
+  );
+  const courtCount = (courtsRes.data ?? []).length;
+  const p = pricingRes.data?.[0];
+  const openHours = p
+    ? Number(p.close_time.slice(0, 2)) - Number(p.open_time.slice(0, 2))
+    : 0;
+  // No floor-to-1 and no silent 16-hour default: both used to turn "we
+  // could not tell" into a plausible-looking percentage.
+  const capacityHours =
+    courtCount > 0 && openHours > 0 ? courtCount * openHours : null;
+  const occupancy =
+    capacityHours === null ? null : Math.round((bookedHours / capacityHours) * 100);
+  const occupancySub =
+    capacityHours === null
+      ? !p
+        ? "Belum ada pengaturan jam operasional"
+        : "Belum ada lapangan aktif"
+      : `${formatHours(bookedHours)} dari ${capacityHours} jam lapangan`;
+
+  // Next up: the earliest booking that has not finished yet. `pending` is a
+  // candidate on purpose — it locks the court (see OCCUPIES_COURT) — so an
+  // unconfirmed WhatsApp hold gets surfaced instead of hidden.
+  const nowMin = wibNowMinutes();
+  const nextUp = bookings.find(
+    (b) =>
+      minutesOf(b.end_time) > nowMin &&
+      (b.status === "pending" || b.status === "confirmed" || b.status === "checked_in")
+  );
+
   return (
     <div className="manager-rise space-y-5">
-      <div>
-        <h1 className="flex flex-wrap items-center gap-2 text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-          <BarChart3 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" /> Hari Ini{" "}
-          <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
-            {new Intl.DateTimeFormat("id-ID", {
-              weekday: "long",
-              day: "numeric",
-              month: "short",
-              timeZone: "Asia/Jakarta",
-            }).format(new Date(`${today}T00:00:00+07:00`))}
-          </span>
-        </h1>
-      </div>
+      {heading}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      {capped.length > 0 && (
+        <p
+          role="status"
+          className="rounded-xl border border-amber-300 bg-amber-50 px-3 py-2 text-[12px] font-semibold text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300"
+        >
+          Data {capped.join(", ")} hari ini melebihi batas tampilan, jadi angka di bawah
+          hanya menghitung bagian yang terambil.
+        </p>
+      )}
+
+      {/* Stats — Pendapatan spans the full mobile row because it is the
+          number staff glance at first; the other two sit side by side under
+          it. Three across at lg. "Booking Berikutnya" is below as a row,
+          not a tile: a booking identity (court + time + who) is not a
+          scalar and squeezed into a tile it hid all three. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <StatCard
+          className="col-span-2 lg:col-span-1"
           icon={Wallet}
           label="Pendapatan"
           value={formatIDR(cash + qris + kantinToday)}
@@ -143,22 +225,32 @@ export default async function DashboardPage() {
         />
         <StatCard
           icon={Shuttlecock}
-          label="Booking aktif"
-          value={activeBookings.length}
-          sub={`${bookings.length} total hari ini`}
+          label="Booking hari ini"
+          value={bookings.length}
+          sub={bookingSub}
         />
-        <StatCard icon={TrendingUp} label="Okupansi" value={`${occupancy}%`} sub={`${bookedHours} jam terpakai`} />
         <StatCard
-          icon={SkipForward}
-          label="Berikutnya"
-          value={
-            nextUp
-              ? `${hourLabel(Number(nextUp.start_time.slice(0, 2)))}`
-              : "—"
-          }
-          sub={nextUp ? `${nextUp.customer_name} · ${nextUp.courts?.name ?? ""}` : "Tidak ada lagi"}
+          icon={TrendingUp}
+          label="Lapangan Terpakai"
+          value={occupancy === null ? "—" : `${occupancy}%`}
+          sub={occupancySub}
         />
       </div>
+
+      <NextBookingCard
+        booking={
+          nextUp
+            ? {
+                id: nextUp.id,
+                status: nextUp.status,
+                customer_name: nextUp.customer_name,
+                start_time: nextUp.start_time,
+                end_time: nextUp.end_time,
+                courts: nextUp.courts,
+              }
+            : null
+        }
+      />
 
       {/* Body — single column until xl, then Agenda takes the wide 2/3
           column and the tools stack in a 1/3 rail beside it. */}
@@ -186,8 +278,7 @@ export default async function DashboardPage() {
               Generate button and no explanation. */}
           {role === "owner" && <DailyReportNudge />}
 
-          {/* Owner tools */}
-          <OwnerMenu />
+          <AiNudge />
         </div>
 
         {/* Agenda */}
@@ -211,8 +302,7 @@ export default async function DashboardPage() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                      {hourLabel(Number(b.start_time.slice(0, 2)))}–
-                      {hourLabel(Number(b.end_time.slice(0, 2)))}
+                      {timeLabel(b.start_time)}–{timeLabel(b.end_time)}
                       <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
                         {b.courts?.name ?? "—"}
                       </span>
