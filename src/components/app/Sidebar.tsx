@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { LogOut } from "lucide-react";
@@ -35,15 +34,6 @@ export default function Sidebar({
     >
       {/* Brand */}
       <div className="flex items-center gap-2.5 border-b border-zinc-100 px-4 py-3.5 dark:border-zinc-800">
-        <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:ring-white/20">
-          <Image
-            src="/centrumLOGO-circle.png"
-            alt="Centrum Badminton Arena"
-            width={36}
-            height={36}
-            className="h-9 w-9 rounded-full object-cover"
-          />
-        </span>
         <div className="min-w-0 leading-tight">
           <p className="truncate text-sm font-extrabold tracking-tight">
             Centrum Manager

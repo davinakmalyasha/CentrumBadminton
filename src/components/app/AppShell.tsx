@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState, type ReactNode } from "react";
@@ -64,16 +63,6 @@ export default function AppShell({
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5 lg:max-w-7xl lg:justify-end lg:px-6 2xl:max-w-[1700px]">
           {/* Brand repeats the sidebar header, so hide it on desktop */}
           <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-            <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900 ring-1 ring-zinc-900/10 dark:bg-zinc-100 dark:ring-white/20">
-              <Image
-                src="/centrumLOGO-circle.png"
-                alt="Centrum Badminton Arena"
-                width={36}
-                height={36}
-                priority
-                className="h-9 w-9 rounded-full object-cover"
-              />
-            </span>
             <div className="min-w-0 leading-tight">
               <p className="truncate text-[13px] font-extrabold tracking-tight">
                 Centrum Manager
@@ -193,15 +182,6 @@ export default function AppShell({
           >
             <div className="flex items-center justify-between gap-2 border-b border-zinc-100 px-4 py-3 dark:border-zinc-800">
               <div className="flex min-w-0 items-center gap-2.5">
-                <span className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-zinc-900">
-                  <Image
-                    src="/centrumLOGO-circle.png"
-                    alt=""
-                    width={36}
-                    height={36}
-                    className="h-9 w-9 rounded-full object-cover"
-                  />
-                </span>
                 <div className="min-w-0 leading-tight">
                   <p className="truncate text-sm font-extrabold">Semua Menu</p>
                   <p className="truncate text-[11px] text-zinc-500 dark:text-zinc-400">
