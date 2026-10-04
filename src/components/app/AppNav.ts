@@ -77,20 +77,16 @@ export function isActivePath(pathname: string, href: string): boolean {
 /**
  * Drawer + desktop rail sections.
  *
- * For owners the owner tools come FIRST. On a phone the drawer is the only
- * route to Laporan / Pengeluaran / Langganan / Blokir / Pengaturan — the
- * bottom bar is just Beranda and Booking — and listing seven primary rows
- * above them meant scrolling past all of it to reach any of them.
+ * Menu Utama is always first. The owner's tools are a second tier, not the way
+ * into the app, and a drawer that opens on "Menu Owner" pushed the pages
+ * people actually use — Beranda, Jadwal, Booking Baru — below the fold.
  */
 export function drawerSections(isOwner: boolean): NavSection[] {
+  const sections: NavSection[] = [{ title: "Menu Utama", items: PRIMARY_NAV }];
   if (isOwner) {
-    return [
-      { title: "Menu Owner", items: [...OWNER_NAV, ...SETTINGS_NAV] },
-      { title: "Menu Utama", items: PRIMARY_NAV },
-    ];
+    sections.push({ title: "Menu Owner", items: [...OWNER_NAV, ...SETTINGS_NAV] });
+  } else {
+    sections.push({ title: "Lainnya", items: SETTINGS_NAV });
   }
-  return [
-    { title: "Menu Utama", items: PRIMARY_NAV },
-    { title: "Lainnya", items: SETTINGS_NAV },
-  ];
+  return sections;
 }
