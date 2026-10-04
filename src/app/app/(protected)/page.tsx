@@ -6,7 +6,8 @@ import {
   durationHours,
   formatHours,
   formatIDR,
-  minutesOf,
+  isInPlay,
+  minutesLeft,
   timeLabel,
   todayISO,
   wibNowMinutes,
@@ -16,10 +17,8 @@ import { DataUnavailable, firstError } from "@/components/app/EmptyState";
 import type { Booking } from "@/lib/types";
 import {
   ArrowUpRight,
-  BarChart3,
   Footprints,
   MessageCircle,
-  TrendingUp,
   TriangleAlert,
   User,
   Wallet,
@@ -31,8 +30,6 @@ import StatusBadge from "@/components/app/StatusBadge";
 import BookingActions from "@/components/app/BookingActions";
 import AiNudge from "@/components/app/AiNudge";
 import DailyReportNudge from "@/components/app/DailyReportNudge";
-import LiveLapangan from "@/components/app/LiveLapangan";
-import NextBookingCard from "@/components/app/NextBookingCard";
 
 export const metadata = { title: "Dashboard · Centrum Manager" };
 
@@ -72,8 +69,8 @@ export default async function DashboardPage() {
     ]);
 
   const heading = (
-    <h1 className="flex flex-wrap items-center gap-2 text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-      <BarChart3 className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" /> Hari Ini{" "}
+    <h1 className="flex flex-wrap items-baseline gap-2 text-lg font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+      Hari Ini{" "}
       <span className="text-sm font-semibold text-zinc-500 dark:text-zinc-400">
         {new Intl.DateTimeFormat("id-ID", {
           weekday: "long",
@@ -156,11 +153,14 @@ export default async function DashboardPage() {
         ? `${liveCount} sedang main`
         : "Semua sudah dikonfirmasi";
 
-  // Occupancy. OCCUPIES_COURT is exactly the set whose hours the venue
-  // could not have sold to anyone else — a cancelled slot is free again and
-  // a no-show never took the court — so it is the honest numerator. Minutes
-  // are kept because truncating to whole hours discarded a 07:00-07:30
-  // booking as "0 jam terpakai".
+  // Occupancy, folded into the "Booking hari ini" tile below rather than
+  // given its own card: both figures come from this one `bookings` array for
+  // this one day, and a separate tile made the count and the ratio read as
+  // unrelated numbers. OCCUPIES_COURT is exactly the set whose hours the
+  // venue could not have sold to anyone else — a cancelled slot is free again
+  // and a no-show never took the court — so it is the honest numerator.
+  // Minutes are kept because truncating to whole hours discarded a
+  // 07:00-07:30 booking as "0 jam terpakai".
   const occupiesCourt = bookings.filter((b) =>
     (OCCUPIES_COURT as readonly string[]).includes(b.status)
   );
@@ -177,23 +177,24 @@ export default async function DashboardPage() {
   // could not tell" into a plausible-looking percentage.
   const capacityHours =
     courtCount > 0 && openHours > 0 ? courtCount * openHours : null;
-  const occupancy =
-    capacityHours === null ? null : Math.round((bookedHours / capacityHours) * 100);
   const occupancySub =
     capacityHours === null
       ? !p
-        ? "Belum ada pengaturan jam operasional"
-        : "Belum ada lapangan aktif"
-      : `${formatHours(bookedHours)} dari ${capacityHours} jam lapangan`;
+        ? "jam operasional belum diatur"
+        : "belum ada lapangan aktif"
+      : `${formatHours(bookedHours)} dari ${capacityHours} jam terpakai`;
 
-  // Next up: the earliest booking that has not finished yet. `pending` is a
-  // candidate on purpose — it locks the court (see OCCUPIES_COURT) — so an
-  // unconfirmed WhatsApp hold gets surfaced instead of hidden.
+  // Which rows are on a court right now. This replaces the old standalone
+  // "Live Lapangan" card, which listed these same bookings a second time
+  // (and claimed "semua kosong" whenever none were in play, even with five
+  // bookings still ahead in the day). One predicate now drives the row
+  // highlight, the "sisa Nm" chip and the +1 jam / Kosongkan buttons, so they
+  // cannot disagree with each other.
   const nowMin = wibNowMinutes();
-  const nextUp = bookings.find(
-    (b) =>
-      minutesOf(b.end_time) > nowMin &&
-      (b.status === "pending" || b.status === "confirmed" || b.status === "checked_in")
+  const inPlayIds = new Set(
+    bookings
+      .filter((b) => isInPlay(b.start_time, b.end_time, b.status, nowMin))
+      .map((b) => b.id)
   );
 
   return (
@@ -210,14 +211,14 @@ export default async function DashboardPage() {
         </p>
       )}
 
-      {/* Stats — Pendapatan spans the full mobile row because it is the
-          number staff glance at first; the other two sit side by side under
-          it. Three across at lg. "Booking Berikutnya" is below as a row,
-          not a tile: a booking identity (court + time + who) is not a
-          scalar and squeezed into a tile it hid all three. */}
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+      {/* Stats — two tiles. Pendapatan is what came in today; Booking hari ini
+          is how busy, in both headcount and court-hours. "Booking Berikutnya"
+          used to be a third tile and then a full-width card of its own, but it
+          only ever restated the first upcoming row of the agenda below — and
+          while a booking was in play it restated the same booking as the "Live
+          Lapangan" card too, so the page named one booking three times. */}
+      <div className="grid gap-3 sm:grid-cols-2">
         <StatCard
-          className="col-span-2 lg:col-span-1"
           icon={Wallet}
           label="Pendapatan"
           value={formatIDR(cash + qris + kantinToday)}
@@ -227,30 +228,9 @@ export default async function DashboardPage() {
           icon={Shuttlecock}
           label="Booking hari ini"
           value={bookings.length}
-          sub={bookingSub}
-        />
-        <StatCard
-          icon={TrendingUp}
-          label="Lapangan Terpakai"
-          value={occupancy === null ? "—" : `${occupancy}%`}
-          sub={occupancySub}
+          sub={`${bookingSub} · ${occupancySub}`}
         />
       </div>
-
-      <NextBookingCard
-        booking={
-          nextUp
-            ? {
-                id: nextUp.id,
-                status: nextUp.status,
-                customer_name: nextUp.customer_name,
-                start_time: nextUp.start_time,
-                end_time: nextUp.end_time,
-                courts: nextUp.courts,
-              }
-            : null
-        }
-      />
 
       {/* Body — single column until xl, then Agenda takes the wide 2/3
           column and the tools stack in a 1/3 rail beside it. */}
@@ -268,9 +248,6 @@ export default async function DashboardPage() {
               </span>
             </Link>
           )}
-
-          {/* Live lapangan — which is in use till when, + nambah jam / kosongkan */}
-          <LiveLapangan bookings={bookings as unknown as Array<{ id: string; court_id: string; courts: { name: string } | null; customer_name: string; start_time: string; end_time: string; status: string }>} />
 
           {/* Daily closing nudge (after 20:00 WIB). Owner-only: the closing
               report generator now lives in /app/laporan and is gated there,
@@ -294,76 +271,92 @@ export default async function DashboardPage() {
           </div>
         ) : (
           <ul className="space-y-2.5 2xl:grid 2xl:grid-cols-2 2xl:gap-2.5 2xl:space-y-0">
-            {bookings.map((b) => (
-              <li
-                key={b.id}
-                className="rounded-2xl border border-zinc-200 bg-white p-3.5 dark:border-zinc-800 dark:bg-zinc-900"
-              >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="min-w-0">
-                    <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
-                      {timeLabel(b.start_time)}–{timeLabel(b.end_time)}
-                      <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
-                        {b.courts?.name ?? "—"}
-                      </span>
-                      <StatusBadge status={b.status} />
-                    </p>
+            {bookings.map((b) => {
+              const inPlay = inPlayIds.has(b.id);
+              return (
+                <li
+                  key={b.id}
+                  className={`rounded-2xl border p-3.5 ${
+                    inPlay
+                      ? "border-emerald-300 bg-emerald-50 dark:border-emerald-800 dark:bg-emerald-950/20"
+                      : "border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-extrabold tracking-tight text-zinc-900 dark:text-zinc-50">
+                        {timeLabel(b.start_time)}–{timeLabel(b.end_time)}
+                        <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 text-[10px] font-bold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                          {b.courts?.name ?? "—"}
+                        </span>
+                        <StatusBadge status={b.status} />
+                        {inPlay && (
+                          <span className="rounded-full border border-emerald-300 bg-emerald-100 px-1.5 py-0.5 text-[10px] font-bold tracking-wide text-emerald-700 uppercase dark:border-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                            Sedang main · sisa {minutesLeft(b.end_time, nowMin)}m
+                          </span>
+                        )}
+                      </p>
                     <p className="mt-1 truncate text-xs font-medium text-zinc-600 dark:text-zinc-400">
-                      <User className="mr-1 inline-block h-3.5 w-3.5 align-[-1px]" />
-                      {b.customer_name}
-                      {b.customer_phone && (
-                        <>
-                          {" · "}
-                          <a
-                            href={`https://wa.me/62${b.customer_phone.replace(/^0/, "")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-600 hover:underline"
-                          >
+                        <User className="mr-1 inline-block h-3.5 w-3.5 align-[-1px]" />
+                        {b.customer_name}
+                        {b.customer_phone && (
+                          <>
+                            {" · "}
+                            <a
+                              href={`https://wa.me/62${b.customer_phone.replace(/^0/, "")}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-emerald-600 hover:underline"
+                            >
+                              WA
+                              <ArrowUpRight className="ml-0.5 inline h-3 w-3" />
+                            </a>
+                          </>
+                        )}
+                      </p>
+                      <p className="mt-0.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
+                        {formatIDR(Number(b.override_price ?? b.computed_price))}{" · "}
+                        {b.source === "whatsapp" ? (
+                          <>
+                            <MessageCircle className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
                             WA
-                            <ArrowUpRight className="ml-0.5 inline h-3 w-3" />
-                          </a>
-                        </>
-                      )}
-                    </p>
-                    <p className="mt-0.5 text-[11px] font-semibold text-zinc-500 dark:text-zinc-400">
-                      {formatIDR(Number(b.override_price ?? b.computed_price))}{" · "}
-                      {b.source === "whatsapp" ? (
-                        <>
-                          <MessageCircle className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
-                          WA
-                        </>
-                      ) : (
-                        <>
-                          <Footprints className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
-                          Walk-in
-                        </>
-                      )}
-                      {" · "}
-                      {b.payment_status === "paid" ? (
-                        <>
-                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />
-                          Lunas
-                        </>
-                      ) : b.payment_status === "partial" ? (
-                        <>
-                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />
-                          DP
-                        </>
-                      ) : (
-                        <>
-                          <span className="mr-1 inline-block h-2 w-2 rounded-full bg-red-500" />
-                          Belum bayar
-                        </>
-                      )}
-                    </p>
+                          </>
+                        ) : (
+                          <>
+                            <Footprints className="mr-0.5 inline-block h-3 w-3 align-[-1px]" />
+                            Walk-in
+                          </>
+                        )}
+                        {" · "}
+                        {b.payment_status === "paid" ? (
+                          <>
+                            <span className="mr-1 inline-block h-2 w-2 rounded-full bg-emerald-500" />
+                            Lunas
+                          </>
+                        ) : b.payment_status === "partial" ? (
+                          <>
+                            <span className="mr-1 inline-block h-2 w-2 rounded-full bg-amber-400" />
+                            DP
+                          </>
+                        ) : (
+                          <>
+                            <span className="mr-1 inline-block h-2 w-2 rounded-full bg-red-500" />
+                            Belum bayar
+                          </>
+                        )}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="mt-2.5">
-                  <BookingActions bookingId={b.id} status={b.status} />
-                </div>
-              </li>
-            ))}
+                  <div className="mt-2.5">
+                    <BookingActions
+                      bookingId={b.id}
+                      status={b.status}
+                      inPlay={inPlay}
+                    />
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
         </div>
