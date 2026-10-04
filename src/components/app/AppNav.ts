@@ -35,7 +35,7 @@ export type NavSection = {
 export const PRIMARY_NAV: NavItem[] = [
   { href: "/app", label: "Beranda", icon: Home, desc: "Ringkasan hari ini" },
   { href: "/app/jadwal", label: "Jadwal", icon: CalendarDays, desc: "Timeline lapangan" },
-  { href: "/app/booking/baru", label: "Booking Baru", icon: Plus, desc: "Buat booking manual" },
+  { href: "/app/booking/baru", label: "Tambah Booking", icon: Plus, desc: "Menambah booking manual" },
   { href: "/app/pembayaran", label: "Bayar", icon: Banknote, desc: "Catat pembayaran" },
   { href: "/app/kantin", label: "Kantin", icon: ShoppingBasket, desc: "Kasir & stok" },
   { href: "/app/pelanggan", label: "Pelanggan", icon: Users, desc: "Data pelanggan" },
@@ -79,7 +79,7 @@ export function isActivePath(pathname: string, href: string): boolean {
  *
  * Menu Utama is always first. The owner's tools are a second tier, not the way
  * into the app, and a drawer that opens on "Menu Owner" pushed the pages
- * people actually use — Beranda, Jadwal, Booking Baru — below the fold.
+ * people actually use — Beranda, Jadwal, Tambah Booking — below the fold.
  */
 export function drawerSections(isOwner: boolean): NavSection[] {
   const sections: NavSection[] = [{ title: "Menu Utama", items: PRIMARY_NAV }];
