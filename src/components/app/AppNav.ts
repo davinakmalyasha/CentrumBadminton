@@ -1,6 +1,5 @@
 import {
   Ban,
-  Banknote,
   BarChart3,
   Bot,
   CalendarDays,
@@ -13,7 +12,6 @@ import {
   Repeat,
   Settings,
   ShoppingBasket,
-  Users,
   type LucideIcon,
 } from "lucide-react";
 
@@ -36,9 +34,7 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/app", label: "Beranda", icon: Home, desc: "Ringkasan hari ini" },
   { href: "/app/jadwal", label: "Jadwal", icon: CalendarDays, desc: "Timeline lapangan" },
   { href: "/app/booking/baru", label: "Tambah Booking", icon: Plus, desc: "Menambah booking manual" },
-  { href: "/app/pembayaran", label: "Bayar", icon: Banknote, desc: "Catat pembayaran" },
   { href: "/app/kantin", label: "Kantin", icon: ShoppingBasket, desc: "Kasir & stok" },
-  { href: "/app/pelanggan", label: "Pelanggan", icon: Users, desc: "Data pelanggan" },
   {
     href: "/app/ai",
     label: "AI Asisten",

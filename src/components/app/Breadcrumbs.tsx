@@ -14,6 +14,16 @@ import {
 const ALL: NavItem[] = [...PRIMARY_NAV, ...OWNER_NAV, ...KANTIN_NAV, ...SETTINGS_NAV];
 
 /**
+ * Detail pages that live under a hub but are not menu items themselves.
+ * Without this the trail would go blank on e.g. /app/laporan/keuangan.
+ */
+const EXTRA: Array<{ href: string; label: string; parentHref: string; parentLabel: string }> = [
+  { href: "/app/laporan/keuangan", label: "Keuangan", parentHref: "/app/laporan", parentLabel: "Laporan" },
+  { href: "/app/laporan/riwayat", label: "Riwayat Booking", parentHref: "/app/laporan", parentLabel: "Laporan" },
+  { href: "/app/laporan/kantin", label: "Kantin", parentHref: "/app/laporan", parentLabel: "Laporan" },
+];
+
+/**
  * Where am I, in one line: Beranda › Tambah Booking.
  *
  * Derived from the pathname through the same NAV arrays as the drawer, so it
@@ -31,20 +41,28 @@ export default function Breadcrumbs({ className }: { className?: string }) {
   const match = ALL.filter(
     (i) => pathname === i.href || pathname.startsWith(`${i.href}/`)
   ).sort((a, b) => b.href.length - a.href.length)[0];
-  if (!match) return null;
+  const extra = EXTRA.filter(
+    (i) => pathname === i.href || pathname.startsWith(`${i.href}/`)
+  ).sort((a, b) => b.href.length - a.href.length)[0];
+  if (!match && !extra) return null;
+  const label = extra?.label ?? match!.label;
 
   // /app/kantin/stok → Beranda / Kantin / Stok: the parent is the longest
   // NAV href that is a strict prefix of the match. /app itself is excluded —
   // the trail already starts at Beranda, or every deep page would name it twice.
+  // Detail pages carry their own parent (see EXTRA above).
+  const here = extra?.href ?? match!.href;
   const parent =
-    match.href.split("/").length > 3
-      ? ALL.filter(
-          (i) =>
-            i.href !== "/app" &&
-            i.href !== match.href &&
-            match.href.startsWith(`${i.href}/`)
-        ).sort((a, b) => b.href.length - a.href.length)[0]
-      : undefined;
+    extra !== undefined
+      ? { href: extra.parentHref, label: extra.parentLabel }
+      : here.split("/").length > 3
+        ? ALL.filter(
+            (i) =>
+              i.href !== "/app" &&
+              i.href !== here &&
+              here.startsWith(`${i.href}/`)
+          ).sort((a, b) => b.href.length - a.href.length)[0]
+        : undefined;
 
   return (
     <nav aria-label="Breadcrumb" className={className ?? "min-w-0"}>
@@ -79,7 +97,7 @@ export default function Breadcrumbs({ className }: { className?: string }) {
           aria-current="page"
           className="truncate font-bold text-zinc-800 dark:text-zinc-100"
         >
-          {match.label}
+          {label}
         </li>
       </ol>
     </nav>
