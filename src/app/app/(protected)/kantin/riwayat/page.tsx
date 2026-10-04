@@ -1,7 +1,7 @@
 import { createClient, proxyFetch } from "@/lib/proxy/client";
 import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 import Link from "next/link";
-import { ChevronLeft, ChevronRight, Receipt } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { addDaysISO, formatIDR, todayISO } from "@/lib/availability";
 import VoidSaleButton from "@/components/app/kantin/VoidSaleButton";
 
@@ -102,12 +102,14 @@ const sales = await Promise.all(
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black text-zinc-900 dark:text-zinc-50">
-            <Receipt className="h-4 w-4" strokeWidth={1.75} /> Riwayat Kantin
+          <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+            {date === today ? "Hari Ini" : date}
           </h1>
-          <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
-            {date === today ? "Hari ini" : date}
-          </p>
+          {date === today && (
+            <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
+              {date}
+            </p>
+          )}
         </div>
         <Link
           href={`/app/kantin/riwayat?date=${addDaysISO(date, 1)}`}

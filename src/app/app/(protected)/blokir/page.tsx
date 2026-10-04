@@ -37,9 +37,6 @@ export default async function BlokirPage() {
   if (readError) {
     return (
       <div className="space-y-4">
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
-        </h1>
         <DataUnavailable detail={readError} />
       </div>
     );
@@ -60,9 +57,6 @@ export default async function BlokirPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <Ban className="h-5 w-5" strokeWidth={1.75} /> Blokir Jadwal
-        </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Maintenance / private event — booking di jam ini akan ditolak, dan
           disappear dari jadwal publik.

@@ -44,9 +44,6 @@ export default async function PelangganPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <Users className="h-5 w-5" strokeWidth={1.75} /> Pelanggan
-        </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {customers.length} terdaftar · dibuat otomatis dari booking
         </p>

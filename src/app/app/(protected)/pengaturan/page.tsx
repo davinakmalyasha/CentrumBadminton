@@ -58,12 +58,6 @@ export default async function PengaturanPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <Settings className="h-5 w-5" strokeWidth={1.75} /> Pengaturan
-        </h1>
-      </div>
-
       {readError ? (
         <DataUnavailable detail={readError} />
       ) : (

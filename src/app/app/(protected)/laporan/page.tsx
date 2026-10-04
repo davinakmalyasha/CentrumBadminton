@@ -207,9 +207,6 @@ export default async function LaporanPage({
   if (readError) {
     return (
       <div className="space-y-5">
-        <h1 className="flex items-center gap-2 text-base font-black text-zinc-900 dark:text-zinc-50">
-          <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Laporan
-        </h1>
         <DataUnavailable detail={readError} />
       </div>
     );
@@ -236,10 +233,9 @@ export default async function LaporanPage({
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black capitalize text-zinc-900 dark:text-zinc-50">
-            <BarChart3 className="h-5 w-5" strokeWidth={1.75} /> Laporan
+          <h1 className="text-xl font-black capitalize tracking-tight text-zinc-900 dark:text-zinc-50">
+            {formatMonthLabel(month)}
           </h1>
-          <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">{formatMonthLabel(month)}</p>
         </div>
         <Link
           href={`/app/laporan?month=${addMonths(month, 1)}`}

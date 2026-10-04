@@ -38,9 +38,6 @@ export default async function KantinProdukPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <ShoppingBasket className="h-5 w-5" strokeWidth={1.75} /> Produk Kantin
-        </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           {products.length} produk · ketuk nama untuk mengubah harga/modal
         </p>
