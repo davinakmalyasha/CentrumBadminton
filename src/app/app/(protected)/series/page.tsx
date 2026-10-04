@@ -77,9 +77,6 @@ export default async function SeriesPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <Repeat className="h-5 w-5" strokeWidth={1.75} /> Langganan Mingguan
-        </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Komunitas rutin — slot dibuat otomatis setiap minggu.
         </p>

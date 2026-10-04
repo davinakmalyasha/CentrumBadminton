@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import LogoutDialog from "./LogoutDialog";
 import Sidebar from "./Sidebar";
+import Breadcrumbs from "./Breadcrumbs";
 import { useRole } from "./RoleContext";
 import ThemeToggle from "./ThemeToggle";
 import { drawerSections, isActivePath } from "./AppNav";
@@ -60,18 +61,12 @@ export default function AppShell({
 
       {/* Header */}
       <header className="sticky top-0 z-30 border-b border-zinc-200/80 bg-white/90 pt-[env(safe-area-inset-top)] backdrop-blur dark:border-zinc-800 dark:bg-zinc-950/90">
-        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5 lg:max-w-7xl lg:justify-end lg:px-6 2xl:max-w-[1700px]">
-          {/* Brand repeats the sidebar header, so hide it on desktop */}
-          <div className="flex min-w-0 items-center gap-2.5 lg:hidden">
-            <div className="min-w-0 leading-tight">
-              <p className="truncate text-[13px] font-extrabold tracking-tight">
-                Centrum Manager
-              </p>
-              <p className="truncate text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
-                {displayName} · {roleLabel}
-              </p>
-            </div>
-          </div>
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-2 px-4 py-2.5 lg:max-w-7xl lg:px-6 2xl:max-w-[1700px]">
+          {/* Breadcrumbs own this slot on every viewport. The brand + account
+              line that used to sit here on mobile duplicated the drawer header
+              verbatim (displayName · roleLabel), so it is gone; on desktop
+              this fills the empty half the justify-end buttons left behind. */}
+          <Breadcrumbs className="min-w-0 flex-1" />
 
           <div className="flex shrink-0 items-center gap-1.5">
             <Link

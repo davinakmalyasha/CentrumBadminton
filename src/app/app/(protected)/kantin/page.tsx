@@ -45,9 +45,6 @@ export default async function KantinPage() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-          <ShoppingBasket className="h-5 w-5" strokeWidth={1.75} /> Kasir Kantin
-        </h1>
         <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
           Ketuk produk untuk masuk keranjang — total dihitung otomatis dari harga tersimpan.
         </p>

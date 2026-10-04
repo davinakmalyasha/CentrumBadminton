@@ -1,4 +1,3 @@
-import { Plus } from "lucide-react";
 import { createClient } from "@/lib/proxy/client";
 import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 import { todayISO, type PricingInfo, type PricingRule } from "@/lib/availability";
@@ -53,9 +52,6 @@ export default async function NewBookingPage({
 
   return (
     <div className="space-y-4">
-      <h1 className="flex items-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-        <Plus className="h-5 w-5" strokeWidth={1.75} /> Booking Baru
-      </h1>
       {readError ? (
         <DataUnavailable detail={readError} />
       ) : courts.length === 0 ? (

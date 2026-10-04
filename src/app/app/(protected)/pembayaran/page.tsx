@@ -214,12 +214,14 @@ export default async function PembayaranPage({
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-lg font-black text-zinc-900 dark:text-zinc-50">
-            <Banknote className="h-5 w-5" strokeWidth={1.75} /> Pembayaran
+          <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+            {date === today ? "Hari Ini" : dayLabel}
           </h1>
-          <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
-            {date === today ? "Hari ini" : dayLabel}
-          </p>
+          {date === today && (
+            <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
+              {dayLabel}
+            </p>
+          )}
         </div>
         <Link
           href={`/app/pembayaran?date=${addDaysISO(date, 1)}`}
