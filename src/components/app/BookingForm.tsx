@@ -2,7 +2,6 @@
 
 import { useActionState, useState } from "react";
 import {
-  CalendarDays,
   Check,
   ClipboardList,
   Clock,
@@ -168,20 +167,16 @@ export default function BookingForm({
                 {state.fieldErrors.date}
               </p>
             )}
-            <div className="relative">
-              <input
-                id="date"
-                type="date"
-                name="date"
-                defaultValue={defaultDate}
-                required
-                className={`${field} pr-9`}
-              />
-              <CalendarDays
-                className="pointer-events-none absolute top-1/2 right-3 h-4 w-4 -translate-y-1/2 text-zinc-400"
-                aria-hidden="true"
-              />
-            </div>
+            {/* Only the native indicator: adding a decorative icon put a
+                second calendar glyph in the field. */}
+            <input
+              id="date"
+              type="date"
+              name="date"
+              defaultValue={defaultDate}
+              required
+              className={field}
+            />
           </div>
         </div>
 
@@ -459,34 +454,81 @@ export default function BookingForm({
           </div>
 
           {preview !== null && (
-            <p className="mt-1.5 text-[11px] text-zinc-400 dark:text-zinc-500">
+            <p className="mt-3 text-[11px] text-zinc-400 dark:text-zinc-500">
               {formatIDR(preview)} harga basis (diskon + override)
             </p>
           )}
-
-          {state.error && (
-            <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600">
-              {state.error}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            disabled={pending}
-            className="manager-tap mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:opacity-50"
-          >
-            <Check className="h-4 w-4" aria-hidden="true" />
-            {pending ? "Menyimpan…" : "Buat Booking Baru"}
-          </button>
-
-          <Link
-            href="/app/jadwal"
-            className="mt-2 block text-center text-[11px] font-medium text-zinc-500 hover:underline dark:text-zinc-400"
-          >
-            Batal &amp; Kembali ke Jadwal
-          </Link>
         </div>
       </section>
+
+      {/* Order summary — fixed to the bottom so the total, court, span and
+          duration are readable while the rest of the form is still being
+          filled. It clears the bottom tab bar (z-30) on mobile and sits on the
+          viewport edge from lg up, where there is no tab bar. z-40 keeps it
+          above the header and the nav but below the drawer (z-[60]). */}
+      <div className="fixed inset-x-0 bottom-0 z-40 lg:bottom-0">
+        <div className="mx-auto max-w-3xl px-4 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:max-w-7xl lg:px-6 lg:pb-4">
+          {/* Opaque, not translucent: at 95% + a light blur the page behind was
+              legible through the bar and the total appeared twice. */}
+          <div className="rounded-2xl border border-zinc-200 bg-white p-4 shadow-xl shadow-zinc-900/10 dark:border-zinc-800 dark:bg-zinc-900 dark:shadow-black/50">
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[11px] font-bold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
+                  Total Pembayaran
+                </p>
+                <p className="mt-0.5 text-xl leading-none font-extrabold tracking-tight text-zinc-900 tabular-nums dark:text-zinc-50">
+                  {total !== null ? formatIDR(total) : "—"}
+                </p>
+              </div>
+              <span className={`${pill} shrink-0 border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300`}>
+                <Shuttlecock className="h-3 w-3" aria-hidden="true" />
+                <span className="max-w-[9rem] truncate">
+                  {court?.name ?? "Belum pilih"}
+                </span>
+              </span>
+            </div>
+
+            <div className="mt-2 flex items-center justify-between gap-3">
+              <span className="flex items-center gap-1.5 text-[11px] font-medium text-zinc-500 dark:text-zinc-400">
+                <Clock className="h-3.5 w-3.5" aria-hidden="true" />
+                {startH !== null && endH !== null
+                  ? `${timeLabel(`${String(startH).padStart(2, "0")}:00`)} — ${timeLabel(`${String(endH).padStart(2, "0")}:00`)}`
+                  : "— —"}
+              </span>
+              {totalHours > 0 && (
+                <span className={`${pill} border border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-900/60 dark:bg-emerald-950/50 dark:text-emerald-300`}>
+                  {totalHours} jam
+                </span>
+              )}
+            </div>
+
+            {state.error && (
+              <p className="mt-2 rounded-xl bg-red-50 px-3 py-2 text-sm font-semibold text-red-600 dark:bg-red-950/40 dark:text-red-400">
+                {state.error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={pending}
+              className="manager-tap mt-3 flex min-h-[48px] w-full items-center justify-center gap-2 rounded-2xl bg-emerald-600 py-3.5 text-sm font-black text-white shadow-lg shadow-emerald-600/20 transition hover:bg-emerald-500 disabled:opacity-50"
+            >
+              <Check className="h-4 w-4" aria-hidden="true" />
+              {pending ? "Menyimpan…" : "Buat Booking Baru"}
+            </button>
+
+            <Link
+              href="/app/jadwal"
+              className="mt-2 block text-center text-[11px] font-medium text-zinc-500 hover:underline dark:text-zinc-400"
+            >
+              Batal &amp; Kembali ke Jadwal
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Keeps the last field clear of the fixed summary. */}
+      <div aria-hidden="true" className="h-36 lg:h-44" />
     </form>
   );
 }
