@@ -9,8 +9,10 @@ import {
   formatK,
   groupHours,
   minutesOf,
+  minutesLeft,
   minutesToHHMM,
   minutesToLabel,
+  isInPlay,
   timeLabel,
   type PricingInfo,
 } from "../src/lib/availability";
@@ -196,5 +198,49 @@ describe("buildSlots", () => {
     const b = buildSlots(pricing, busy, "court-b", futureDate, "2000-01-01");
     expect(a.find((s) => s.hour === 8)!.status).toBe("blocked");
     expect(b.find((s) => s.hour === 8)!.status).toBe("blocked");
+  });
+});
+
+describe("isInPlay", () => {
+  const start = "19:00:00";
+  const end = "20:30:00";
+
+  it("counts a confirmed or checked_in booking inside its window", () => {
+    expect(isInPlay(start, end, "confirmed", 19 * 60 + 30)).toBe(true);
+    expect(isInPlay(start, end, "checked_in", 20 * 60)).toBe(true);
+  });
+
+  it("never counts a pending hold, even inside its window", () => {
+    // A WhatsApp hold locks the court but nobody is on it, and
+    // releaseBooking only completes a checked_in booking.
+    expect(isInPlay(start, end, "pending", 19 * 60 + 30)).toBe(false);
+  });
+
+  it("is false before the start and after the end", () => {
+    expect(isInPlay(start, end, "confirmed", 18 * 60 + 59)).toBe(false);
+    expect(isInPlay(start, end, "confirmed", 20 * 60 + 31)).toBe(false);
+    expect(isInPlay(start, end, "checked_in", 23 * 60)).toBe(false);
+  });
+
+  it("treats start as inclusive and end as exclusive", () => {
+    expect(isInPlay(start, end, "confirmed", 19 * 60)).toBe(true);
+    expect(isInPlay(start, end, "confirmed", 20 * 60 + 30)).toBe(false);
+  });
+
+  it("ignores cancelled, no-show, completed and unknown statuses", () => {
+    for (const s of ["cancelled", "no_show", "completed", "", "unknown"]) {
+      expect(isInPlay(start, end, s, 19 * 60 + 30)).toBe(false);
+    }
+  });
+});
+
+describe("minutesLeft", () => {
+  it("counts down to the end time and keeps the minutes", () => {
+    expect(minutesLeft("20:30", 19 * 60 + 30)).toBe(60);
+    expect(minutesLeft("20:30:00", 20 * 60 + 15)).toBe(15);
+  });
+
+  it("never goes negative once the slot is over", () => {
+    expect(minutesLeft("20:30", 21 * 60)).toBe(0);
   });
 });

@@ -1,8 +1,14 @@
 "use client";
 
 import { useActionState } from "react";
-import { Check, Flag, Trash2, UserX } from "lucide-react";
-import { updateBookingStatus, deleteBooking, type ActionState } from "@/app/app/(protected)/actions";
+import { Check, Flag, LogOut, Plus, Trash2, UserX } from "lucide-react";
+import {
+  updateBookingStatus,
+  deleteBooking,
+  extendBooking,
+  releaseBooking,
+  type ActionState,
+} from "@/app/app/(protected)/actions";
 import { useRole } from "./RoleContext";
 
 const initial: ActionState = { error: null };
@@ -10,21 +16,64 @@ const initial: ActionState = { error: null };
 export default function BookingActions({
   bookingId,
   status,
+  inPlay = false,
 }: {
   bookingId: string;
   status: string;
+  /**
+   * Whether this booking is on a court right now. Passed in rather than read
+   * from the clock here so the row's highlight and these buttons can never
+   * disagree — and so "+1 jam" is offered for a court that is actually in use,
+   * not for one that starts in three hours.
+   */
+  inPlay?: boolean;
 }) {
   const { role } = useRole();
   const [state, formAction, pending] = useActionState(updateBookingStatus, initial);
   const [delState, delAction, delPending] = useActionState(deleteBooking, initial);
+  const [extState, extAction, extPending] = useActionState(extendBooking, initial);
+  const [relState, relAction, relPending] = useActionState(releaseBooking, initial);
 
   const btn =
     "manager-tap inline-flex min-h-[40px] items-center gap-1 rounded-lg px-2.5 py-2 text-[11px] font-bold transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-zinc-400 disabled:opacity-50";
 
-  const err = state.error || delState.error;
+  const err = state.error || delState.error || extState.error || relState.error;
+  const busy = pending || delPending || extPending || relPending;
 
   return (
     <div className="flex flex-wrap items-center gap-1.5">
+      {/* Live-court actions. Used to live in a separate "Live Lapangan" card
+          that listed the same booking the agenda row below already showed;
+          the row is now the only place court state appears. */}
+      {inPlay && (
+        <form action={extAction}>
+          <input type="hidden" name="booking_id" value={bookingId} />
+          <input type="hidden" name="hours" value="1" />
+          <button
+            type="submit"
+            disabled={busy}
+            className={`${btn} bg-emerald-600 text-white hover:bg-emerald-700`}
+            title="Nambah 1 jam — cek slot berikutnya, hitung harga otomatis"
+          >
+            <Plus className="h-3.5 w-3.5" aria-hidden="true" />
+            +1 jam
+          </button>
+        </form>
+      )}
+      {inPlay && status === "checked_in" && (
+        <form action={relAction}>
+          <input type="hidden" name="booking_id" value={bookingId} />
+          <button
+            type="submit"
+            disabled={busy}
+            className={`${btn} border border-amber-300 bg-white text-amber-600 hover:bg-amber-50 dark:border-amber-900/60 dark:bg-transparent dark:text-amber-300 dark:hover:bg-amber-950/40`}
+            title="Kosongkan sekarang — set selesai, uang tetap dihitung, slot jadi free"
+          >
+            <LogOut className="h-3.5 w-3.5" aria-hidden="true" />
+            Kosongkan
+          </button>
+        </form>
+      )}
       {(status === "pending" || status === "confirmed") && (
         <form action={formAction}>
           <input type="hidden" name="booking_id" value={bookingId} />
