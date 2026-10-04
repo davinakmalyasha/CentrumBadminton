@@ -32,9 +32,8 @@ export default function AiNudge() {
         </p>
         <Link
           href={AI_LINK.href}
-          className="manager-tap inline-flex min-h-[44px] items-center gap-1.5 rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none active:scale-95 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
+          className="manager-tap inline-flex min-h-[44px] items-center rounded-xl bg-zinc-900 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-zinc-700 focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none active:scale-95 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-white"
         >
-          <AI_LINK.icon className="h-4 w-4" aria-hidden="true" />
           {AI_LINK.label} {isOwner ? "" : "(jadwal/stok)"}
         </Link>
       </div>

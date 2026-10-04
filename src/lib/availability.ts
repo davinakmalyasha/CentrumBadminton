@@ -130,6 +130,35 @@ export function formatHours(h: number): string {
   return (Math.round(h * 10) / 10).toLocaleString("id-ID");
 }
 
+/**
+ * Is this booking on a court right now?
+ *
+ * Deliberately the same rule the dashboard's row highlight and its
+ * "Kosongkan" button have to agree on, so a row can never claim to be live
+ * while offering an action the server refuses:
+ *
+ * - `pending` is never in play. An unconfirmed WhatsApp hold locks the court,
+ *   but nobody is on it, and `releaseBooking` only completes a `checked_in`.
+ * - start is inclusive, end exclusive: at exactly `end_time` the slot is over.
+ *
+ * `nowMin` is passed in rather than read from the clock so this stays pure and
+ * testable; pass `wibNowMinutes()` at the call site.
+ */
+export function isInPlay(
+  start: string,
+  end: string,
+  status: string,
+  nowMin: number
+): boolean {
+  if (status !== "confirmed" && status !== "checked_in") return false;
+  return nowMin >= minutesOf(start) && nowMin < minutesOf(end);
+}
+
+/** Minutes left before `end`, floored at 0. Only meaningful when {@link isInPlay}. */
+export function minutesLeft(end: string, nowMin: number): number {
+  return Math.max(minutesOf(end) - nowMin, 0);
+}
+
 function overlaps(
   busyStart: string,
   busyEnd: string,
