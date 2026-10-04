@@ -122,12 +122,6 @@ export default function TimelineGrid({
           ))}
         </div>
       </div>
-
-      <div className="border-t border-zinc-200 bg-zinc-50 px-3 py-2 text-[10px] font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
-        Tap <span className="font-bold text-emerald-500">+</span> untuk buat booking ·{" "}
-        {formatIDR(pricing.priceDay)}/jam siang · {formatIDR(pricing.priceEvening)}
-        /jam malam
-      </div>
     </div>
   );
 }

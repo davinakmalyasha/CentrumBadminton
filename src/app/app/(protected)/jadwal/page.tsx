@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { CalendarDays, Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
+import { Check, ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { createClient } from "@/lib/proxy/client";
 import { VISIBLE_ON_SCHEDULE } from "@/lib/booking-status";
 import {
@@ -121,12 +121,14 @@ export default async function JadwalPage({
           <ChevronLeft className="h-4 w-4" />
         </Link>
         <div className="text-center">
-          <h1 className="flex items-center justify-center gap-2 text-base font-black text-zinc-900 dark:text-zinc-50">
-            <CalendarDays className="h-5 w-5" strokeWidth={1.75} /> Jadwal
+          <h1 className="text-xl font-black tracking-tight text-zinc-900 dark:text-zinc-50">
+            {date === today ? "Hari Ini" : dayLabel}
           </h1>
-          <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
-            {date === today ? "Hari ini" : dayLabel}
-          </p>
+          {date === today && (
+            <p className="text-xs font-semibold capitalize text-zinc-500 dark:text-zinc-400">
+              {dayLabel}
+            </p>
+          )}
         </div>
         <Link
           href={`/app/jadwal?date=${addDaysISO(date, 1)}`}
@@ -165,12 +167,19 @@ export default async function JadwalPage({
         />
       ) : (
         <>
-          <p className="text-xs leading-relaxed text-zinc-500 dark:text-zinc-400">
-            Satu baris per jam, satu kolom per lapangan. Blok berwarna =
-            booking; garis miring = lapangan ditutup (blokir).
-          </p>
-
           <ScheduleRealtime dateISO={date} />
+
+          {bookingBlocks.length === 0 && (
+            <p className="rounded-xl border border-zinc-200 bg-white px-3 py-2 text-center text-xs font-medium text-zinc-500 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400">
+              Belum ada booking di tanggal ini — semua jam kosong.{" "}
+              <Link
+                href="/app/booking/baru"
+                className="font-bold text-zinc-800 underline dark:text-zinc-100"
+              >
+                Catat booking →
+              </Link>
+            </p>
+          )}
 
           <TimelineGrid
             courts={courts}
@@ -179,13 +188,7 @@ export default async function JadwalPage({
             dateISO={date}
           />
 
-          {bookingBlocks.length === 0 ? (
-            <EmptyState
-              title="Belum ada booking di tanggal ini"
-              body="Semua jam masih kosong. Booking dari WhatsApp atau walk-in bisa dicatat di Booking Baru."
-              action={{ href: "/app/booking/baru", label: "Catat booking" }}
-            />
-          ) : (
+          {bookingBlocks.length > 0 && (
             /* Agenda. Status actions live here because this is where staff
                look for tomorrow's provisional bookings — the Booking Baru
                form even tells them to confirm "dari tombol Confirm di
