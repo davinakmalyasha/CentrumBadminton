@@ -15,6 +15,7 @@ import Sidebar from "./Sidebar";
 import Breadcrumbs from "./Breadcrumbs";
 import { useRole } from "./RoleContext";
 import ThemeToggle from "./ThemeToggle";
+import PushToggle from "./PushToggle";
 import { drawerSections, isActivePath } from "./AppNav";
 
 export default function AppShell({
@@ -83,6 +84,7 @@ export default function AppShell({
               <Bot className="h-[18px] w-[18px]" aria-hidden="true" />
             </Link>
             <ThemeToggle />
+            <PushToggle />
             <button
               type="button"
               onClick={() => setMenuOpen(true)}
