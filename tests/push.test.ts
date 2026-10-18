@@ -1,5 +1,21 @@
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { bufToB64url, toBackendShape, vapidKeyToUint8 } from "../src/lib/push";
+
+describe("push session transport", () => {
+  it("never reads document.cookie and always uses the same-origin shim", () => {
+    // The session cookie is httpOnly; reading it from JS silently broke
+    // subscribe in production ("no session — log in first"). Pin the
+    // transport so it cannot regress.
+    const src = readFileSync(
+      fileURLToPath(new URL("../src/lib/push.ts", import.meta.url)),
+      "utf8",
+    );
+    expect(src).not.toContain("document.cookie");
+    expect(src).toContain("/api/push/subscriptions");
+  });
+});
 
 describe("vapidKeyToUint8", () => {
   it("round-trips base64url without padding", () => {

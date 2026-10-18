@@ -2,16 +2,19 @@
 // browser against the backend registry (POST/DELETE
 // /v1/push/subscriptions), so due reminders can reach staff devices.
 //
-// Auth reuses the readable session cookie (same mechanism as
-// lib/proxy/browser.ts): the backend resolves tenant + user from it.
+// Auth goes through the same-origin shim /api/push/subscriptions: the
+// session cookie is httpOnly (lib/proxy/client.ts — bearer credential,
+// never readable from JS), so this module must NOT try to read cookies
+// from the document. Doing so returned undefined and made subscribe
+// fail with "no session" in production; the shim attaches
+// X-Session-Token server-side.
 // VAPID public key comes from NEXT_PUBLIC_VAPID_PUBLIC_KEY (set in the
 // env sweep; without it the toggle hides itself).
 //
 // No "use client" here: pure helpers are imported by vitest (node).
 
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
 const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ?? "";
-const SESSION_COOKIE = "proxy_session";
+const SHIM_PATH = "/api/push/subscriptions";
 
 export type PushState = "unsupported" | "denied" | "off" | "on" | "working" | "unconfigured";
 
@@ -50,24 +53,10 @@ export function toBackendShape(sub: {
   return { endpoint: sub.endpoint, p256dh, auth };
 }
 
-function sessionToken(): string | undefined {
-  if (typeof document === "undefined") return undefined;
-  const m = document.cookie
-    .split("; ")
-    .find((c) => c.startsWith(SESSION_COOKIE + "="));
-  return m ? decodeURIComponent(m.split("=").slice(1).join("=")) : undefined;
-}
-
 async function backend(path: string, init: RequestInit): Promise<Response> {
-  const token = sessionToken();
-  if (!token) throw new Error("no session — log in first");
-  return fetch(`${PROXY_URL}${path}`, {
+  return fetch(path, {
     ...init,
-    headers: {
-      "Content-Type": "application/json",
-      "X-Session-Token": token,
-      ...(init.headers ?? {}),
-    },
+    headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
     cache: "no-store",
   });
 }
@@ -98,7 +87,7 @@ export async function subscribePush(): Promise<{ ok: true } | { ok: false; messa
   });
   const shape = toBackendShape(sub);
   if (!shape) return { ok: false, message: "gagal membaca kunci subscription" };
-  const res = await backend("/v1/push/subscriptions", {
+  const res = await backend(SHIM_PATH, {
     method: "POST",
     body: JSON.stringify(shape),
   });
@@ -117,7 +106,7 @@ export async function unsubscribePush(): Promise<{ ok: true } | { ok: false; mes
     const reg = await navigator.serviceWorker.ready;
     const sub = await reg.pushManager.getSubscription();
     if (sub) {
-      await backend(`/v1/push/subscriptions?endpoint=${encodeURIComponent(sub.endpoint)}`, {
+      await backend(`${SHIM_PATH}?endpoint=${encodeURIComponent(sub.endpoint)}`, {
         method: "DELETE",
       }).catch(() => {});
       await sub.unsubscribe().catch(() => {});
