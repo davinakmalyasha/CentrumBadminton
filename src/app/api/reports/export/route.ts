@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { buildXlsx, XLSX_MIME } from "@/lib/xlsx";
 import { createClient, proxyFetch } from "@/lib/proxy/client";
 import { monthEndExclusive, monthStart } from "@/lib/months";
 import { ALL_BOOKING_STATUSES } from "@/lib/booking-status";
@@ -72,19 +73,21 @@ async function mapLimit<T, R>(
   return out;
 }
 
-/**
- * Neutralise a leading formula character for the XLSX path.
- *
- * XLSX cells are formulas by default when they start with = + - @, and
- * Excel evaluates them on open. An apostrophe prefix is the standard
- * neutraliser; the cell is additionally typed as String below so the
- * character survives as visible text rather than being swallowed.
- *
- * A leading apostrophe that the user actually typed is left alone -- it
- * is already inert.
- */
-function xlsxSafe(s: string): string {
-  return /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+/** Build an XLSX response in the same shape as the previous export path. */
+async function xlsxResponse(
+  headers: string[],
+  rows: Array<Array<string | number>>,
+  sheet: string,
+  columnWidth: number,
+  filename: string
+): Promise<NextResponse> {
+  const bytes = await buildXlsx(headers, rows, sheet, columnWidth);
+  return new NextResponse(new Blob([bytes], { type: XLSX_MIME }), {
+    headers: {
+      "Content-Type": XLSX_MIME,
+      "Content-Disposition": `attachment; filename="${filename}"`,
+    },
+  });
 }
 
 function day(iso: string | undefined | null): string {
@@ -222,22 +225,7 @@ export async function GET(request: Request) {
     }
 
     if (format === "xlsx") {
-      const ExcelJS = await import("exceljs");
-      const wb = new ExcelJS.Workbook();
-      const ws = wb.addWorksheet("Kantin");
-      ws.addRow(kHeaders);
-      ws.getRow(1).font = { bold: true } as unknown as never;
-      kRows.forEach((r) => ws.addRow(r));
-      ws.columns.forEach((c) => {
-        (c as unknown as { width: number }).width = 14;
-      });
-      const buf = await wb.xlsx.writeBuffer();
-      return new NextResponse(buf as unknown as BodyInit, {
-        headers: {
-          "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-          "Content-Disposition": `attachment; filename="kantin-${label}.xlsx"`,
-        },
-      });
+      return xlsxResponse(kHeaders, kRows, "Kantin", 14, `kantin-${label}.xlsx`);
     }
 
     const kLines = [kHeaders.join(";"), ...kRows.map((r) => r.map((v) => esc(v)).join(";"))];
@@ -347,54 +335,16 @@ export async function GET(request: Request) {
   }
 
   if (format === "xlsx") {
-    const ExcelJS = await import("exceljs");
-    const wb = new ExcelJS.Workbook();
-    const ws = wb.addWorksheet("Laporan");
-    ws.addRow(lHeaders);
-    ws.getRow(1).font = { bold: true } as unknown as never;
-    // Strings get the same formula-injection guard the CSV path applies,
-    // and are marked as literal text so Excel cannot reinterpret them.
-    //
-    // A customer named "=1+1" or "+62811" is stored verbatim in the
-    // database, and XLSX cells are evaluated on open: without this the
-    // export handed the recipient a workbook that tried to compute its
-    // own contents from whatever the payer typed into a name field. The
-    // CSV path already escaped this; the XLSX path did not, so the same
-    // data was safe in one format and not the other.
-    const isText = (v: unknown) => typeof v === "string";
-    const guard = (v: unknown) => (isText(v) ? xlsxSafe(v as string) : v);
-    lRows.forEach((r) => ws.addRow(r.map(guard)));
-    ws.columns.forEach((c) => {
-      (c as unknown as { width: number }).width = 16;
-    });
-    // Header row plus every added row.
-    //
-    // `cell.type` is getter-only on ExcelJS's Cell — assigning to it
-    // throws "Cannot set property type of [object Object] which has only
-    // a getter" and the whole export 500s. Typing the cells up front, via
-    // the row's `values` tuple, is the supported way and avoids the
-    // property entirely.
-    for (let rowNo = 2; rowNo <= lRows.length + 1; rowNo++) {
-      const row = ws.getRow(rowNo);
-      row.eachCell((cell) => {
-        if (typeof cell.value === "string" && cell.value.startsWith("=")) {
-          // Belt and braces: the apostrophe prefix above already makes
-          // this inert, but a formula would be stored as a formula
-          // regardless of a leading quote in some readers.
-          (cell as unknown as { model: Record<string, unknown> }).model = {
-            type: "str",
-            value: cell.value,
-          };
-        }
-      });
-    }
-    const buf = await wb.xlsx.writeBuffer();
-    return new NextResponse(buf as unknown as BodyInit, {
-      headers: {
-        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        "Content-Disposition": `attachment; filename="laporan-centrum-${label}.xlsx"`,
-      },
-    });
+    // xlsxResponse applies the same formula-injection guard as the CSV
+    // path (xlsxSafe). A customer named "=1+1" must not become a formula
+    // when the workbook is opened.
+    return xlsxResponse(
+      lHeaders,
+      lRows,
+      "Laporan",
+      16,
+      `laporan-centrum-${label}.xlsx`
+    );
   }
 
   const lines = [lHeaders.join(";"), ...lRows.map((r) => r.map((v) => esc(v)).join(";"))];

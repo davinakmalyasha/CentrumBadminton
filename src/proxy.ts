@@ -35,7 +35,11 @@ function contentSecurityPolicy(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${
       isDevelopment ? " 'unsafe-eval'" : ""
     }`,
-    "style-src 'self' 'unsafe-inline'",
+    // <style> elements require the nonce; dynamic style attributes
+    // (progress widths, timeline heights) are explicitly allowed by
+    // style-src-attr instead of opening all of style-src.
+    `style-src 'self' 'nonce-${nonce}'`,
+    "style-src-attr 'unsafe-inline'",
     "img-src 'self' data: blob:",
     "font-src 'self' data:",
     "media-src 'self'",

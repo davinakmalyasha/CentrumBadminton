@@ -40,9 +40,6 @@ const privateHeaders = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
-  // ExcelJS pulls in Node-only dependencies; keep it external instead of
-  // asking Turbopack/webpack to bundle it into the server route.
-  serverExternalPackages: ["exceljs"],
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },

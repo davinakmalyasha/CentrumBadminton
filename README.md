@@ -175,7 +175,7 @@ Deploy dari repo terpisah. Variabel yang dibutuhkan backend antara lain `DATABAS
 
 - Jangan commit `.env.local`, token, password, private key, atau dump database.
 - Repo ini public. Gunakan **GitHub private vulnerability reporting** untuk melaporkan celah — lihat [SECURITY.md](SECURITY.md).
-- CSP nonce per request dihasilkan di `src/proxy.ts`; production memakai `script-src 'nonce-…' 'strict-dynamic'` tanpa `'unsafe-inline'`. HSTS, `X-Frame-Options`, `nosniff`, COOP/CORP, dan header lain diatur di `next.config.ts`.
+- CSP nonce per request dihasilkan di `src/proxy.ts`; production memakai `script-src 'nonce-…' 'strict-dynamic'` dan `style-src 'nonce-…'`. Hanya `style-src-attr 'unsafe-inline'` yang diizinkan untuk style attribute dinamis (lebar progress/timeline). HSTS, `X-Frame-Options`, `nosniff`, COOP/CORP, dan header lain diatur di `next.config.ts`.
 - Halaman `/app` mengirim `Cache-Control: private, no-store` dan `X-Robots-Tag: noindex` agar HTML staf tidak tersimpan di cache bersama.
 - Push subscription memakai same-origin check sebelum meneruskan request ke backend.
 - Semua ekspor CSV/XLSX dilindungi dari formula injection.

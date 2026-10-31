@@ -70,12 +70,12 @@ If you cloned the repository before that date:
 
 GitHub may retain unreachable objects for a period after a force-push. If you need an old object purged immediately, contact GitHub Support and reference the affected commit hashes.
 
-## Known Dependency Risk
+## Dependency Notes
 
-`exceljs` (used only for server-side XLSX export) currently brings moderate-severity transitive advisories (`uuid`, `archiver`, `minimatch`). There is no patched release yet. Mitigations already in place:
-
-- ExcelJS runs only on the server, behind authentication and rate limiting.
-- Export input is generated from validated date ranges and database rows, not arbitrary user files.
-- CSV/XLSX cells are guarded against formula injection.
-
-Track updates and replace the library if a maintained alternative becomes available.
+- `npm audit --omit=dev` reports **0 vulnerabilities** as of 2026-10-31.
+- XLSX export uses `write-excel-file` (Node build) and `fflate`; ExcelJS was
+  removed because its transitive dependencies carried moderate advisories.
+- XLSX/CSV cells are guarded against formula injection, and export runs only
+  on the server behind authentication and rate limiting.
+- Dev-only tooling (ESLint/Vitest) may still report moderate advisories; it
+  is not shipped to production. Re-check `npm audit` after dependency bumps.

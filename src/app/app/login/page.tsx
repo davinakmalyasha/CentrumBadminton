@@ -259,43 +259,6 @@ export default function LoginPage() {
           <p>Buka setiap hari 07.00–23.00 WIB · Centrum Badminton Arena</p>
         </div>
       </div>
-
-      {/* scoped keyframes — decorative only, no logic impact */}
-      <style>{`
-        .login-enter { animation: login-rise 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
-        @keyframes login-rise {
-          from { opacity: 0; transform: translateY(14px) scale(0.99); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        .login-orb-a { animation: login-drift-a 9s ease-in-out infinite alternate; }
-        .login-orb-b { animation: login-drift-b 11s ease-in-out infinite alternate; }
-        @keyframes login-drift-a {
-          from { transform: translate(0, 0) scale(1); }
-          to { transform: translate(40px, 30px) scale(1.08); }
-        }
-        @keyframes login-drift-b {
-          from { transform: translate(0, 0) scale(1); }
-          to { transform: translate(-36px, -28px) scale(1.06); }
-        }
-        .login-shake { animation: login-shake 0.4s ease, login-fade 0.25s ease both; }
-        @keyframes login-shake {
-          0%, 100% { transform: translateX(0); }
-          20% { transform: translateX(-5px); }
-          40% { transform: translateX(5px); }
-          60% { transform: translateX(-3px); }
-          80% { transform: translateX(3px); }
-        }
-        @keyframes login-fade {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .login-fade-in { animation: login-fade 0.2s ease both; }
-        @media (prefers-reduced-motion: reduce) {
-          .login-enter, .login-orb-a, .login-orb-b, .login-shake, .login-fade-in {
-            animation: none;
-          }
-        }
-      `}</style>
     </main>
   );
 }
