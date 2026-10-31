@@ -35,6 +35,13 @@ function isErrorReply(text: string): boolean {
   );
 }
 
+/** Grow the composer up to 120px, then scroll inside it. */
+function resizeTextarea(el: HTMLTextAreaElement | null): void {
+  if (!el) return;
+  el.style.height = "auto";
+  el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+}
+
 export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" }) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
@@ -47,15 +54,8 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
   }, [messages, pending]);
 
-  function autoresize() {
-    const el = inputRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-  }
-
   useEffect(() => {
-    autoresize();
+    resizeTextarea(inputRef.current);
   }, [input]);
 
   // Render bot replies: an XLSX:/v1/reports/... marker becomes a real
@@ -164,7 +164,7 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
     const next: ChatMsg[] = [...messages, { role: "user", text: q }];
     setMessages(next);
     setInput("");
-    requestAnimationFrame(autoresize);
+    requestAnimationFrame(() => resizeTextarea(inputRef.current));
     await callAi(next);
   }
 
@@ -325,7 +325,7 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
             value={input}
             rows={1}
             onChange={(e) => setInput(e.target.value)}
-            onInput={autoresize}
+            onInput={(e) => resizeTextarea(e.currentTarget)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
                 e.preventDefault();

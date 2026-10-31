@@ -20,8 +20,11 @@ export type PushState = "unsupported" | "denied" | "off" | "on" | "working" | "u
 
 /** base64url → Uint8Array for PushManager.subscribe applicationServerKey. Pure; unit-tested. */
 export function vapidKeyToUint8(base64url: string): Uint8Array<ArrayBuffer> {
-  const padded = base64url.replaceAll("-", "+").replaceAll("_", "/");
-  const bin = atob(padded);
+  const normalised = base64url.replaceAll("-", "+").replaceAll("_", "/");
+  // atob() is strict about padding in some browsers. VAPID public keys are
+  // usually copied without the trailing "=", so restore it before decoding.
+  const padding = "=".repeat((4 - (normalised.length % 4)) % 4);
+  const bin = atob(normalised + padding);
   const out = new Uint8Array(bin.length);
   for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
   return out;
@@ -58,6 +61,7 @@ async function backend(path: string, init: RequestInit): Promise<Response> {
     ...init,
     headers: { "Content-Type": "application/json", ...(init.headers ?? {}) },
     cache: "no-store",
+    signal: init.signal ?? AbortSignal.timeout(15_000),
   });
 }
 
@@ -65,6 +69,7 @@ async function backend(path: string, init: RequestInit): Promise<Response> {
 export async function getPushState(): Promise<PushState> {
   if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return "unsupported";
   if (!VAPID_PUBLIC_KEY) return "unconfigured";
+  if (typeof Notification === "undefined") return "unsupported";
   if (Notification.permission === "denied") return "denied";
   try {
     const reg = await navigator.serviceWorker.ready;
@@ -78,26 +83,42 @@ export async function getPushState(): Promise<PushState> {
 /** Request permission, subscribe, register server-side. Returns false with an alert-safe message on failure. */
 export async function subscribePush(): Promise<{ ok: true } | { ok: false; message: string }> {
   if (!VAPID_PUBLIC_KEY) return { ok: false, message: "push belum dikonfigurasi" };
-  const perm = await Notification.requestPermission();
-  if (perm !== "granted") return { ok: false, message: "izin notifikasi ditolak" };
-  const reg = await navigator.serviceWorker.ready;
-  const sub = await reg.pushManager.subscribe({
-    userVisibleOnly: true,
-    applicationServerKey: vapidKeyToUint8(VAPID_PUBLIC_KEY),
-  });
-  const shape = toBackendShape(sub);
-  if (!shape) return { ok: false, message: "gagal membaca kunci subscription" };
-  const res = await backend(SHIM_PATH, {
-    method: "POST",
-    body: JSON.stringify(shape),
-  });
-  if (!res.ok) {
-    // Server rejected it — drop the local subscription so state stays
-    // consistent (subscribed-but-unknown would silently never deliver).
-    await sub.unsubscribe().catch(() => {});
-    return { ok: false, message: `server menolak (${res.status})` };
+  if (typeof Notification === "undefined") {
+    return { ok: false, message: "browser tidak mendukung notifikasi" };
   }
-  return { ok: true };
+
+  try {
+    const perm = await Notification.requestPermission();
+    if (perm !== "granted") return { ok: false, message: "izin notifikasi ditolak" };
+
+    let applicationServerKey: Uint8Array<ArrayBuffer>;
+    try {
+      applicationServerKey = vapidKeyToUint8(VAPID_PUBLIC_KEY);
+    } catch {
+      return { ok: false, message: "konfigurasi push tidak valid" };
+    }
+
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.subscribe({
+      userVisibleOnly: true,
+      applicationServerKey,
+    });
+    const shape = toBackendShape(sub);
+    if (!shape) return { ok: false, message: "gagal membaca kunci subscription" };
+    const res = await backend(SHIM_PATH, {
+      method: "POST",
+      body: JSON.stringify(shape),
+    });
+    if (!res.ok) {
+      // Server rejected it — drop the local subscription so state stays
+      // consistent (subscribed-but-unknown would silently never deliver).
+      await sub.unsubscribe().catch(() => {});
+      return { ok: false, message: `server menolak (${res.status})` };
+    }
+    return { ok: true };
+  } catch {
+    return { ok: false, message: "gagal mengaktifkan notifikasi" };
+  }
 }
 
 /** Remove server-side registration, then the local subscription. */

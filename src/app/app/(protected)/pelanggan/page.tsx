@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/proxy/client";
 import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
-import { MessageCircle, Phone, UserX, Users } from "lucide-react";
+import { MessageCircle, Phone, UserX } from "lucide-react";
 import CustomerNotesForm from "@/components/app/CustomerNotesForm";
 
 export const metadata = { title: "Pelanggan · Centrum Manager" };

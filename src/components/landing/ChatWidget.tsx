@@ -89,6 +89,7 @@ export default function ChatWidget() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: q }),
+        signal: AbortSignal.timeout(35_000),
       });
       const data = await res.json();
       if (data.degraded) {
@@ -298,7 +299,6 @@ export default function ChatWidget() {
               onChange={(e) => setInput(e.target.value)}
               placeholder="Tanya jadwal, harga, cara booking…"
               disabled={pending}
-              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus={open}
               className="min-w-0 flex-1 rounded-xl border border-slate-200 bg-white px-4 py-3 text-base focus:border-sky-brand-400 focus:outline-none"
             />

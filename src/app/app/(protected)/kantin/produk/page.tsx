@@ -1,6 +1,5 @@
 import { requireOwnerPage } from "@/lib/guard";
 import KantinSubnav from "@/components/app/kantin/KantinSubnav";
-import { ShoppingBasket } from "lucide-react";
 import { EditProductRow, NewProductForm } from "@/components/app/kantin/ProductForms";
 
 export const metadata = { title: "Kantin · Produk · Centrum Manager" };

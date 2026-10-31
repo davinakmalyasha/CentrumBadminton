@@ -1,6 +1,6 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
-import { Repeat, Users } from "lucide-react";
+import { Users } from "lucide-react";
 import Shuttlecock from "@/components/icons/Shuttlecock";
 import SeriesForm from "@/components/app/SeriesForm";
 import SeriesControls from "@/components/app/SeriesControls";

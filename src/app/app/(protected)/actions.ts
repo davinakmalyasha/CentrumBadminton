@@ -257,7 +257,6 @@ export async function updateBookingStatus(
     .select("id");
 
   if (error) {
-    // eslint-disable-next-line no-console
     console.error("[updateBookingStatus] patch failed", { id, from, next, error: error.message, status: (error as unknown as { status?: number }).status });
     return { error: `Gagal update: ${error.message} (${(error as unknown as { status?: number }).status ?? ""})` };
   }

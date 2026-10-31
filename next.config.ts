@@ -35,11 +35,16 @@ const cspDirectives = [
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob:",
   "font-src 'self' data:",
+  "media-src 'self'",
   `connect-src ${connectSrc}`,
   "frame-src https://www.google.com https://maps.google.com",
+  "worker-src 'self' blob:",
+  "manifest-src 'self'",
+  "object-src 'none'",
   "frame-ancestors 'none'",
   "base-uri 'self'",
   "form-action 'self'",
+  ...(isProd ? ["upgrade-insecure-requests"] : []),
 ].join("; ");
 
 const securityHeaders = [
@@ -50,7 +55,13 @@ const securityHeaders = [
     key: "Permissions-Policy",
     value: "camera=(), microphone=(), geolocation=()",
   },
-  // Only meaningful over HTTPS; harmless on localhost
+  // Isolate the app from cross-origin openers/windows. Maps embeds are
+  // iframes (frame-src), not openers, so this does not affect them.
+  { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+  { key: "Cross-Origin-Resource-Policy", value: "same-origin" },
+  { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
+  { key: "X-DNS-Prefetch-Control", value: "off" },
+  // Only meaningful over HTTPS; harmless on localhost.
   {
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains",
@@ -65,10 +76,21 @@ const securityHeaders = [
       ]),
 ];
 
+const noIndexHeaders = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
+
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  reactStrictMode: true,
+  // ExcelJS pulls in Node-only dependencies; keep it external instead of
+  // asking Turbopack/webpack to bundle it into the server route.
+  serverExternalPackages: ["exceljs"],
   async headers() {
-    return [{ source: "/:path*", headers: securityHeaders }];
+    return [
+      { source: "/:path*", headers: securityHeaders },
+      { source: "/app/:path*", headers: noIndexHeaders },
+      { source: "/app", headers: noIndexHeaders },
+      { source: "/api/:path*", headers: noIndexHeaders },
+    ];
   },
   // Legacy /favicon.ico lookup → generated PNG icon (internal rewrite,
   // no extra round-trip). Modern browsers use the metadata link instead.

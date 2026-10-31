@@ -1,6 +1,5 @@
 import { createClient } from "@/lib/proxy/client";
 import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
-import { ShoppingBasket } from "lucide-react";
 import KantinPos, { type PosBooking, type PosProduct } from "@/components/app/kantin/KantinPos";
 import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 

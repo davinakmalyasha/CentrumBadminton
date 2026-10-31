@@ -1,8 +1,17 @@
 # start-all.ps1 — supervised startup for CentrumBadminton (:3000) + AgentsProxy (:8080)
-# Replaces blind kill-all + hidden windows. Run: powershell -ExecutionPolicy Bypass -File .\start-all.ps1
+# Run from anywhere: powershell -ExecutionPolicy Bypass -File .\start-all.ps1
+# Set AGENTSPROXY_DIR if the proxy is not a sibling of this repository.
 $ErrorActionPreference = "Continue"
-$centrum = "D:\MyProject\CentrumBadminton"
-$proxyDir = "D:\MyProject\AgentsProxy"
+
+$centrum = (Resolve-Path (Join-Path $PSScriptRoot ".")).Path
+$parent = Split-Path $centrum -Parent
+$proxyDir = if ($env:AGENTSPROXY_DIR) {
+  (Resolve-Path $env:AGENTSPROXY_DIR).Path
+} else {
+  Join-Path $parent "AgentsProxy"
+}
+$proxyStart = Join-Path $proxyDir "start-proxy.ps1"
+$proxyLog = Join-Path $proxyDir "proxy.log"
 
 function Stop-NextDev {
   # Target ONLY next-dev processes (launcher + turbopack workers), never blind kill-all.
@@ -17,12 +26,13 @@ function Stop-NextDev {
 }
 
 function Stop-Proxy {
-  $srv = Get-Process -Name "server" -ErrorAction SilentlyContinue
-  foreach ($p in $srv) {
-    Write-Host "Stopping stale proxy PID $($p.Id) ..."
-    Stop-Process -Id $p.Id -Force -ErrorAction SilentlyContinue
+  # Only stop the process listening on :8080, not every process named "server".
+  $conn = Get-NetTCPConnection -LocalPort 8080 -State Listen -ErrorAction SilentlyContinue | Select-Object -First 1
+  if ($conn) {
+    Write-Host "Stopping stale proxy PID $($conn.OwningProcess) ..."
+    Stop-Process -Id $conn.OwningProcess -Force -ErrorAction SilentlyContinue
+    Start-Sleep -Seconds 3
   }
-  if ($srv) { Start-Sleep -Seconds 3 }
 }
 
 function Wait-Healthy($url, $label, $seconds = 90) {
@@ -38,12 +48,18 @@ function Wait-Healthy($url, $label, $seconds = 90) {
   return $false
 }
 
+if (-not (Test-Path $proxyStart)) {
+  Write-Host "Proxy launcher not found: $proxyStart"
+  Write-Host "Set AGENTSPROXY_DIR to the AgentsProxy checkout, then run this script again."
+  exit 1
+}
+
 Write-Host "=== 1/4 stopping stale next-dev + proxy (targeted, no kill-all) ==="
 Stop-NextDev
 Stop-Proxy
 
 Write-Host "=== 2/4 starting proxy (:8080, visible window, logs to proxy.log) ==="
-Start-Process powershell -ArgumentList "-NoExit","-NoProfile","-ExecutionPolicy","Bypass","-File","D:\MyProject\AgentsProxy\start-proxy.ps1" -WorkingDirectory $proxyDir
+Start-Process powershell -ArgumentList "-NoExit","-NoProfile","-ExecutionPolicy","Bypass","-File",$proxyStart -WorkingDirectory $proxyDir
 $proxyOk = Wait-Healthy "http://localhost:8080/healthz" "proxy" 90
 
 Write-Host "=== 3/4 starting next dev (:3000, visible window) ==="
@@ -58,7 +74,7 @@ if ($proxyOk) {
     Write-Host "availability via Next: $($r.StatusCode), facilities: $($j.facilities.Count)"
   } catch { Write-Host "availability via Next: FAILED $($_.Exception.Message)" }
 } else {
-  Write-Host "proxy is DOWN — check the proxy window + D:\MyProject\AgentsProxy\proxy.log"
+  Write-Host "proxy is DOWN — check the proxy window + $proxyLog"
 }
 if (-not $webOk) { Write-Host "web is DOWN — check the next-dev window." }
 Write-Host "Done. Keep BOTH windows open. Run .\status.ps1 anytime for a health snapshot."

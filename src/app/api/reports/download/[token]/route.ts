@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { assertProxyConfigured, PROXY_URL } from "@/lib/env";
 
 // GET /api/reports/download/{token}.xlsx
 //
@@ -9,7 +10,7 @@ import { NextResponse } from "next/server";
 // Content-Disposition and names the file from the URL path instead —
 // which is why a report saved as "<64-hex-token>.xlsx". Relaying
 // through our own origin makes the header authoritative again.
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
+const PROXY_TIMEOUT_MS = 30_000;
 
 const XLSX_MIME =
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
@@ -45,8 +46,10 @@ export async function GET(
   }
 
   try {
+    assertProxyConfigured();
     const upstream = await fetch(`${PROXY_URL}/v1/reports/${token}.xlsx`, {
       cache: "no-store",
+      signal: AbortSignal.timeout(PROXY_TIMEOUT_MS),
       // Reports can be megabytes and the proxy uses http.ServeContent,
       // so pass a resumable range request straight through.
       headers: request.headers.get("range")

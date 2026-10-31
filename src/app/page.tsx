@@ -108,7 +108,11 @@ export default async function LandingPage() {
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{
+          // Escape "<" so a future value containing "</script>" cannot
+          // break out of the JSON-LD block.
+          __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
+        }}
       />
       <Navbar lang={lang} />
       <main>

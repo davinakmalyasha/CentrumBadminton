@@ -12,6 +12,8 @@
 
 # testing
 /coverage
+/playwright-report/
+/test-results/
 
 # next.js
 /.next/
@@ -22,28 +24,33 @@
 
 # misc
 .DS_Store
-*.pem
+Thumbs.db
 
-# debug
+# secrets and certificates
+*.pem
+*.key
+*.p12
+*.pfx
+
+# logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
-
-# local dev / integration run logs (dev-*.log, next-integ*.log, …)
 *.log
 
-
-# env files (can opt-in for committing if needed)
-.env*
+# environment files
+.env
+.env.*
+!.env.example
 !.env.local.example
 
 # vercel
-.vercel
+.vercel/
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
 
-# Playwright MCP test artifacts
+# browser automation artifacts
 .playwright-mcp/

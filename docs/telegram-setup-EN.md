@@ -31,17 +31,18 @@ check the day's income by simply chatting with a bot.
 3. Give it a name (example: `Centrum Owner`).
 4. Give it a username that ends in `bot` (example: `centrum_owner_bot`).
 5. BotFather sends you a **token** — a long code like `123456789:AAH...`.
-6. Copy the token and paste it into your venue settings page
-   (**Settings → Telegram bots → Add bot**).
+6. Copy the token and give it to whoever manages the AgentsProxy backend.
+   The token is **not** stored in the frontend — never paste it into a
+   settings page or a repo file.
 7. Send the bot a message and press **Start**.
 
 ## Give the right people access (important for money questions)
 
 - The **Owner bot** can answer money and report questions.
 - The **Staff bot** can help with schedule and daily income.
-- Only chats you put on the **allow list** can use Owner/Staff bots.
-  Everyone else is politely refused. Add chat IDs to the allow list in the
-  same settings page.
+- Only chats you put on the **allow list** (managed in AgentsProxy) can use
+  Owner/Staff bots. Everyone else is politely refused. Ask your backend
+  administrator to add chat IDs.
 
 ### How to find your Telegram chat ID
 
@@ -70,7 +71,7 @@ check the day's income by simply chatting with a bot.
 - The **token is like a key**. Never share it with anyone except the person
   setting up your website. If you think it leaked: in @BotFather press
   `/revoke`, choose the bot — the old key stops working immediately and a
-  new one is issued. Paste the new token in Settings.
+  new one is issued. Give the new token to the backend administrator.
 - Money questions are only answered through the Owner bot, and only for
   chats you allowed.
 

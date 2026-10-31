@@ -18,13 +18,15 @@
 // action itself enforces server context via cookies().
 import { cookies } from "next/headers";
 import { cache } from "react";
+import {
+  assertProxyConfigured,
+  CLIENT_COOKIE,
+  PROXY_URL,
+  SESSION_COOKIE,
+  TENANT_ID,
+} from "@/lib/env";
 
-const PROXY_URL = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
-
-export const TENANT_ID = process.env.NEXT_PUBLIC_TENANT_ID ?? "centrum";
-
-const SESSION_COOKIE = "proxy_session";
-const CLIENT_COOKIE = "proxy_client_token";
+const DEFAULT_TIMEOUT_MS = 12_000;
 
 export class ProxyError extends Error {
   status: number;
@@ -37,6 +39,35 @@ export class ProxyError extends Error {
     if (status === 409) this.code = "23P01";
   }
 }
+
+/**
+ * UI table name → AgentsProxy endpoint.
+ *
+ * The proxy groups these under /v1/sports. Keeping one map means a read
+ * and a write for the same table can never drift to different endpoints.
+ */
+const TABLE_PATHS: Record<string, string> = {
+  bookings: "bookings",
+  payments: "payments",
+  customers: "customers",
+  expenses: "expenses",
+  court_blocks: "courtblocks",
+  recurring_series: "series",
+  courts: "facilities",
+  kantin_products: "kantin/products",
+  kantin_sales: "kantin/sales",
+  // The sales list does not expose items; the client aggregates from the
+  // sale total instead.
+  kantin_sale_items: "kantin/sales",
+  // This used to point at "kantin/products" because no movements endpoint
+  // existed, which made the stock page render PRODUCT rows as movements:
+  // no delta, no reason, no note, and the product's creation date as the
+  // movement time. It looked like plausible data, so the fabrication went
+  // unnoticed. The ledger now has its own endpoint.
+  kantin_stock_movements: "kantin/movements",
+  pricing_rules: "pricing",
+  profiles: "users",
+};
 
 async function getTokens(): Promise<{ session?: string; client?: string }> {
   const store = await cookies();
@@ -91,8 +122,11 @@ export async function proxyFetch<T>(
      * validation. Array form is the only shape the handlers understand.
      */
     query?: Record<string, string | string[] | undefined>;
+    /** Per-call timeout. LLM-backed endpoints need more than the default. */
+    timeoutMs?: number;
   }
 ): Promise<T> {
+  assertProxyConfigured();
   const { session, client } = await getTokens();
   let url = PROXY_URL + path;
   if (init?.query) {
@@ -114,12 +148,21 @@ export async function proxyFetch<T>(
   if (session) headers["X-Session-Token"] = session;
   else if (client) headers["X-Client-Token"] = client;
 
-  const res = await fetch(url, {
-    method: init?.method ?? "GET",
-    headers,
-    body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
-    cache: "no-store",
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      method: init?.method ?? "GET",
+      headers,
+      body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
+      cache: "no-store",
+      signal: AbortSignal.timeout(init?.timeoutMs ?? DEFAULT_TIMEOUT_MS),
+    });
+  } catch (e) {
+    if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) {
+      throw new ProxyError("Server tidak merespons (timeout).", 504);
+    }
+    throw new ProxyError("Tidak dapat menghubungi server.", 0);
+  }
   if (!res.ok) {
     let msg = `HTTP ${res.status}`;
     try {
@@ -142,21 +185,30 @@ export const proxyAuth = {
   async signInWithPassword(creds: { email: string; password: string }): Promise<{
     error: ProxyError | null;
   }> {
+    assertProxyConfigured();
     try {
       const res = await fetch(`${PROXY_URL}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenant_id: TENANT_ID, email: creds.email, password: creds.password }),
         cache: "no-store",
+        signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
       });
       if (!res.ok) {
         throw new ProxyError("Email atau kata sandi salah.", res.status);
       }
-      const data = await res.json();
-      await setSession(data.token as string);
+      const data = (await res.json()) as { token?: unknown };
+      if (typeof data.token !== "string" || data.token.length < 10) {
+        throw new ProxyError("Respons login dari server tidak valid.", 502);
+      }
+      await setSession(data.token);
       return { error: null };
     } catch (e) {
-      return { error: e as ProxyError };
+      if (e instanceof ProxyError) return { error: e };
+      if (e instanceof DOMException && (e.name === "TimeoutError" || e.name === "AbortError")) {
+        return { error: new ProxyError("Server tidak merespons (timeout).", 504) };
+      }
+      return { error: new ProxyError("Tidak dapat menghubungi server.", 0) };
     }
   },
   async signOut(): Promise<void> {
@@ -199,13 +251,16 @@ const cachedGetUser = cache(async () => {
     return { data: { user: me.user } };
   } catch (e) {
     const status = (e as ProxyError)?.status;
-    if (status === 429) {
-      // Rate limited — don't treat as logged out. Rethrow to let layout show retry instead of redirect.
-      // eslint-disable-next-line no-console
-      console.warn("[getUser] rate limited 429");
-      throw e;
+    // Only a definitive auth answer means "signed out". A timeout, a 5xx
+    // or an unreachable backend must NOT clear the session: redirecting to
+    // login during an outage looks like a logout and hides the real error.
+    if (status === 401 || status === 403 || status === 404) {
+      return { data: { user: null } };
     }
-    return { data: { user: null } };
+    if (status === 429) {
+      console.warn("[getUser] rate limited 429");
+    }
+    throw e;
   }
 });
 
@@ -660,26 +715,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   }
 
   private tableMap(): Record<string, string> {
-    return {
-      bookings: "bookings",
-      payments: "payments",
-      customers: "customers",
-      expenses: "expenses",
-      court_blocks: "courtblocks",
-      recurring_series: "series",
-      courts: "facilities",
-      kantin_products: "kantin/products",
-      kantin_sales: "kantin/sales",
-kantin_sale_items: "kantin/sales", // proxy sales list doesn't expose items; client aggregates via sales total instead
-  // Used to point at "kantin/products" because no movements endpoint
-  // existed, which made the stock page render PRODUCT rows as movements:
-  // no delta, no reason, no note, and the product's creation date as the
-  // movement time. It looked like plausible data, so the fabrication went
-  // unnoticed. The ledger now has its own endpoint.
-  kantin_stock_movements: "kantin/movements",
-      pricing_rules: "pricing",
-      profiles: "users",
-    };
+    return TABLE_PATHS;
   }
 
   insert(row: Record<string, unknown> | Record<string, unknown>[]): this {
@@ -698,19 +734,7 @@ kantin_sale_items: "kantin/sales", // proxy sales list doesn't expose items; cli
   }
 
   private pathFor(): string {
-    const tableMap: Record<string, string> = {
-      bookings: "bookings",
-      payments: "payments",
-      customers: "customers",
-      expenses: "expenses",
-      court_blocks: "courtblocks",
-      recurring_series: "series",
-      courts: "facilities",
-      kantin_products: "kantin/products",
-      pricing_rules: "pricing",
-      profiles: "users",
-    };
-    return `/v1/sports/${tableMap[this.table] ?? this.table}`;
+    return `/v1/sports/${TABLE_PATHS[this.table] ?? this.table}`;
   }
 
   /** Map Centrum column names → proxy field names. */
@@ -798,8 +822,14 @@ async function rpcLoose(
   try {
     switch (name) {
       case "is_owner": {
-        const me = await cachedGetUser();
-        return { data: me.data.user?.role === "owner", error: null };
+        try {
+          const me = await cachedGetUser();
+          return { data: me.data.user?.role === "owner", error: null };
+        } catch {
+          // Capability checks fail closed when the backend is unreachable;
+          // the layout/route that needs a real answer surfaces its own error.
+          return { data: false, error: null };
+        }
       }
       case "is_staff": {
         // This was `await cachedGetUser(); return { data: true }` — the
@@ -812,9 +842,13 @@ async function rpcLoose(
         // back without a `user` key at all, which surfaces as
         // `undefined` — and `undefined !== null` would have let a missing
         // user through a null check.
-        const me = await cachedGetUser();
-        const role = me.data.user?.role;
-        return { data: role === "owner" || role === "pegawai", error: null };
+        try {
+          const me = await cachedGetUser();
+          const role = me.data.user?.role;
+          return { data: role === "owner" || role === "pegawai", error: null };
+        } catch {
+          return { data: false, error: null };
+        }
       }
       case "get_pricing_for": {
         const date = String(args?.p_date ?? "");

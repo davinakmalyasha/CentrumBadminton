@@ -1,15 +1,23 @@
 # PRD — Centrum Badminton Arena Platform (v1.0)
 
+> **Status (Oktober 2026):** Ini adalah PRD awal. Sebagian arsitektur sudah
+> digantikan: Supabase/Gemini tidak lagi dipakai. Backend sekarang
+> **AgentsProxy** (Go + Postgres + Redis), dan frontend hanya berbicara ke
+> proxy lewat `src/lib/proxy/`. Untuk arsitektur dan cara deploy terkini,
+> lihat [README](../README.md). Bagian historis dipertahankan sebagai konteks
+> keputusan produk.
+
 ## 1. Overview
 
 Single **Next.js** repository serving two products from one root folder:
 
 ```
 CentrumBadminton/                 ← single project root
-├── src/app/(public)/...          ← Landing page (public website)
-├── src/app/app/...               ← Management PWA ("mobile" app lives here)
-├── supabase/                     ← schema, migrations, seed
-└── docs/PRD.md                   ← this document
+├── src/app/                      ← Landing page (public)
+├── src/app/app/                  ← Management PWA ("mobile" app lives here)
+├── src/lib/proxy/                ← AgentsProxy connector
+├── docs/PRD.md                   ← this document
+└── assets/                       ← source art (tidak di-deploy)
 ```
 
 | | |
@@ -20,7 +28,7 @@ CentrumBadminton/                 ← single project root
 | Pricing | Rp40.000/jam (07:00–17:00) · Rp50.000/jam (17:00–23:00) |
 | WhatsApp | +62 815-9408-136 → `wa.me/628159408136` |
 | Socials | IG `@centrum_badminton_arena` · FB *Centrum Badminton Arena* |
-| Stack | Next.js 15 + TypeScript + Tailwind + shadcn/ui · Supabase (Postgres/Auth/Realtime/RLS) · Gemini Flash · Vercel |
+| Stack | Next.js 16 + TypeScript + Tailwind CSS v4 · AgentsProxy (Go/Postgres/Redis) · Vercel |
 
 ## 2. Users & Roles
 
@@ -32,16 +40,17 @@ CentrumBadminton/                 ← single project root
 
 ## 3. Auth & Session Policy
 
-- **No public register.** Accounts created by Owner in-app (*Pengaturan → Kelola Pegawai*) + one seeded owner account. Email+password login only.
-- **Permanent sessions**: Supabase auth token persisted client-side with auto-refresh — user stays logged in indefinitely until they manually tap *Keluar*. No idle timeout, no forced re-auth.
-- Role-based route guards + Postgres RLS (pegawai cannot read revenue/expenses/AI endpoints).
+- **No public register.** Akun dibuat oleh Owner in-app (*Pengaturan → Kelola Pegawai*) atau lewat tooling backend. Login email+password.
+- **Sesi permanen 30 hari**: token disimpan di cookie `proxy_session` yang `httpOnly`, `Secure` di production, dan `SameSite=Lax`. Tidak ada idle timeout; keluar hanya lewat tombol **Keluar** (yang juga me-revoke sesi di backend).
+- Validasi sesi: `GET /v1/auth/me` di `(protected)/layout.tsx`. Proxy hanya melakukan redirect optimistis.
+- Otorisasi: page guard + pengecekan role di server action; backend tetap menjadi otoritas akhir. Backend down tidak diperlakukan sebagai logout.
 
 ## 4. Landing Page Features
 
 | # | Feature | Spec |
 |---|---|---|
 | L1 | Hero | Name, **live Google rating badge**, photo/video carousel (placeholders initially), CTA scroll-to-schedule + WA button |
-| L2 | Live Availability | Date picker → realtime timeline grid, both courts, hourly slots 07–23; states: available/booked/past/blocked; peak-price color coding; Supabase Realtime push |
+| L2 | Live Availability | Date picker → timeline grid, both courts, hourly slots 07–23; states: available/booked/past/blocked; peak-price color coding; polling 5 detik lewat `/api/availability` (berhenti saat tab hidden) |
 | L3 | WA Booking Deep Link | Multi-slot selection → prefilled message (court, date, times, total price) → `wa.me/628159408136`. Payment settled in chat (cash/QRIS) |
 | L4 | Pricing | Rate table + hours |
 | L5 | Facilities | 8-item grid (vinyl interlock ×2, wasit & scoreboard, lampu, indoor, ruang tunggu & kantin, musholla, toilet bersih, parkir) |
@@ -69,11 +78,16 @@ Installable home-screen app on iPhone (Safari → Add to Home Screen) & Android 
 **H. Court Blocks** *(owner)* — maintenance/event blocking, reflected instantly on landing availability.
 **I. Reports** *(owner)* — revenue by day/week/month, per-court utilization, peak heatmap, CSV export.
 **J. Expenses** *(owner)* — entries (listrik, gaji, …) → gross vs net reporting.
-**K. AI Assistant — Gemini Flash** *(owner)* — chat UI; server-only API key; tool-calling into safe SQL RPCs (revenue summaries, busiest hours, top customers, MoM comparisons, cancellations); **Daily Closing Report** generator formatted for WhatsApp copy-paste; quota-exceeded fallback message.
-**L. Notifications** — new booking alert + daily-report reminder; Android full PWA push, iOS 16.4+ installed-PWA push, in-app badge fallback.
+**K. AI Assistant — AgentsProxy** *(owner/pegawai)* — chat UI; LLM key hanya di backend; tool-calling dan memory ada di AgentsProxy (`POST /v1/agent/chat`); **Daily Closing Report** diformat untuk WhatsApp; kuota per role ditegakkan di backend + limiter lokal.
+**L. Notifications** — new booking alert + daily-report reminder; PWA push didaftarkan lewat `/api/push/subscriptions` ke AgentsProxy; Telegram tetap kanal utama backend.
 **M. Settings** *(owner)* — courts, hours, pricing rules (effective-date aware), WA number, venue info, **staff management (create/disable pegawai)**.
 
-## 6. Data Model (Supabase)
+## 6. Data Model (historis — Supabase)
+
+> Skema saat ini ada di repo AgentsProxy (`internal/db/migrations`), memakai
+> tabel `sports_*` dengan tenant isolation. Model di bawah adalah desain awal
+> yang dipertahankan untuk konteks; nama kolom di connector sudah dipetakan ke
+> endpoint proxy (`facility_id`, `price`, `series`, dst.).
 
 ```
 profiles(id, role: owner|pegawai, name, phone, is_active)
@@ -94,7 +108,7 @@ RLS: pegawai → bookings/payments/customers read-write, zero access to expenses
 
 1. Online payment gateway (Xendit/Midtrans) — payments stay manual cash/QRIS via WA
 2. Customer accounts / customer-facing app or web booking-without-WA
-3. Kantin/café POS
+3. Kantin/café POS — **dikerjakan setelah v1** (sekarang sudah ada di app)
 4. Automated WhatsApp reply bot (chat remains human)
 5. Payroll & employee attendance management
 6. Multi-venue/branch support

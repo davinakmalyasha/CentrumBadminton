@@ -1,6 +1,5 @@
-import Link from "next/link";
 import { requireStaffPage, getRole } from "@/lib/guard";
-import { ArrowLeft, Bot } from "lucide-react";
+import { Bot } from "lucide-react";
 import AiChat from "@/components/app/AiChat";
 
 export const metadata = { title: "AI Asisten · Centrum Manager" };

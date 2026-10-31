@@ -1,7 +1,7 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
 import { addMonths, currentMonthKey } from "@/lib/months";
-import { Settings, Users, Wallet } from "lucide-react";
+import { Users, Wallet } from "lucide-react";
 import Shuttlecock from "@/components/icons/Shuttlecock";
 import {
   NewCourtForm,

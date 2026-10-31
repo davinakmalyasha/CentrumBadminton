@@ -3,7 +3,13 @@
 // prerendered at build time.
 export const dynamic = "force-dynamic";
 
+import type { Metadata } from "next";
 import ThemeProvider from "@/components/app/ThemeProvider";
+
+export const metadata: Metadata = {
+  title: "Centrum Manager",
+  robots: { index: false, follow: false },
+};
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   return (

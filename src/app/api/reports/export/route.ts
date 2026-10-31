@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient, proxyFetch } from "@/lib/proxy/client";
 import { monthEndExclusive, monthStart } from "@/lib/months";
 import { ALL_BOOKING_STATUSES } from "@/lib/booking-status";
+import { rateLimit } from "@/lib/ratelimit";
 
 // The proxy caps a single list request at 2000 rows (bookings) and 5000
 // (payments). Exporting a year therefore needs more than one page, and
@@ -74,6 +75,12 @@ export async function GET(request: Request) {
   const user = authData.user;
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!rateLimit(`report-export:${user.id}`, 10, 60_000).ok) {
+    return NextResponse.json(
+      { error: "Terlalu banyak ekspor. Coba lagi sebentar." },
+      { status: 429 }
+    );
   }
   // Owner sees the whole ledger. Staff see only the money they actually
   // took — the "same tenant data (single tenant centrum)" comment that used
@@ -242,7 +249,7 @@ export async function GET(request: Request) {
     );
   }
 
-// The join source has to cover every status, not just confirmed.
+  // The join source has to cover every status, not just confirmed.
   //
   // This used to be an unfiltered `.limit(2000)`. Two things then went
   // wrong at once: the proxy defaults to status=confirmed when no status

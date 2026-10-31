@@ -1,5 +1,5 @@
 /* Centrum Badminton Arena — minimal hand-rolled service worker */
-const CACHE = "cba-v5";
+const CACHE = "cba-v6";
 const OFFLINE_URL = "/offline";
 const MAX_STATIC_ENTRIES = 120;
 

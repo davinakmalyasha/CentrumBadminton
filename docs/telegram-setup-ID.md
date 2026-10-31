@@ -31,8 +31,9 @@ lihat pemasukan hari ini cukup dengan chat ke bot.
 3. Beri nama (contoh: `Centrum Owner`).
 4. Beri username yang diakhiri `bot` (contoh: `centrum_owner_bot`).
 5. BotFather mengirim **token** — kode panjang seperti `123456789:AAH...`.
-6. Salin token dan tempel di halaman pengaturan venue kamu
-   (**Pengaturan → Bot Telegram → Tambah bot**).
+6. Salin token dan berikan ke pengelola backend AgentsProxy. Token
+   **tidak** disimpan di frontend — jangan menempelkannya ke halaman
+   pengaturan atau file repo.
 7. Kirim pesan ke bot itu dan tekan **Start**.
 
 ## Beri akses ke orang yang tepat (penting untuk pertanyaan uang)
@@ -69,7 +70,7 @@ lihat pemasukan hari ini cukup dengan chat ke bot.
 - **Token itu seperti kunci.** Jangan pernah membagikannya ke siapa pun
   selain orang yang menyiapkan website kamu. Kalau curiga bocor: di
   @BotFather tekan `/revoke`, pilih bot — kunci lama langsung mati dan
-  dibuat kunci baru. Tempel token baru di Pengaturan.
+  dibuat kunci baru. Berikan token baru ke pengelola backend.
 - Pertanyaan uang hanya dijawab lewat bot Owner, dan hanya untuk chat yang
   kamu izinkan.
 

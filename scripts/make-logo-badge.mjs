@@ -9,7 +9,7 @@ const size = 256;
 const r = size / 2;
 const pad = Math.round(size * 0.09);
 
-const src = process.argv[2] ?? "public/centrumLOGO.png";
+const src = process.argv[2] ?? "assets/centrumLOGO.png";
 
 const content = await sharp(src)
   .trim({ background: { r: 0, g: 0, b: 0, alpha: 0 } })

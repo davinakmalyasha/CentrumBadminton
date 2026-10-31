@@ -32,7 +32,15 @@ export async function signIn(
   });
 
   if (error) {
-    return { error: `Email atau kata sandi salah. (${error.message ?? error.status ?? ""})` };
+    // Never echo backend/provider details back into the login form: they
+    // can reveal whether an email exists or expose internal status text.
+    if (error.status === 429) {
+      return { error: "Terlalu banyak percobaan. Coba lagi sebentar." };
+    }
+    if (error.status === 0 || error.status === 502 || error.status === 503 || error.status === 504) {
+      return { error: "Server sedang bermasalah. Coba lagi beberapa saat lagi." };
+    }
+    return { error: "Email atau kata sandi salah." };
   }
 
   // redirect() throws internally — must not be inside try/catch

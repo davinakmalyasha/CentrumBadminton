@@ -63,6 +63,7 @@ export async function askAi(
           message: last.text,
           vertical: "sports",
         },
+        timeoutMs: 60_000,
       });
       if (res.reply) return { reply: res.reply };
     } catch (e) {
@@ -102,6 +103,7 @@ export async function buildClosingReport(
     const res = await proxyFetch<{ reply: string }>("/v1/agent/chat", {
       method: "POST",
       body: { message: `buat closing report ${date}`, vertical: "sports" },
+      timeoutMs: 60_000,
     });
     if (res.reply) return { text: res.reply };
   } catch {

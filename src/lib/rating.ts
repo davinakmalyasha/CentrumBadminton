@@ -22,8 +22,8 @@ export async function getGoogleRating(): Promise<RatingData> {
 
   try {
     const res = await fetch(
-      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${placeId}&fields=rating,user_ratings_total&key=${key}`,
-      { next: { revalidate: 86_400 } }
+      `https://maps.googleapis.com/maps/api/place/details/json?place_id=${encodeURIComponent(placeId)}&fields=rating,user_ratings_total&key=${encodeURIComponent(key)}`,
+      { next: { revalidate: 86_400 }, signal: AbortSignal.timeout(5_000) }
     );
     const json = (await res.json()) as {
       status?: string;

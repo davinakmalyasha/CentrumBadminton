@@ -1,6 +1,6 @@
 import { requireOwnerPage } from "@/lib/guard";
 import KantinSubnav from "@/components/app/kantin/KantinSubnav";
-import { PackageSearch, TriangleAlert } from "lucide-react";
+import { TriangleAlert } from "lucide-react";
 import { StockAdjustForm } from "@/components/app/kantin/StockForms";
 import { lowStockProducts } from "@/lib/kantin";
 

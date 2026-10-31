@@ -22,10 +22,14 @@ export default async function ProtectedLayout({
   } catch (e) {
     const status = (e as { status?: number })?.status;
     if (status === 429) {
-      // Rate limited — show inline retry instead of logging out
+      // Rate limited — show inline retry instead of logging out.
       throw new Error("Terlalu banyak permintaan, coba lagi 1 menit (rate limit).");
     }
-    user = null;
+    // A timeout / 5xx / unreachable backend is not a logout. Surface it
+    // instead of bouncing the user to the login screen during an outage.
+    throw new Error(
+      "Tidak dapat menghubungi server. Periksa koneksi lalu coba lagi."
+    );
   }
 
   if (!user) {
@@ -33,11 +37,16 @@ export default async function ProtectedLayout({
   }
 
   let profile: Profile | null = null;
-  const { data } = await supabase
+  const { data, error: profileError } = await supabase
     .from("profiles")
     .select("role,full_name,is_active")
     .eq("id", user.id)
     .maybeSingle();
+  if (profileError && profileError.status !== 404) {
+    throw new Error(
+      "Tidak dapat memuat profil pengguna. Coba muat ulang halaman."
+    );
+  }
   profile = data as Profile | null;
 
   if (profile && !profile.is_active) {

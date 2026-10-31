@@ -79,7 +79,6 @@ export default function AvailabilityBoard({
         setBusy(Array.isArray(data) ? (data as BusyInterval[]) : []);
         setLoadError(false);
       } catch (e) {
-        // eslint-disable-next-line no-console
         console.error("[AvailabilityBoard] get_day_busy failed:", d, e);
         setLoadError(true);
       } finally {

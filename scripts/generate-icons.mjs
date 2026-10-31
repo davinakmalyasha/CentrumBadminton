@@ -1,15 +1,17 @@
-// Generates PWA icons from centrumLOGO.jpg (falls back to SVG if missing)
+// Generates PWA icons from assets/centrumLOGO.avif (falls back to SVG if missing)
 // Usage: node scripts/generate-icons.mjs
 import sharp from "sharp";
 import { mkdir } from "node:fs/promises";
 import { existsSync } from "node:fs";
 
-const hasLogo = existsSync("public/centrumLOGO.avif");
+const LOGO = "assets/centrumLOGO.avif";
+const hasLogo = existsSync(LOGO);
+const PNG_OPTS = { palette: true, quality: 95, compressionLevel: 9 };
 
 async function sharpFromLogo(size, maskable = false) {
   if (!hasLogo) throw new Error("no logo");
   // avif already has transparent background and perfect circle — use contain to preserve full ring
-  let img = sharp("public/centrumLOGO.avif").resize(size, size, {
+  let img = sharp(LOGO).resize(size, size, {
     fit: "contain",
     background: { r: 255, g: 255, b: 255, alpha: 0 },
     position: "centre",
@@ -21,7 +23,7 @@ async function sharpFromLogo(size, maskable = false) {
     })
       .composite([
         {
-          input: await sharp("public/centrumLOGO.avif")
+          input: await sharp(LOGO)
             .resize(size - pad * 2, size - pad * 2, { fit: "contain", background: { r: 255, g: 255, b: 255, alpha: 0 } })
             .png()
             .toBuffer(),
@@ -29,9 +31,9 @@ async function sharpFromLogo(size, maskable = false) {
           top: pad,
         },
       ])
-      .png();
+      .png(PNG_OPTS);
   }
-  return img.png();
+  return img.png(PNG_OPTS);
 }
 
 const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
@@ -65,10 +67,10 @@ for (const [out, size, maskable] of targets) {
     if (hasLogo) {
       await (await sharpFromLogo(size, maskable)).toFile(out);
     } else {
-      await sharp(Buffer.from(svg)).resize(size, size).png().toFile(out);
+      await sharp(Buffer.from(svg)).resize(size, size).png(PNG_OPTS).toFile(out);
     }
   } catch {
-    await sharp(Buffer.from(svg)).resize(size, size).png().toFile(out);
+    await sharp(Buffer.from(svg)).resize(size, size).png(PNG_OPTS).toFile(out);
   }
   console.log("OK", out, hasLogo ? "(logo)" : "(svg fallback)");
 }

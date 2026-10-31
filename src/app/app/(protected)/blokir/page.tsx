@@ -1,6 +1,5 @@
 import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
-import { Ban } from "lucide-react";
 import BlockForm from "@/components/app/BlockForm";
 import DeleteBlockButton from "@/components/app/DeleteBlockButton";
 import { DataUnavailable, EmptyState, firstError } from "@/components/app/EmptyState";
