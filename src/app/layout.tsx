@@ -60,7 +60,11 @@ export const metadata: Metadata = {
   alternates: { canonical: "/" },
 };
 
-export default async function RootLayout({ children }: LayoutProps<"/">) {
+export default async function RootLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
   // Keep <html lang> in sync with the language cookie so screen readers and
   // translation tools announce the active language correctly.
   const lang = await getLang();
