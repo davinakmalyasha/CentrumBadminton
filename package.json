@@ -28,10 +28,10 @@
   },
   "dependencies": {
     "exceljs": "^4.4.0",
-    "lucide-react": "^1.33.0",
+    "lucide-react": "^1.63.0",
     "next": "^16.4.3",
-    "react": "19.2.8",
-    "react-dom": "19.2.8"
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
