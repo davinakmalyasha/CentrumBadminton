@@ -185,8 +185,8 @@ export const proxyAuth = {
   async signInWithPassword(creds: { email: string; password: string }): Promise<{
     error: ProxyError | null;
   }> {
-    assertProxyConfigured();
     try {
+      assertProxyConfigured();
       const res = await fetch(`${PROXY_URL}/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
