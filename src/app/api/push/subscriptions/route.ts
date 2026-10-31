@@ -1,6 +1,12 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { assertProxyConfigured, PROXY_URL, SESSION_COOKIE } from "@/lib/env";
+import {
+  assertProxyConfigured,
+  LEGACY_SESSION_COOKIE,
+  PROXY_URL,
+  SESSION_COOKIE,
+} from "@/lib/env";
+import { isSameOrigin } from "@/lib/security";
 
 const PROXY_TIMEOUT_MS = 10_000;
 const MAX_BODY_BYTES = 16 * 1024;
@@ -13,10 +19,17 @@ const MAX_ENDPOINT_LENGTH = 2_048;
 // server-side and forwards, same posture as every other authenticated path.
 async function session(): Promise<string | null> {
   const store = await cookies();
-  return store.get(SESSION_COOKIE)?.value ?? null;
+  return (
+    store.get(SESSION_COOKIE)?.value ??
+    store.get(LEGACY_SESSION_COOKIE)?.value ??
+    null
+  );
 }
 
 export async function POST(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
   const token = await session();
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 });
 
@@ -46,6 +59,9 @@ export async function POST(req: Request) {
 }
 
 export async function DELETE(req: Request) {
+  if (!isSameOrigin(req)) {
+    return NextResponse.json({ error: "forbidden" }, { status: 403 });
+  }
   const token = await session();
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 });
 

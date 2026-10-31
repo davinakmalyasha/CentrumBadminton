@@ -43,6 +43,36 @@ function truncated(res: unknown): boolean {
 }
 
 /**
+ * Run async work over a list with a fixed concurrency window.
+ *
+ * Exporting Kantin sales needs one items request per sale. Sequential
+ * requests made a 500-sale export take minutes; unbounded Promise.all
+ * would hammer the proxy and trip its limiter. Four in flight keeps latency
+ * reasonable without turning one export into a burst.
+ */
+async function mapLimit<T, R>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<R>
+): Promise<R[]> {
+  const out = new Array<R>(items.length);
+  let next = 0;
+
+  async function worker(): Promise<void> {
+    for (;;) {
+      const index = next++;
+      if (index >= items.length) return;
+      out[index] = await fn(items[index]);
+    }
+  }
+
+  await Promise.all(
+    Array.from({ length: Math.min(limit, items.length) }, () => worker())
+  );
+  return out;
+}
+
+/**
  * Neutralise a leading formula character for the XLSX path.
  *
  * XLSX cells are formulas by default when they start with = + - @, and
@@ -151,26 +181,26 @@ export async function GET(request: Request) {
       recorded_by?: string | null;
     }>;
 
-    // Fetch sale items per sale via the items endpoint (one sale at a
-    // time; tenant scale is small — cap at 500 sales per export).
-    const allItems: Array<{
-      sale_id: string;
-      product_name: string;
-      qty: number;
-      unit_price: number;
-    }> = [];
-    for (const s of inMonth.slice(0, 500)) {
-      try {
-        const res = await proxyFetch<{ items: Array<{ product_name: string; qty: number; unit_price: number }> }>(
-          `/v1/sports/kantin/sales/${s.id}/items`
-        );
-        for (const it of res.items ?? []) {
-          allItems.push({ sale_id: s.id, product_name: it.product_name, qty: it.qty, unit_price: it.unit_price });
+    // Fetch sale items per sale via the items endpoint. Bounded
+    // concurrency keeps a large export fast without bursting the proxy.
+    const allItems = (
+      await mapLimit(inMonth.slice(0, 500), 4, async (s) => {
+        try {
+          const res = await proxyFetch<{
+            items: Array<{ product_name: string; qty: number; unit_price: number }>;
+          }>(`/v1/sports/kantin/sales/${s.id}/items`);
+          return (res.items ?? []).map((it) => ({
+            sale_id: s.id,
+            product_name: it.product_name,
+            qty: it.qty,
+            unit_price: it.unit_price,
+          }));
+        } catch {
+          // One bad sale must not kill the whole export.
+          return [];
         }
-      } catch {
-        /* one bad sale must not kill the whole export */
-      }
-    }
+      })
+    ).flat();
 
     const kHeaders = ["Tanggal", "Jam", "Metode", "Produk", "Qty", "Harga", "Subtotal", "Pembeli", "Dicatat"];
     const kRows: Array<Array<string | number>> = [];

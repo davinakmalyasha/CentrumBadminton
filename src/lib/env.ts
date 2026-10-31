@@ -22,7 +22,17 @@ export const PROXY_URL =
 
 export const TENANT_ID = (process.env.NEXT_PUBLIC_TENANT_ID ?? "").trim() || "centrum";
 
-export const SESSION_COOKIE = "proxy_session";
+/**
+ * In production the session cookie uses the `__Host-` prefix, which forces
+ * Secure + Path=/ and forbids a Domain attribute. Browsers then refuse to
+ * let a subdomain overwrite it.
+ *
+ * The unprefixed name is kept as a fallback so existing staff sessions are
+ * not silently logged out on deploy. New logins always write the prefixed
+ * cookie.
+ */
+export const SESSION_COOKIE = isProduction ? "__Host-proxy_session" : "proxy_session";
+export const LEGACY_SESSION_COOKIE = "proxy_session";
 export const CLIENT_COOKIE = "proxy_client_token";
 
 /** Throw a useful error instead of fetching a relative URL in production. */

@@ -1,59 +1,19 @@
 import type { NextConfig } from "next";
 
 /**
- * Security headers.
+ * Static security headers.
  *
- * The CSP ships enforced in production (script-src keeps 'unsafe-inline'
- * because Next's hydration bootstrap requires it; 'unsafe-eval' is dropped
- * outside dev where React refresh needs it). In development the policy runs
- * Report-Only so HMR/dev tooling never breaks. Known origins: AgentsProxy
- * + Google Maps embed + directions, wa.me navigations.
+ * CSP is not here: it contains a per-request nonce and is generated in
+ * `src/proxy.ts`. Keeping the static headers in next.config means they also
+ * apply to API routes and static assets, which the proxy matcher skips.
  */
-const isProd = process.env.NODE_ENV === "production";
-
-// Proxy URL host for landing data + authenticated app calls. Falls back
-// to localhost for dev; allow any http(s) localhost variant and the
-// configured proxy origin.
-const proxyHost = (() => {
-  try {
-    return new URL(process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080").origin;
-  } catch {
-    return "http://localhost:8080";
-  }
-})();
-
-const connectSrc = [
-  "'self'",
-  proxyHost,
-  // Dev-only localhost fallbacks — not exposed in production CSP
-  ...(isProd ? [] : ["http://localhost:8080", "http://127.0.0.1:8080"]),
-].join(" ");
-
-const cspDirectives = [
-  "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
-  "style-src 'self' 'unsafe-inline'",
-  "img-src 'self' data: blob:",
-  "font-src 'self' data:",
-  "media-src 'self'",
-  `connect-src ${connectSrc}`,
-  "frame-src https://www.google.com https://maps.google.com",
-  "worker-src 'self' blob:",
-  "manifest-src 'self'",
-  "object-src 'none'",
-  "frame-ancestors 'none'",
-  "base-uri 'self'",
-  "form-action 'self'",
-  ...(isProd ? ["upgrade-insecure-requests"] : []),
-].join("; ");
-
 const securityHeaders = [
   { key: "X-Frame-Options", value: "DENY" },
   { key: "X-Content-Type-Options", value: "nosniff" },
   { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
   {
     key: "Permissions-Policy",
-    value: "camera=(), microphone=(), geolocation=()",
+    value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()",
   },
   // Isolate the app from cross-origin openers/windows. Maps embeds are
   // iframes (frame-src), not openers, so this does not affect them.
@@ -66,17 +26,16 @@ const securityHeaders = [
     key: "Strict-Transport-Security",
     value: "max-age=63072000; includeSubDomains",
   },
-  ...(isProd
-    ? [{ key: "Content-Security-Policy", value: cspDirectives }]
-    : [
-        {
-          key: "Content-Security-Policy-Report-Only",
-          value: cspDirectives,
-        },
-      ]),
 ];
 
 const noIndexHeaders = [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
+
+// Authenticated HTML must never sit in a shared cache or be restored from
+// bfcache with another user's data on a shared device.
+const privateHeaders = [
+  ...noIndexHeaders,
+  { key: "Cache-Control", value: "private, no-store, max-age=0" },
+];
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
@@ -87,8 +46,8 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       { source: "/:path*", headers: securityHeaders },
-      { source: "/app/:path*", headers: noIndexHeaders },
-      { source: "/app", headers: noIndexHeaders },
+      { source: "/app/:path*", headers: privateHeaders },
+      { source: "/app", headers: privateHeaders },
       { source: "/api/:path*", headers: noIndexHeaders },
     ];
   },

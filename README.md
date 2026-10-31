@@ -130,6 +130,7 @@ Setelah owner ada, akun pegawai dibuat dari **Pengaturan → Staf → Buat Akun 
 | `npm run typecheck` | `tsc --noEmit` |
 | `npm test` | Unit test (Vitest) |
 | `npm run test:watch` | Test mode watch |
+| `npm run analyze` | Production build + Turbopack bundle analysis |
 | `npm run check` | Typecheck + lint + test |
 | `node scripts/kantin-e2e.mjs` | E2E kantin terhadap proxy lokal |
 | `node scripts/promote-owner.mjs <email>` | Promosikan user menjadi owner (butuh kredensial owner) |
@@ -137,7 +138,7 @@ Setelah owner ada, akun pegawai dibuat dari **Pengaturan → Staf → Buat Akun 
 ## Autentikasi & Sesi
 
 - Login email+password ke `POST /v1/auth/login` milik AgentsProxy.
-- Token disimpan di cookie `proxy_session`: `httpOnly`, `SameSite=Lax`, `Secure` di production, berlaku 30 hari.
+- Token disimpan di cookie `__Host-proxy_session` di production: `httpOnly`, `SameSite=Lax`, `Secure`, `Path=/`, prioritas tinggi, berlaku 30 hari. Nama lama `proxy_session` masih dibaca sebagai fallback agar deploy tidak memaksa semua staf login ulang; login baru selalu menulis cookie `__Host-`.
 - `src/proxy.ts` melakukan redirect optimistis; validasi sesi sebenarnya ada di `(protected)/layout.tsx` lewat `GET /v1/auth/me`.
 - Backend down **tidak** dianggap logout. Halaman menampilkan error yang jujur, bukan mengarahkan ke login.
 - Logout memanggil `POST /v1/auth/logout` (revoke server-side) lalu menghapus cookie.
@@ -174,7 +175,9 @@ Deploy dari repo terpisah. Variabel yang dibutuhkan backend antara lain `DATABAS
 
 - Jangan commit `.env.local`, token, password, private key, atau dump database.
 - Repo ini public. Gunakan **GitHub private vulnerability reporting** untuk melaporkan celah — lihat [SECURITY.md](SECURITY.md).
-- CSP, HSTS, `X-Frame-Options`, `nosniff`, dan header keamanan lain diatur di `next.config.ts`; CSP di production bersifat enforcing.
+- CSP nonce per request dihasilkan di `src/proxy.ts`; production memakai `script-src 'nonce-…' 'strict-dynamic'` tanpa `'unsafe-inline'`. HSTS, `X-Frame-Options`, `nosniff`, COOP/CORP, dan header lain diatur di `next.config.ts`.
+- Halaman `/app` mengirim `Cache-Control: private, no-store` dan `X-Robots-Tag: noindex` agar HTML staf tidak tersimpan di cache bersama.
+- Push subscription memakai same-origin check sebelum meneruskan request ke backend.
 - Semua ekspor CSV/XLSX dilindungi dari formula injection.
 - Rate limit in-memory melindungi login, chat publik, pembuatan booking, pembayaran, dan ekspor. Untuk skala besar, pindahkan limiter ke Redis/edge.
 - Riwayat repo pernah memuat kredensial uji dan artefak Playwright. Riwayat sudah ditulis ulang; **tetap rotasi** kredensial apa pun yang pernah muncul di repo/SHA lama.

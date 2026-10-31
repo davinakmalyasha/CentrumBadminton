@@ -7,6 +7,7 @@ import {
   type PricingRule,
 } from "@/lib/availability";
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import { VENUE } from "@/lib/constants";
 import { getGoogleRating } from "@/lib/rating";
 import { getDict } from "@/lib/i18n";
@@ -19,7 +20,7 @@ import FacilitiesSection from "@/components/landing/FacilitiesSection";
 import LocationSection from "@/components/landing/LocationSection";
 import SocialSection from "@/components/landing/SocialSection";
 import Footer from "@/components/landing/Footer";
-import ChatWidget from "@/components/landing/ChatWidget";
+import ChatWidgetLoader from "@/components/landing/ChatWidgetLoader";
 
 export async function generateMetadata(): Promise<Metadata> {
   const lang = await getLang();
@@ -53,6 +54,7 @@ export default async function LandingPage() {
   const today = todayISO();
   const lang = await getLang();
   const t = getDict(lang);
+  const nonce = (await headers()).get("x-nonce") ?? undefined;
 
   const supabase = await createClient();
   const [courtsRes, pricingRes, busyRes, rating] = await Promise.all([
@@ -107,6 +109,7 @@ export default async function LandingPage() {
   return (
     <>
       <script
+        nonce={nonce}
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           // Escape "<" so a future value containing "</script>" cannot
@@ -130,7 +133,7 @@ export default async function LandingPage() {
         <SocialSection rating={rating} t={t} />
       </main>
       <Footer t={t} />
-      <ChatWidget />
+      <ChatWidgetLoader />
     </>
   );
 }

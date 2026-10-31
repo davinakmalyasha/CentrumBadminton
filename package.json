@@ -24,6 +24,7 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
+    "analyze": "next build --analyze",
     "check": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {

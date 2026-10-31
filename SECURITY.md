@@ -45,7 +45,9 @@ Out of scope:
 - [ ] Configure AgentsProxy CORS to allow only the frontend origin.
 - [ ] Rotate owner/staff passwords and API keys on a schedule; use a password manager.
 - [ ] Keep `LLM_API_KEY`, `ADMIN_API_KEY`, `DATABASE_URL`, `REDIS_URL`, and VAPID **private** keys only in the backend environment.
-- [ ] Enable GitHub secret scanning, Dependabot alerts, and private vulnerability reporting.
+- [ ] Keep GitHub secret scanning + push protection, Dependabot alerts, and private vulnerability reporting enabled.
+- [ ] Keep the nonce-based CSP enabled in `src/proxy.ts` and the `__Host-` session cookie in production.
+- [ ] Keep `/app` responses `Cache-Control: private, no-store` with `X-Robots-Tag: noindex`.
 - [ ] Run `npm run check` and `npm audit --omit=dev` before each release.
 - [ ] Monitor `GET /api/health` and alert when it returns `503`.
 

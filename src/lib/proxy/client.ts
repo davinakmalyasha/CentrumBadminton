@@ -21,6 +21,7 @@ import { cache } from "react";
 import {
   assertProxyConfigured,
   CLIENT_COOKIE,
+  LEGACY_SESSION_COOKIE,
   PROXY_URL,
   SESSION_COOKIE,
   TENANT_ID,
@@ -72,7 +73,10 @@ const TABLE_PATHS: Record<string, string> = {
 async function getTokens(): Promise<{ session?: string; client?: string }> {
   const store = await cookies();
   return {
-    session: store.get(SESSION_COOKIE)?.value,
+    // Prefer the hardened __Host- cookie, but accept the old name so a
+    // deploy does not sign every staff member out.
+    session:
+      store.get(SESSION_COOKIE)?.value ?? store.get(LEGACY_SESSION_COOKIE)?.value,
     client: store.get(CLIENT_COOKIE)?.value,
   };
 }
@@ -100,12 +104,18 @@ export async function setSession(token: string) {
     secure: process.env.NODE_ENV === "production",
     maxAge: 60 * 60 * 24 * 30,
     path: "/",
+    priority: "high",
   });
 }
 
 export async function clearSession() {
   const store = await cookies();
   store.delete(SESSION_COOKIE);
+  // Remove the legacy cookie too, otherwise it remains a valid bearer
+  // token after the user presses Keluar.
+  if (SESSION_COOKIE !== LEGACY_SESSION_COOKIE) {
+    store.delete(LEGACY_SESSION_COOKIE);
+  }
 }
 
 /** Core fetch: attaches auth headers, JSON in/out, ProxyError on non-2xx. */
