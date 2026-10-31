@@ -41,7 +41,7 @@ CentrumBadminton/                 ← single project root
 ## 3. Auth & Session Policy
 
 - **No public register.** Akun dibuat oleh Owner in-app (*Pengaturan → Kelola Pegawai*) atau lewat tooling backend. Login email+password.
-- **Sesi permanen 30 hari**: token disimpan di cookie `proxy_session` yang `httpOnly`, `Secure` di production, dan `SameSite=Lax`. Tidak ada idle timeout; keluar hanya lewat tombol **Keluar** (yang juga me-revoke sesi di backend).
+- **Sesi permanen 30 hari**: token disimpan di cookie `__Host-proxy_session` (production) yang `httpOnly`, `Secure`, `Path=/`, dan `SameSite=Lax`. Nama lama `proxy_session` tetap dibaca sebagai fallback. Tidak ada idle timeout; keluar hanya lewat tombol **Keluar** (yang juga me-revoke sesi di backend).
 - Validasi sesi: `GET /v1/auth/me` di `(protected)/layout.tsx`. Proxy hanya melakukan redirect optimistis.
 - Otorisasi: page guard + pengecekan role di server action; backend tetap menjadi otoritas akhir. Backend down tidak diperlakukan sebagai logout.
 

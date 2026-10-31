@@ -21,7 +21,7 @@ Browser
                                                               Postgres · Redis · LLM
 ```
 
-- Semua request terautentikasi melewati server Next.js. Cookie sesi (`proxy_session`) bersifat **httpOnly** dan tidak pernah dibaca oleh JavaScript browser.
+- Semua request terautentikasi melewati server Next.js. Cookie sesi (`__Host-proxy_session` di production) bersifat **httpOnly** dan tidak pernah dibaca oleh JavaScript browser.
 - `src/lib/proxy/` adalah satu-satunya lapisan yang tahu kontrak HTTP AgentsProxy.
 - Route API Next.js hanya menjadi same-origin shim untuk kebutuhan browser (availability, chat publik, push subscription, download laporan).
 
@@ -213,6 +213,7 @@ public/                      # Hanya aset yang disajikan
 ## Dokumen
 
 - [PRD](docs/PRD.md) — requirement produk (catatan: sebagian arsitektur awal sudah digantikan AgentsProxy).
+- [Performance notes](docs/PERFORMANCE.md) — baseline bundle + cara mengukur.
 - [Telegram setup (ID)](docs/telegram-setup-ID.md) · [EN](docs/telegram-setup-EN.md)
 - [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
 
