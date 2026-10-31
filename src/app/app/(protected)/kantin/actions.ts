@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/proxy/client";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimitDistributed } from "@/lib/ratelimit";
 
 export type KantinActionState = { error: string | null; ok?: boolean; info?: string };
 
@@ -95,7 +95,7 @@ export async function recordSale(
 ): Promise<KantinActionState> {
   const { user } = await requireUser();
 
-  if (!rateLimit(`ksale:${user.id}`, 60, 60_000).ok) {
+  if (!(await rateLimitDistributed(`ksale:${user.id}`, 60, 60_000)).ok) {
     return { error: "Terlalu banyak transaksi — coba lagi sebentar." };
   }
 

@@ -115,6 +115,8 @@ Setelah owner ada, akun pegawai dibuat dari **Pengaturan → Staf → Buat Akun 
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | ya | opsional | Public key Web Push; private key ada di backend |
 | `GOOGLE_PLACES_API_KEY` | tidak | opsional | Rating Google live |
 | `GOOGLE_PLACE_ID` | tidak | opsional | Place ID venue |
+| `UPSTASH_REDIS_REST_URL` / `UPSTASH_REDIS_REST_TOKEN` | tidak | opsional | Rate limit terdistribusi (Upstash REST) |
+| `KV_REST_API_URL` / `KV_REST_API_TOKEN` | tidak | opsional | Alternatif Vercel KV/Upstash |
 | `E2E_OWNER_EMAIL` / `E2E_OWNER_PASSWORD` | tidak | opsional | Hanya untuk script E2E |
 
 `NEXT_PUBLIC_*` di-inline ke bundle browser. **Jangan pernah** menaruh service-role key, JWT private key, database URL, atau LLM API key di sana.
@@ -179,7 +181,7 @@ Deploy dari repo terpisah. Variabel yang dibutuhkan backend antara lain `DATABAS
 - Halaman `/app` mengirim `Cache-Control: private, no-store` dan `X-Robots-Tag: noindex` agar HTML staf tidak tersimpan di cache bersama.
 - Push subscription memakai same-origin check sebelum meneruskan request ke backend.
 - Semua ekspor CSV/XLSX dilindungi dari formula injection.
-- Rate limit in-memory melindungi login, chat publik, pembuatan booking, pembayaran, dan ekspor. Untuk skala besar, pindahkan limiter ke Redis/edge.
+- Rate limit memakai Upstash/Vercel KV jika `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (atau `KV_REST_API_URL` + `KV_REST_API_TOKEN`) diisi; tanpa itu, limiter in-memory per instance tetap menjadi fallback. Redis yang down tidak mengunci login.
 - Riwayat repo pernah memuat kredensial uji dan artefak Playwright. Riwayat sudah ditulis ulang; **tetap rotasi** kredensial apa pun yang pernah muncul di repo/SHA lama.
 
 ## Testing
@@ -215,7 +217,7 @@ public/                      # Hanya aset yang disajikan
 - [PRD](docs/PRD.md) — requirement produk (catatan: sebagian arsitektur awal sudah digantikan AgentsProxy).
 - [Performance notes](docs/PERFORMANCE.md) — baseline bundle + cara mengukur.
 - [Telegram setup (ID)](docs/telegram-setup-ID.md) · [EN](docs/telegram-setup-EN.md)
-- [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md)
+- [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [License](LICENSE)
 
 ## Troubleshooting
 
@@ -230,4 +232,4 @@ public/                      # Hanya aset yang disajikan
 
 ---
 
-Dibuat untuk Centrum Badminton Arena. Kode tidak dilisensikan untuk penggunaan ulang tanpa izin.
+Dibuat untuk Centrum Badminton Arena. Kode bersifat proprietary — lihat [LICENSE](LICENSE).

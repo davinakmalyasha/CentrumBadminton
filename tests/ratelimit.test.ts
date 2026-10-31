@@ -1,5 +1,5 @@
-import { afterEach, describe, expect, it } from "vitest";
-import { clientIp, rateLimit } from "../src/lib/ratelimit";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { clientIp, rateLimit, rateLimitDistributed } from "../src/lib/ratelimit";
 
 // Unique keys per test so ordering never couples cases
 let seq = 0;
@@ -7,7 +7,8 @@ const key = () => `test:${++seq}`;
 
 describe("rateLimit", () => {
   afterEach(() => {
-    // nothing to reset — keys are unique per run
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
   });
 
   it("allows up to max hits inside the window", () => {
@@ -44,6 +45,49 @@ describe("rateLimit", () => {
     // Must not throw or degrade: still allows fresh traffic
     const res = rateLimit(k, 5, 60_000);
     expect(res.ok).toBe(true);
+  });
+});
+
+describe("rateLimitDistributed", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.unstubAllGlobals();
+  });
+
+  it("uses Upstash when configured and reports the Redis TTL", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "secret-token");
+
+    const captured: Array<{ url: string; init?: RequestInit }> = [];
+    vi.stubGlobal("fetch", async (url: string, init?: RequestInit) => {
+      captured.push({ url, init });
+      return new Response(JSON.stringify({ result: [2, 60_000] }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+
+    const res = await rateLimitDistributed("login:a@b.test", 1, 60_000);
+    expect(res).toEqual({ ok: false, retryAfterSec: 60 });
+    expect(captured[0]?.url).toBe("https://redis.example");
+    expect(captured[0]?.init?.headers).toMatchObject({
+      Authorization: "Bearer secret-token",
+    });
+    expect(String(captured[0]?.init?.body)).toContain("EVAL");
+    expect(String(captured[0]?.init?.body)).not.toContain("a@b.test");
+  });
+
+  it("falls back to the local limiter when Redis fails", async () => {
+    vi.stubEnv("UPSTASH_REDIS_REST_URL", "https://redis.example");
+    vi.stubEnv("UPSTASH_REDIS_REST_TOKEN", "secret-token");
+    vi.stubGlobal("fetch", async () => {
+      throw new Error("redis down");
+    });
+
+    const k = key();
+    expect((await rateLimitDistributed(k, 2, 60_000)).ok).toBe(true);
+    expect((await rateLimitDistributed(k, 2, 60_000)).ok).toBe(true);
+    expect((await rateLimitDistributed(k, 2, 60_000)).ok).toBe(false);
   });
 });
 

@@ -1,7 +1,7 @@
 "use server";
 
 import { createClient } from "@/lib/proxy/client";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimitDistributed } from "@/lib/ratelimit";
 import { todayISO } from "@/lib/availability";
 
 export interface ChatMsg {
@@ -31,8 +31,8 @@ export async function askAi(
   if (isOwner !== true && isStaff !== true) return { error: "Hanya staff yang bisa memakai AI." };
 
   // Cost guards: 10/menit + 150/hari per user (local in-memory, proxy also caps per-role 20/80/150)
-  const rlMin = rateLimit(`ai:min:${user.id}`, 10, 60_000);
-  const rlDay = rateLimit(`ai:day:${user.id}`, 150, 24 * 60 * 60_000);
+  const rlMin = await rateLimitDistributed(`ai:min:${user.id}`, 10, 60_000);
+  const rlDay = await rateLimitDistributed(`ai:day:${user.id}`, 150, 24 * 60 * 60_000);
   if (!rlMin.ok) {
     return { error: `Lambat sedikit — coba lagi dalam ${rlMin.retryAfterSec} detik.` };
   }

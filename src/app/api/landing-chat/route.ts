@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { assertProxyConfigured, PROXY_URL, TENANT_ID } from "@/lib/env";
-import { clientIp, rateLimit } from "@/lib/ratelimit";
+import { clientIp, rateLimitDistributed } from "@/lib/ratelimit";
 
 // Client bot: fully LLM via AgentsProxy — no hardcoded model key here.
 // Single shared LLM_API_KEY lives in AgentsProxy/.env, never in this repo.
@@ -47,7 +47,7 @@ async function readJsonBody(req: Request): Promise<Record<string, unknown>> {
 
 export async function POST(req: Request) {
   const ip = visitorIP(req);
-  const rl = rateLimit(`landing:${ip || "unknown"}`, 20, 60_000);
+  const rl = await rateLimitDistributed(`landing:${ip || "unknown"}`, 20, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Terlalu banyak pesan. Coba lagi sebentar." },
@@ -151,7 +151,7 @@ export async function POST(req: Request) {
 
 export async function DELETE(req: Request) {
   const ip = visitorIP(req);
-  const rl = rateLimit(`landing-delete:${ip || "unknown"}`, 5, 60_000);
+  const rl = await rateLimitDistributed(`landing-delete:${ip || "unknown"}`, 5, 60_000);
   if (!rl.ok) {
     return NextResponse.json(
       { error: "Terlalu banyak permintaan." },

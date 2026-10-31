@@ -46,8 +46,8 @@ Out of scope:
 - [ ] Rotate owner/staff passwords and API keys on a schedule; use a password manager.
 - [ ] Keep `LLM_API_KEY`, `ADMIN_API_KEY`, `DATABASE_URL`, `REDIS_URL`, and VAPID **private** keys only in the backend environment.
 - [ ] Keep GitHub secret scanning + push protection, Dependabot alerts, and private vulnerability reporting enabled.
-- [ ] Keep the nonce-based CSP enabled in `src/proxy.ts` and the `__Host-` session cookie in production.
-- [ ] Keep `/app` responses `Cache-Control: private, no-store` with `X-Robots-Tag: noindex`.
+- [ ] Configure `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN` (or Vercel KV equivalents) for distributed rate limiting; without them the local fallback is per-instance.
+- [ ] Keep nonce CSP, `__Host-` session cookie, and `Cache-Control: private, no-store` on `/app` enabled.
 - [ ] Run `npm run check` and `npm audit --omit=dev` before each release.
 - [ ] Monitor `GET /api/health` and alert when it returns `503`.
 

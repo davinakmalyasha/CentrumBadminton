@@ -3,7 +3,7 @@ import { buildXlsx, XLSX_MIME } from "@/lib/xlsx";
 import { createClient, proxyFetch } from "@/lib/proxy/client";
 import { monthEndExclusive, monthStart } from "@/lib/months";
 import { ALL_BOOKING_STATUSES } from "@/lib/booking-status";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimitDistributed } from "@/lib/ratelimit";
 
 // The proxy caps a single list request at 2000 rows (bookings) and 5000
 // (payments). Exporting a year therefore needs more than one page, and
@@ -109,7 +109,7 @@ export async function GET(request: Request) {
   if (!user) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  if (!rateLimit(`report-export:${user.id}`, 10, 60_000).ok) {
+  if (!(await rateLimitDistributed(`report-export:${user.id}`, 10, 60_000)).ok) {
     return NextResponse.json(
       { error: "Terlalu banyak ekspor. Coba lagi sebentar." },
       { status: 429 }

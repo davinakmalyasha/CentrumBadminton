@@ -9,7 +9,7 @@ import {
   OCCUPIES_COURT,
 } from "@/lib/booking-status";
 import { addDaysISO, computePrice, minutesOf, minutesToHHMM, minutesToLabel, timeLabel, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
-import { rateLimit } from "@/lib/ratelimit";
+import { rateLimitDistributed } from "@/lib/ratelimit";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -122,7 +122,7 @@ export async function createBooking(
   const unconfirmed = String(formData.get("unconfirmed") ?? "") === "1";
 
   // Spam guard: 30 booking / menit / user
-  if (!rateLimit(`booking:${user.id}`, 30, 60_000).ok) {
+  if (!(await rateLimitDistributed(`booking:${user.id}`, 30, 60_000)).ok) {
     return { error: "Terlalu banyak booking sekaligus — coba lagi sebentar." };
   }
 
@@ -535,7 +535,7 @@ export async function recordPayment(
   if (!Number.isFinite(amount) || amount <= 0)
     return { error: "Nominal harus lebih dari 0." };
   if (amount > 100_000_000) return { error: "Nominal melebihi batas maksimum." };
-  if (!rateLimit(`payment:${user.id}`, 60, 60_000).ok) {
+  if (!(await rateLimitDistributed(`payment:${user.id}`, 60, 60_000)).ok) {
     return { error: "Terlalu banyak transaksi — coba lagi sebentar." };
   }
 
