@@ -27,6 +27,10 @@ function visitorIP(req: Request): string {
 }
 
 async function readJsonBody(req: Request): Promise<Record<string, unknown>> {
+  const declared = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    throw new Error("BODY_TOO_LARGE");
+  }
   const raw = await req.text();
   if (raw.length > MAX_BODY_BYTES) throw new Error("BODY_TOO_LARGE");
   let parsed: unknown;

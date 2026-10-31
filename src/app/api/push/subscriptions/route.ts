@@ -20,6 +20,10 @@ export async function POST(req: Request) {
   const token = await session();
   if (!token) return NextResponse.json({ error: "no session" }, { status: 401 });
 
+  const declared = Number(req.headers.get("content-length") ?? "0");
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "payload too large" }, { status: 413 });
+  }
   const body = await req.text();
   if (body.length > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "payload too large" }, { status: 413 });
