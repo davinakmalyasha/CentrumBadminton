@@ -17,6 +17,21 @@ updates:
     labels: ["dependencies"]
     commit-message:
       prefix: "deps"
+    ignore:
+      # Major upgrades of the toolchain need a deliberate migration, not a
+      # weekly bot PR. Minor/patch updates still flow through the groups.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "eslint"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "vitest"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "@types/node"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: github-actions
     directory: "/"
