@@ -8,7 +8,6 @@ import {
   Package,
   ClipboardList,
   Plus,
-  Receipt,
   Repeat,
   Settings,
   ShoppingBasket,
@@ -34,6 +33,13 @@ export const PRIMARY_NAV: NavItem[] = [
   { href: "/app", label: "Beranda", icon: Home, desc: "Ringkasan hari ini" },
   { href: "/app/jadwal", label: "Jadwal", icon: CalendarDays, desc: "Timeline lapangan" },
   { href: "/app/booking/baru", label: "Tambah Booking", icon: Plus, desc: "Menambah booking manual" },
+  {
+    href: "/app/series",
+    label: "Member",
+    icon: Repeat,
+    desc: "Booking rutin",
+    ownerOnly: true,
+  },
   { href: "/app/kantin", label: "Kantin", icon: ShoppingBasket, desc: "Kasir & stok" },
   {
     href: "/app/ai",
@@ -46,8 +52,6 @@ export const PRIMARY_NAV: NavItem[] = [
 
 export const OWNER_NAV: NavItem[] = [
   { href: "/app/laporan", label: "Laporan", icon: BarChart3, desc: "Omzet & rekap" },
-  { href: "/app/pengeluaran", label: "Pengeluaran", icon: Receipt, desc: "Biaya operasional" },
-  { href: "/app/series", label: "Langganan", icon: Repeat, desc: "Jadwal rutin" },
   { href: "/app/blokir", label: "Blokir", icon: Ban, desc: "Tutup slot lapangan" },
 ];
 
@@ -78,7 +82,8 @@ export function isActivePath(pathname: string, href: string): boolean {
  * people actually use — Beranda, Jadwal, Tambah Booking — below the fold.
  */
 export function drawerSections(isOwner: boolean): NavSection[] {
-  const sections: NavSection[] = [{ title: "Menu Utama", items: PRIMARY_NAV }];
+  const primary = PRIMARY_NAV.filter((i) => !i.ownerOnly || isOwner);
+  const sections: NavSection[] = [{ title: "Menu Utama", items: primary }];
   if (isOwner) {
     sections.push({ title: "Menu Owner", items: [...OWNER_NAV, ...SETTINGS_NAV] });
   } else {

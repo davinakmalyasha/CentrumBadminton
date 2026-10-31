@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 import {
   AlertTriangle,
   Bot,
@@ -42,13 +42,22 @@ function resizeTextarea(el: HTMLTextAreaElement | null): void {
   el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
 }
 
-export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" }) {
+export default function AiChat({
+  role = "owner",
+  embedded = false,
+  inputRef: externalInputRef,
+}: {
+  role?: "owner" | "pegawai";
+  embedded?: boolean;
+  inputRef?: RefObject<HTMLTextAreaElement | null>;
+}) {
   const [messages, setMessages] = useState<ChatMsg[]>([]);
   const [input, setInput] = useState("");
   const [pending, setPending] = useState(false);
   const [retrying, setRetrying] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const localInputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = externalInputRef ?? localInputRef;
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth", block: "end" });
@@ -56,7 +65,7 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
 
   useEffect(() => {
     resizeTextarea(inputRef.current);
-  }, [input]);
+  }, [input, inputRef]);
 
   // Render bot replies: an XLSX:/v1/reports/... marker becomes a real
   // download button (token-authed, no session needed); bare URLs linkify.
@@ -206,7 +215,11 @@ export default function AiChat({ role = "owner" }: { role?: "owner" | "pegawai" 
          lot of dead space on a tall screen and pushed the composer off the
          fold on a short one. `min-h-0` is required for a flex child to be
          allowed to shrink below its content height. */
-      className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+      className={
+        embedded
+          ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+          : "flex min-h-0 flex-1 flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900"
+      }
     >
       {/* Messages */}
       <div

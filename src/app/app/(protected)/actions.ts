@@ -792,7 +792,7 @@ export async function createSeries(
   try {
     ctx = await requireOwner();
   } catch {
-    return { error: "Hanya owner yang bisa membuat langganan." };
+    return { error: "Hanya owner yang bisa membuat member." };
   }
   const { supabase, user } = ctx;
 
@@ -847,7 +847,7 @@ export async function createSeries(
     .single();
 
   if (sErr || !series)
-    return { error: `Gagal membuat langganan: ${sErr?.message ?? "?"}` };
+    return { error: `Gagal membuat member: ${sErr?.message ?? "?"}` };
 
   // Generate weekly instances, capped by end_date
   const dates: string[] = [];
@@ -871,7 +871,7 @@ export async function createSeries(
       customer_phone: phoneRaw || null,
       recurring_series_id: series.id,
       computed_price: price,
-      notes: "Langganan mingguan",
+      notes: "Member mingguan",
       created_by: user.id,
     }))
   );
@@ -902,7 +902,7 @@ function describeGeneration(r: InstanceResult, planned: number): string {
   // Neither "blocked" nor "taken": the weeks fell outside the subscription's
   // own end date, so they were never eligible.
   const past = planned - r.attempted;
-  if (past > 0) parts.push(`${past} di luar tanggal akhir langganan`);
+  if (past > 0) parts.push(`${past} di luar tanggal akhir member`);
   // Anything left over was a real failure, and the owner is the only one who
   // can fix it -- so pass the backend's own words rather than a tidy lie.
   const unexplained = r.skipped - r.blocked - r.taken;
@@ -948,7 +948,7 @@ export async function setSeriesStatus(
     .eq("id", id)
     .select("id")
     .single();
-  if (error) return { error: `Gagal update langganan: ${error.message}` };
+  if (error) return { error: `Gagal update member: ${error.message}` };
 
   revalidatePath("/app/series");
   revalidatePath("/app/jadwal");
@@ -963,8 +963,8 @@ export async function setSeriesStatus(
     );
     info =
       next === "paused"
-        ? `Langganan dijeda. ${n} jadwal yang belum berjalan dibatalkan.`
-        : `Langganan diakhiri. ${n} jadwal yang belum berjalan dibatalkan.`;
+        ? `Member dijeda. ${n} jadwal yang belum berjalan dibatalkan.`
+        : `Member diakhiri. ${n} jadwal yang belum berjalan dibatalkan.`;
   }
   return { error: null, ok: true, info };
 }
@@ -983,7 +983,7 @@ export async function extendSeries(
   const { supabase, user } = ctx;
 
   const id = String(formData.get("series_id") ?? "");
-  if (!id) return { error: "Langganan tidak valid." };
+  if (!id) return { error: "Member tidak valid." };
 
   const { data: s } = await supabase
     .from("recurring_series")
@@ -992,9 +992,9 @@ export async function extendSeries(
     )
     .eq("id", id)
     .maybeSingle();
-  if (!s) return { error: "Langganan tidak ditemukan." };
+  if (!s) return { error: "Member tidak ditemukan." };
   if (s.status !== "active")
-    return { error: "Aktifkan langganan dulu sebelum menambah jadwal." };
+    return { error: "Aktifkan member dulu sebelum menambah jadwal." };
 
   // Find furthest generated instance to continue from.
   //
@@ -1052,7 +1052,7 @@ export async function extendSeries(
       customer_phone: (s.customer_phone as string) || null,
       recurring_series_id: id,
       computed_price: price,
-      notes: "Langganan mingguan",
+      notes: "Member mingguan",
       created_by: user.id,
     }))
   );

@@ -22,6 +22,7 @@ const EXTRA: Array<{ href: string; label: string; parentHref: string; parentLabe
   { href: "/app/laporan/keuangan", label: "Keuangan", parentHref: "/app/laporan", parentLabel: "Laporan" },
   { href: "/app/laporan/riwayat", label: "Riwayat Booking", parentHref: "/app/laporan", parentLabel: "Laporan" },
   { href: "/app/laporan/kantin", label: "Kantin", parentHref: "/app/laporan", parentLabel: "Laporan" },
+  { href: "/app/pengeluaran", label: "Pengeluaran", parentHref: "/app/laporan", parentLabel: "Laporan" },
 ];
 
 export type Crumb = { label: string; href?: string };

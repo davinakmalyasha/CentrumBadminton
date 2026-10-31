@@ -35,7 +35,7 @@ export default function SeriesForm({
 
       <div>
         <label htmlFor="sname" className={label}>
-          Nama Komunitas / Pelanggan
+          Nama Member / Komunitas
         </label>
         <input id="sname" name="customer_name" required placeholder="cth. Komunitas Sabtu" className={field} />
       </div>
@@ -56,7 +56,7 @@ export default function SeriesForm({
 
       <div>
         <label htmlFor="senddate" className={label}>
-          Berakhir tanggal (opsional — batasi durasi langganan)
+          Berakhir tanggal (opsional — batasi durasi member)
         </label>
         <input id="senddate" type="date" name="end_date" min={today} className={field} />
       </div>
@@ -105,7 +105,7 @@ export default function SeriesForm({
       )}
       {state.ok && (
         <p className="text-xs font-semibold text-emerald-600">
-          Langganan dibuat — {state.info}
+          Member dibuat — {state.info}
         </p>
       )}
 
@@ -119,7 +119,7 @@ export default function SeriesForm({
         ) : (
           <>
             <Repeat className="h-4 w-4" />
-            Buat Langganan
+            Buat Member
           </>
         )}
       </button>

@@ -25,6 +25,13 @@ describe("resolveTrail", () => {
     ]);
   });
 
+  it("uses the Member label for the series route", () => {
+    expect(resolveTrail("/app/series")).toEqual([
+      { label: "Beranda", href: "/app" },
+      { label: "Member" },
+    ]);
+  });
+
   it("never names Beranda twice on deep pages", () => {
     const crumbs = resolveTrail("/app/booking/baru")!;
     expect(crumbs.filter((c) => c.label === "Beranda")).toHaveLength(1);
@@ -48,6 +55,14 @@ describe("resolveTrail", () => {
       { label: "Beranda", href: "/app" },
       { label: "Laporan", href: "/app/laporan" },
       { label: "Kantin" },
+    ]);
+  });
+
+  it("keeps pengeluaran under the Laporan hub after leaving the sidebar", () => {
+    expect(resolveTrail("/app/pengeluaran")).toEqual([
+      { label: "Beranda", href: "/app" },
+      { label: "Laporan", href: "/app/laporan" },
+      { label: "Pengeluaran" },
     ]);
   });
 });

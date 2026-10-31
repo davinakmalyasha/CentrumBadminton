@@ -2,10 +2,11 @@ import { requireOwnerPage } from "@/lib/guard";
 import { todayISO } from "@/lib/availability";
 import { Users } from "lucide-react";
 import Shuttlecock from "@/components/icons/Shuttlecock";
-import SeriesForm from "@/components/app/SeriesForm";
+import { EmptyState } from "@/components/app/EmptyState";
+import SeriesCreate from "@/components/app/SeriesCreate";
 import SeriesControls from "@/components/app/SeriesControls";
 
-export const metadata = { title: "Langganan · Centrum Manager" };
+export const metadata = { title: "Member · Centrum Manager" };
 
 type SeriesRow = {
   id: string;
@@ -76,25 +77,17 @@ export default async function SeriesPage() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <p className="text-xs font-semibold text-zinc-500 dark:text-zinc-400">
-          Komunitas rutin — slot dibuat otomatis setiap minggu.
-        </p>
-      </div>
-
-      <SeriesForm
-        courts={(courtsRes.data ?? []) as Array<{ id: string; name: string }>}
-        today={today}
-      />
+      <SeriesCreate courts={courtList} today={today} />
 
       <section>
         <h2 className="mb-2 text-sm font-extrabold uppercase tracking-wide text-zinc-500 dark:text-zinc-400">
           Berjalan ({series.length})
         </h2>
         {series.length === 0 ? (
-          <p className="rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-6 text-center text-sm text-zinc-500 dark:text-zinc-400">
-            Belum ada langganan aktif.
-          </p>
+          <EmptyState
+            title="Belum ada member aktif"
+            body="Tekan “Member baru” di atas untuk membuat jadwal rutin mingguan — slotnya dibuat otomatis, tanpa booking satu per satu."
+          />
         ) : (
           <ul className="space-y-2.5">
             {series.map((s) => {

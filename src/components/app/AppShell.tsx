@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import {
   Bot,
   Home,
@@ -10,6 +10,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import AiChatPopover from "./AiChatPopover";
 import LogoutDialog from "./LogoutDialog";
 import Sidebar from "./Sidebar";
 import Breadcrumbs from "./Breadcrumbs";
@@ -31,7 +32,9 @@ export default function AppShell({
   const { role } = useRole();
   const isOwner = role === "owner";
   const [menuOpen, setMenuOpen] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
   const [logoutOpen, setLogoutOpen] = useState(false);
+  const aiTriggerRef = useRef<HTMLButtonElement>(null);
   const closeMenu = () => setMenuOpen(false);
 
   useEffect(() => {
@@ -49,6 +52,7 @@ export default function AppShell({
   }, [menuOpen]);
 
   const aiActive = isActivePath(pathname, "/app/ai");
+  const aiHighlighted = aiActive || aiOpen;
   const sections = drawerSections(isOwner);
 
   return (
@@ -57,7 +61,10 @@ export default function AppShell({
       <Sidebar
         displayName={displayName}
         roleLabel={roleLabel}
-        onLogout={() => setLogoutOpen(true)}
+        onLogout={() => {
+          setAiOpen(false);
+          setLogoutOpen(true);
+        }}
       />
 
       {/* Header */}
@@ -69,25 +76,32 @@ export default function AppShell({
               this fills the empty half the justify-end buttons left behind. */}
           <Breadcrumbs className="min-w-0 flex-1" />
 
-          <div className="flex shrink-0 items-center gap-1.5">
-            <Link
-              href="/app/ai"
-              aria-label="Buka AI Asisten"
+            <div className="flex shrink-0 items-center gap-1.5">
+            <button
+              ref={aiTriggerRef}
+              type="button"
+              onClick={() => setAiOpen((v) => !v)}
+              aria-label={aiOpen ? "Tutup AI Asisten" : "Buka AI Asisten"}
               title="AI Asisten"
+              aria-expanded={aiOpen}
+              aria-controls="ai-chat-popover"
               aria-current={aiActive ? "page" : undefined}
               className={`manager-tap flex h-10 w-10 items-center justify-center rounded-xl border transition focus-visible:ring-2 focus-visible:ring-zinc-400 focus-visible:outline-none active:scale-95 ${
-                aiActive
+                aiHighlighted
                   ? "border-zinc-900 bg-zinc-900 text-white dark:border-zinc-100 dark:bg-zinc-100 dark:text-zinc-900"
                   : "border-zinc-200 bg-white text-zinc-600 hover:bg-zinc-100 hover:text-zinc-900 dark:border-zinc-800 dark:bg-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
               }`}
             >
               <Bot className="h-[18px] w-[18px]" aria-hidden="true" />
-            </Link>
+            </button>
             <ThemeToggle />
             <PushToggle />
             <button
               type="button"
-              onClick={() => setMenuOpen(true)}
+              onClick={() => {
+                setMenuOpen(true);
+                setAiOpen(false);
+              }}
               aria-label="Buka menu navigasi"
               aria-expanded={menuOpen}
               aria-controls="manager-drawer"
@@ -285,6 +299,12 @@ export default function AppShell({
           </aside>
         </div>
       )}
+
+      <AiChatPopover
+        triggerRef={aiTriggerRef}
+        open={aiOpen}
+        onOpenChange={setAiOpen}
+      />
 
       <LogoutDialog
         open={logoutOpen}
