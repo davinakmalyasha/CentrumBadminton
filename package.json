@@ -28,8 +28,8 @@
     "check": "npm run typecheck && npm run lint && npm test"
   },
   "dependencies": {
-    "lucide-react": "^1.63.0",
-    "next": "^16.4.3",
+    "lucide-react": "^1.69.0",
+    "next": "^16.4.5",
     "react": "19.3.1",
     "react-dom": "19.3.1",
     "write-excel-file": "^4.1.1"
