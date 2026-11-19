@@ -12,7 +12,7 @@ export interface ChatMsg {
 // LLM now lives in AgentsProxy (single shared key, see AgentsProxy/.env LLM_API_KEY).
 // This action proxies to the Go agent via X-Session-Token — no Gemini SDK here.
 // Tool calling + memory will be centralized in AgentsProxy/internal/agent; this
-// Next action is a thin forwarder until the landing/Telegram chat widgets land.
+// Next action is a thin forwarder until the external chat backend lands.
 
 /* ------------------------------------------------------------------ */
 /* askAi                                                               */
