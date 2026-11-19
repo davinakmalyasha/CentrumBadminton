@@ -35,7 +35,7 @@ Browser
 | Data/Auth | AgentsProxy (Go) — Postgres + Redis |
 | PWA | Web App Manifest + service worker + Web Push |
 | Test | Vitest |
-| Deploy | Vercel (frontend) + Railway/VPS (AgentsProxy) |
+| Deploy | Vercel (frontend + AgentsProxy) |
 
 ## Fitur
 
@@ -171,7 +171,7 @@ Setelah owner ada, akun pegawai dibuat dari **Pengaturan → Staf → Buat Akun 
 
 ### AgentsProxy (backend)
 
-Deploy dari repo terpisah. Variabel yang dibutuhkan backend antara lain `DATABASE_URL`, `REDIS_URL`, `LLM_API_KEY`, `ADMIN_API_KEY`, `TELEGRAM_BOT_TOKEN`, dan VAPID private key. **Jangan** menyalin nilai-nilai itu ke repo ini.
+Deploy dari repo terpisah. Variabel yang dibutuhkan backend antara lain `DATABASE_URL`, `REDIS_URL`, `LLM_API_KEY`, `ADMIN_API_KEY`, dan VAPID private key. **Jangan** menyalin nilai-nilai itu ke repo ini.
 
 ## Keamanan
 
@@ -208,15 +208,14 @@ src/
 │   └── ...                  # Domain logic (availability, pricing, kantin, dll.)
 └── proxy.ts                 # Optimistic /app auth gate (Next proxy/middleware)
 assets/                      # Source logo (tidak di-deploy)
-docs/                        # PRD & panduan Telegram
+docs/                        # arsip PRD & catatan performa
 public/                      # Hanya aset yang disajikan
 ```
 
 ## Dokumen
 
-- [PRD](docs/PRD.md) — requirement produk (catatan: sebagian arsitektur awal sudah digantikan AgentsProxy).
+- [PRD arsip v1](docs/archive/PRD-v1.md) — requirement produk awal; arsitektur Supabase/Gemini sudah digantikan AgentsProxy.
 - [Performance notes](docs/PERFORMANCE.md) — baseline bundle + cara mengukur.
-- [Telegram setup (ID)](docs/telegram-setup-ID.md) · [EN](docs/telegram-setup-EN.md)
 - [Security policy](SECURITY.md) · [Contributing](CONTRIBUTING.md) · [License](LICENSE)
 
 ## Troubleshooting
