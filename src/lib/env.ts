@@ -23,6 +23,15 @@ export const PROXY_URL =
 export const TENANT_ID = (process.env.NEXT_PUBLIC_TENANT_ID ?? "").trim() || "centrum";
 
 /**
+ * Tenant-scoped API prefix. Centrum moved from the legacy /v1/sports alias to
+ * its project router (/v1/p/centrum). Keep the old value as an explicit
+ * rollback switch: changing this env var and redeploying restores the legacy
+ * routes without a code revert.
+ */
+const prefix = clean(process.env.NEXT_PUBLIC_PROXY_PREFIX);
+export const PROXY_PREFIX = prefix === "/v1/sports" ? "/v1/sports" : "/v1/p/centrum";
+
+/**
  * In production the session cookie uses the `__Host-` prefix, which forces
  * Secure + Path=/ and forbids a Domain attribute. Browsers then refuse to
  * let a subdomain overwrite it.

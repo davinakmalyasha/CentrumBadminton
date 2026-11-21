@@ -22,6 +22,7 @@ import {
   assertProxyConfigured,
   CLIENT_COOKIE,
   LEGACY_SESSION_COOKIE,
+  PROXY_PREFIX,
   PROXY_URL,
   SESSION_COOKIE,
   TENANT_ID,
@@ -44,7 +45,7 @@ export class ProxyError extends Error {
 /**
  * UI table name → AgentsProxy endpoint.
  *
- * The proxy groups these under /v1/sports. Keeping one map means a read
+ * The proxy groups these under the tenant prefix (PROXY_PREFIX). Keeping one map means a read
  * and a write for the same table can never drift to different endpoints.
  */
 const TABLE_PATHS: Record<string, string> = {
@@ -325,7 +326,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   private writeOp?: { kind: "insert" | "update" | "delete"; row?: Record<string, unknown> };
 
   constructor(private table: string) {
-    this.path = `/v1/sports/${table}`;
+    this.path = `${PROXY_PREFIX}/${table}`;
   }
 
   /** PromiseLike: makes `await supabase.from(...)` work. */
@@ -522,7 +523,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
     }
 
     const feature = this.tableMap()[this.table] ?? this.table;
-    this.path = `/v1/sports/${feature}/`;
+    this.path = `${PROXY_PREFIX}/${feature}/`;
 
     const query: Record<string, string | string[]> = {};
     if (this.filters["date"] !== undefined) query.date = String(this.filters["date"]);
@@ -744,7 +745,7 @@ export class QueryBuilder<T> implements PromiseLike<QueryResult<T>> {
   }
 
   private pathFor(): string {
-    return `/v1/sports/${TABLE_PATHS[this.table] ?? this.table}`;
+    return `${PROXY_PREFIX}/${TABLE_PATHS[this.table] ?? this.table}`;
   }
 
   /** Map Centrum column names → proxy field names. */
@@ -863,7 +864,7 @@ async function rpcLoose(
       case "get_pricing_for": {
         const date = String(args?.p_date ?? "");
         const rules = await proxyFetch<{ items: Array<Record<string, unknown>> }>(
-          "/v1/sports/pricing/",
+          `${PROXY_PREFIX}/pricing/`,
           { query: { tenant_id: TENANT_ID, type: "badminton" } }
         );
         // Find the latest rule valid on/before the date.
@@ -881,7 +882,7 @@ async function rpcLoose(
             name: string;
             busy: Array<{ start: string; end: string; kind: string }>;
           }>;
-        }>("/v1/sports/availability/", { query: { date, tenant_id: TENANT_ID, type: "badminton" } });
+        }>(`${PROXY_PREFIX}/availability/`, { query: { date, tenant_id: TENANT_ID, type: "badminton" } });
         const out: Array<Record<string, unknown>> = [];
         for (const f of avail.facilities ?? []) {
           for (const b of f.busy ?? []) {
@@ -898,7 +899,7 @@ async function rpcLoose(
       }
       case "top_customers": {
         const limit = Number(args?.p_limit ?? 10);
-        const res = await proxyFetch<{ items: unknown[] }>("/v1/sports/customers/top", {
+        const res = await proxyFetch<{ items: unknown[] }>(`${PROXY_PREFIX}/customers/top`, {
           query: { limit: String(limit) },
         });
         return { data: res.items, error: null };
@@ -907,10 +908,10 @@ async function rpcLoose(
         // Handled server-side by the bookings PATCH (status=no_show).
         return { data: null, error: null };
       case "record_kantin_sale": {
-        // Legacy RPC → proxy REST: POST /v1/sports/kantin/sales
+        // Legacy RPC → proxy REST: POST the tenant prefix + /kantin/sales
         const pSale = (args?.p_sale ?? {}) as Record<string, unknown>;
         const pItems = (args?.p_items ?? []) as Array<Record<string, unknown>>;
-        const sale = await proxyFetch<{ id: string; total: number }>("/v1/sports/kantin/sales", {
+        const sale = await proxyFetch<{ id: string; total: number }>(`${PROXY_PREFIX}/kantin/sales`, {
           method: "POST",
           body: {
             method: (pSale.method as string) ?? "cash",
@@ -949,20 +950,20 @@ case "adjust_kantin_stock": {
         body.delta = reason === "waste" ? -Math.abs(deltaRaw) : Math.abs(deltaRaw);
       }
       const res = await proxyFetch<{ stock: number; id: string }>(
-        "/v1/sports/kantin/products/" + pid + "/stock",
+        `${PROXY_PREFIX}/kantin/products/${pid}/stock`,
         { method: "POST", body }
       );
       return { data: (res.stock ?? null) as unknown, error: null };
     }
       case "void_kantin_sale": {
         const sid = String(args?.p_sale_id ?? args?.p_saleId ?? "");
-        await proxyFetch("/v1/sports/kantin/sales/" + sid + "/void", { method: "POST" });
+        await proxyFetch(`${PROXY_PREFIX}/kantin/sales/${sid}/void`, { method: "POST" });
         return { data: null, error: null };
       }
       case "customer_stats": {
         // Aggregated stats: visits + last_visit per customer
         try {
-          const customers = await proxyFetch<{ items: Array<Record<string, unknown>> }>("/v1/sports/customers/");
+          const customers = await proxyFetch<{ items: Array<Record<string, unknown>> }>(`${PROXY_PREFIX}/customers/`);
           const items = customers.items ?? [];
           const rows = items.map((c) => ({
             customer_id: String(c.id ?? c.customer_id ?? ""),
@@ -974,7 +975,7 @@ case "adjust_kantin_stock": {
           // If visits are 0 (proxy older), fallback to top endpoint
           if (rows.every((r) => Number(r.visits) === 0) && rows.length > 0) {
             try {
-              const top = await proxyFetch<{ items: Array<Record<string, unknown>> }>("/v1/sports/customers/top", {
+              const top = await proxyFetch<{ items: Array<Record<string, unknown>> }>(`${PROXY_PREFIX}/customers/top`, {
                 query: { limit: String(Math.min(rows.length, 200)) },
               });
               const byId = new Map<string, Record<string, unknown>>();
@@ -1011,7 +1012,7 @@ case "adjust_kantin_stock": {
               const bookings = await proxyFetch<{
                 items: Array<Record<string, unknown>>;
                 truncated?: boolean;
-              }>("/v1/sports/bookings/", {
+              }>(`${PROXY_PREFIX}/bookings/`, {
                 query: {
                   status: "confirmed,checked_in,completed,pending,no_show",
                   from: recent,

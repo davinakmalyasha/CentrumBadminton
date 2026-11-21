@@ -3,6 +3,7 @@ import { requireStaffPage } from "@/lib/guard";
 import { DataUnavailable, firstError } from "@/components/app/EmptyState";
 import { formatIDR } from "@/lib/availability";
 import { proxyFetch } from "@/lib/proxy/client";
+import { PROXY_PREFIX } from "@/lib/env";
 import { ChevronLeft, ChevronRight, Download, ShoppingBasket } from "lucide-react";
 import {
   addMonths,
@@ -58,7 +59,7 @@ export default async function LaporanKantinPage({
               unit_cost: number;
               product_name: string;
             }>;
-          }>(`/v1/sports/kantin/sales/${s.id}/items`);
+          }>(`${PROXY_PREFIX}/kantin/sales/${s.id}/items`);
           for (const it of res.items ?? []) kantinItems.push(it);
         } catch {
           /* one bad sale must not kill the report */

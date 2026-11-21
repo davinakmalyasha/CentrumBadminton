@@ -4,6 +4,7 @@ import { createClient, proxyFetch } from "@/lib/proxy/client";
 import { monthEndExclusive, monthStart } from "@/lib/months";
 import { ALL_BOOKING_STATUSES } from "@/lib/booking-status";
 import { rateLimitDistributed } from "@/lib/ratelimit";
+import { PROXY_PREFIX } from "@/lib/env";
 
 // The proxy caps a single list request at 2000 rows (bookings) and 5000
 // (payments). Exporting a year therefore needs more than one page, and
@@ -191,7 +192,7 @@ export async function GET(request: Request) {
         try {
           const res = await proxyFetch<{
             items: Array<{ product_name: string; qty: number; unit_price: number }>;
-          }>(`/v1/sports/kantin/sales/${s.id}/items`);
+          }>(`${PROXY_PREFIX}/kantin/sales/${s.id}/items`);
           return (res.items ?? []).map((it) => ({
             sale_id: s.id,
             product_name: it.product_name,

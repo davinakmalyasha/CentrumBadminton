@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
-import { assertProxyConfigured, PROXY_URL, TENANT_ID } from "@/lib/env";
+import { assertProxyConfigured, PROXY_PREFIX, PROXY_URL, TENANT_ID } from "@/lib/env";
 
 const PROXY_TIMEOUT_MS = 8_000;
 
-// Shape of GET /v1/sports/availability on the proxy. Untrusted input is
+// Shape of GET {tenant-prefix}/availability on the proxy. Untrusted input is
 // only used for display, so unknown members are simply not read here.
 type AvailabilityResponse = {
   facilities?: Array<{
@@ -31,7 +31,7 @@ export async function GET(req: Request) {
   try {
     assertProxyConfigured();
     const r = await fetch(
-      `${PROXY_URL}/v1/sports/availability/?date=${encodeURIComponent(date)}&tenant_id=${encodeURIComponent(TENANT_ID)}&type=badminton`,
+      `${PROXY_URL}${PROXY_PREFIX}/availability/?date=${encodeURIComponent(date)}&tenant_id=${encodeURIComponent(TENANT_ID)}&type=badminton`,
       { cache: "no-store", signal: AbortSignal.timeout(PROXY_TIMEOUT_MS) }
     );
     const data = (await r.json().catch(() => ({}))) as AvailabilityResponse;

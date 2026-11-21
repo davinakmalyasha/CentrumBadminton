@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { assertProxyConfigured, PROXY_URL, TENANT_ID } from "@/lib/env";
+import { assertProxyConfigured, PROXY_PREFIX, PROXY_URL, TENANT_ID } from "@/lib/env";
 import { clientIp, rateLimitDistributed } from "@/lib/ratelimit";
 
 // Client bot: fully LLM via AgentsProxy — no hardcoded model key here.
@@ -103,7 +103,7 @@ export async function POST(req: Request) {
     let priceEve = 50000;
     try {
       const fb = await fetch(
-        `${PROXY_URL}/v1/sports/pricing/?tenant_id=${encodeURIComponent(TENANT_ID)}&type=badminton`,
+        `${PROXY_URL}${PROXY_PREFIX}/pricing/?tenant_id=${encodeURIComponent(TENANT_ID)}&type=badminton`,
         { cache: "no-store", signal: AbortSignal.timeout(FALLBACK_TIMEOUT_MS) }
       );
       if (fb.ok) {

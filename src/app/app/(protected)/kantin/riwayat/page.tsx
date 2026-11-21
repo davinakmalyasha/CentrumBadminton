@@ -1,4 +1,5 @@
 import { createClient, proxyFetch } from "@/lib/proxy/client";
+import { PROXY_PREFIX } from "@/lib/env";
 import KantinSubnav from "@/components/app/kantin/KantinSubnav";
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
@@ -71,7 +72,7 @@ const sales = await Promise.all(
       try {
         const res = await proxyFetch<{
           items: Array<{ id: string; product_name: string; qty: number; unit_price: number }>;
-        }>(`/v1/sports/kantin/sales/${s.id}/items`);
+        }>(`${PROXY_PREFIX}/kantin/sales/${s.id}/items`);
         return { ...s, kantin_sale_items: res.items ?? [] };
       } catch {
         return { ...s, kantin_sale_items: [] as SRow["kantin_sale_items"] };
