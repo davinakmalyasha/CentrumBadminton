@@ -20,6 +20,8 @@ function clean(value: string | undefined): string {
 export const PROXY_URL =
   clean(process.env.NEXT_PUBLIC_PROXY_URL) || (isProduction ? "" : DEV_PROXY_URL);
 
+const EXPECTED_PROXY_ORIGIN = clean(process.env.NEXT_PUBLIC_PROXY_EXPECTED_ORIGIN);
+
 export const TENANT_ID = (process.env.NEXT_PUBLIC_TENANT_ID ?? "").trim() || "centrum";
 
 /**
@@ -50,5 +52,20 @@ export function assertProxyConfigured(): void {
     throw new Error(
       "NEXT_PUBLIC_PROXY_URL belum dikonfigurasi. Set variabel ini di environment deployment."
     );
+  }
+  if (EXPECTED_PROXY_ORIGIN) {
+    let actual = "";
+    try {
+      actual = new URL(PROXY_URL).origin;
+    } catch {
+      throw new Error("NEXT_PUBLIC_PROXY_URL bukan URL yang valid.");
+    }
+    if (actual !== EXPECTED_PROXY_ORIGIN) {
+      // A staging/preview backend copied into production would otherwise
+      // serve the wrong tenant data without any visible failure.
+      throw new Error(
+        "NEXT_PUBLIC_PROXY_URL tidak cocok dengan origin produksi yang diharapkan."
+      );
+    }
   }
 }
