@@ -61,6 +61,24 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
+describe("tenant route prefix", () => {
+  it("uses the project-scoped prefix by default", async () => {
+    stubFetch({ items: [] });
+    const supabase = await createClient();
+    await supabase.from("bookings").eq("date", "2026-09-30");
+
+    expect(new URL(captured[0].url).pathname).toBe("/v1/p/centrum/bookings/");
+  });
+
+  it("keeps non-tenant endpoints on their original paths", async () => {
+    stubFetch({ user: { id: "u-1", email: "owner@example.com" } });
+    const supabase = await createClient();
+    await supabase.auth.getUser();
+
+    expect(new URL(captured[0].url).pathname).toBe("/v1/auth/me");
+  });
+});
+
 describe("query builder: status reaches the proxy", () => {
   it("sends an explicit status filter", async () => {
     stubFetch({ items: [] });
@@ -310,7 +328,7 @@ describe("update returns the patched row", () => {
     await supabase.from("bookings").update({ status: "completed" }).eq("id", "b-9");
 
     expect(captured[0].method).toBe("PATCH");
-    expect(captured[0].url).toContain("/v1/sports/bookings/b-9");
+    expect(captured[0].url).toContain("/v1/p/centrum/bookings/b-9");
   });
 });
 

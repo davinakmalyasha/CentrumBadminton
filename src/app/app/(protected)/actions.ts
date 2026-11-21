@@ -10,6 +10,7 @@ import {
 } from "@/lib/booking-status";
 import { addDaysISO, computePrice, minutesOf, minutesToHHMM, minutesToLabel, timeLabel, todayISO, wibNowMinutes, type PricingRule } from "@/lib/availability";
 import { rateLimitDistributed } from "@/lib/ratelimit";
+import { PROXY_PREFIX } from "@/lib/env";
 
 export async function signOut() {
   const supabase = await createClient();
@@ -311,7 +312,7 @@ export async function applyVenueHours(
   try {
     // proxyFetch throws ProxyError on any non-2xx, so this is where a
     // refused write lands rather than a returned error field.
-    await proxyFetch("/v1/sports/pricing/apply_hours", {
+    await proxyFetch(`${PROXY_PREFIX}/pricing/apply_hours`, {
       method: "POST",
       body: { open_time: openTime, close_time: closeTime },
     });
