@@ -6,6 +6,7 @@
  *  ADMIN credentials via PROXY. Falls back to direct DB via psql hint.
  */
 const proxyUrl = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
+const prefix = "/v1/p/centrum";
 const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? "centrum";
 const targetEmail = process.argv[2] ?? process.env.OWNER_EMAIL ?? "owner@example.com";
 const ownerEmail = process.env.E2E_OWNER_EMAIL ?? process.env.OWNER_EMAIL;
@@ -33,12 +34,12 @@ if (!loginRes.ok || !loginJson.token) {
 }
 const token = loginJson.token;
 
-// find user id via customers/users list — users endpoint is /v1/sports/users
-// List users (proxy's sports_users) — use the users table via facilities? Actually users are via /v1/sports/users
+// find user id via customers/users list — users endpoint is /v1/p/centrum/users
+// List users (proxy's sports_users) — use the users table via facilities? Actually users are via /v1/p/centrum/users
 // Fallback: query via proxy's customers? Safer to call PATCH directly if we know id via login /me search
 // Try list users
 let userId = null;
-const listRes = await fetch(`${proxyUrl}/v1/sports/users/`, {
+const listRes = await fetch(`${proxyUrl}${prefix}/users/`, {
   headers: { "X-Session-Token": token },
 });
 if (listRes.ok) {
@@ -56,12 +57,12 @@ if (!userId) {
   }
 }
 if (!userId) {
-  console.error("USER_NOT_FOUND:", targetEmail, "(list /v1/sports/users returned 0 matches)");
+  console.error("USER_NOT_FOUND:", targetEmail, "(list /v1/p/centrum/users returned 0 matches)");
   console.error(`Fallback psql: psql "$DATABASE_URL" -c "UPDATE sports_users SET role='owner' WHERE tenant_id='${tenantId}' AND email='${targetEmail}';"`);
   process.exit(1);
 }
 
-const patchRes = await fetch(`${proxyUrl}/v1/sports/users/${userId}`, {
+const patchRes = await fetch(`${proxyUrl}${prefix}/users/${userId}`, {
   method: "PATCH",
   headers: { "Content-Type": "application/json", "X-Session-Token": token },
   body: JSON.stringify({ role: "owner" }),
