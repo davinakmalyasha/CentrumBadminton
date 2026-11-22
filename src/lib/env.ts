@@ -25,13 +25,10 @@ const EXPECTED_PROXY_ORIGIN = clean(process.env.NEXT_PUBLIC_PROXY_EXPECTED_ORIGI
 export const TENANT_ID = (process.env.NEXT_PUBLIC_TENANT_ID ?? "").trim() || "centrum";
 
 /**
- * Tenant-scoped API prefix. Centrum moved from the legacy /v1/sports alias to
- * its project router (/v1/p/centrum). Keep the old value as an explicit
- * rollback switch: changing this env var and redeploying restores the legacy
- * routes without a code revert.
+ * Tenant-scoped API prefix. Centrum is a project tenant and is reachable only
+ * through its project router. The legacy /v1/sports alias has been removed.
  */
-const prefix = clean(process.env.NEXT_PUBLIC_PROXY_PREFIX);
-export const PROXY_PREFIX = prefix === "/v1/sports" ? "/v1/sports" : "/v1/p/centrum";
+export const PROXY_PREFIX = "/v1/p/centrum";
 
 /**
  * In production the session cookie uses the `__Host-` prefix, which forces

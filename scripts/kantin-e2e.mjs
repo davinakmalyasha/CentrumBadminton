@@ -10,6 +10,7 @@
  *   E2E_BASE_URL (default http://localhost:3000)
  */
 const proxyUrl = process.env.NEXT_PUBLIC_PROXY_URL ?? "http://localhost:8080";
+const prefix = "/v1/p/centrum";
 const tenantId = process.env.NEXT_PUBLIC_TENANT_ID ?? "centrum";
 const email = process.env.E2E_OWNER_EMAIL;
 const password = process.env.E2E_OWNER_PASSWORD;
@@ -61,7 +62,7 @@ if (!token) {
 const api = (p, opts = {}) => proxyFetch(p, { ...opts, token });
 
 // 2) Seeded products visible
-const { json: prodJson, ok: prodOk } = await api("/v1/sports/kantin/products");
+const { json: prodJson, ok: prodOk } = await api(prefix + "/kantin/products");
 const products = prodJson.items ?? prodJson.data ?? [];
 ok("seeded products >= 1", prodOk && (products.length ?? 0) >= 1, `got ${products.length}`);
 const pick = (n) => products.find((p) => p.name === n);
@@ -82,56 +83,56 @@ const salePayload = {
     { product_id: indomie.id, qty: 1 },
   ],
 };
-const { json: sale, ok: saleOk } = await api("/v1/sports/kantin/sales", { method: "POST", body: salePayload });
+const { json: sale, ok: saleOk } = await api(prefix + "/kantin/sales", { method: "POST", body: salePayload });
 const expectedTotal = (esTeh.price ?? 0) * 2 + (indomie.price ?? 0) * 1;
 ok("record kantin sale (atomic)", saleOk && Number(sale.total) === expectedTotal, sale.error ?? `total=${sale.total} expected=${expectedTotal}`);
 const saleId = sale.id ?? sale.sale_id;
 
 // 4.1/4 stock check: read product after sale
 if (saleId) {
-  const { json: saleGet } = await api(`/v1/sports/kantin/sales/${saleId}`);
+  const { json: saleGet } = await api(prefix + `/kantin/sales/${saleId}`);
   ok("sale readable", Boolean(saleGet.id ?? saleGet.total !== undefined), `id=${saleGet.id}`);
 }
 
 // 5) Stock tracking path
 // enable track_stock on Es Teh
 if (esTeh?.id) {
-  await api(`/v1/sports/kantin/products/${esTeh.id}`, { method: "PATCH", body: { track_stock: true, low_stock_threshold: 5 } });
+  await api(prefix + `/kantin/products/${esTeh.id}`, { method: "PATCH", body: { track_stock: true, low_stock_threshold: 5 } });
   // set stock to 10 via restock delta (read current then top up) — use adjust endpoint
   // first get current stock
-  const { json: cur } = await api(`/v1/sports/kantin/products/${esTeh.id}`);
+  const { json: cur } = await api(prefix + `/kantin/products/${esTeh.id}`);
   const curStock = Number(cur.stock ?? cur.data?.stock ?? 0);
   const need = 10 - curStock;
   if (need !== 0) {
-    await api(`/v1/sports/kantin/products/${esTeh.id}/stock`, {
+    await api(prefix + `/kantin/products/${esTeh.id}/stock`, {
       method: "POST",
       body: { delta: need, reason: "correction", note: "e2e stock setup" },
     });
   }
-  const { json: afterSetup } = await api(`/v1/sports/kantin/products/${esTeh.id}`);
+  const { json: afterSetup } = await api(prefix + `/kantin/products/${esTeh.id}`);
   esTehTracked = afterSetup;
 
-  const { json: sale2, ok: sale2Ok } = await api("/v1/sports/kantin/sales", {
+  const { json: sale2, ok: sale2Ok } = await api(prefix + "/kantin/sales", {
     method: "POST",
     body: { method: "qris", items: [{ product_id: esTeh.id, qty: 2 }] },
   });
-  const { json: after } = await api(`/v1/sports/kantin/products/${esTeh.id}`);
+  const { json: after } = await api(prefix + `/kantin/products/${esTeh.id}`);
   const afterStock = Number(after.stock ?? 0);
   const setupStock = Number(afterSetup.stock ?? 0);
   ok("stock decremented on sale", sale2Ok && afterStock === setupStock - 2, `stock ${setupStock}->${afterStock}`);
 
-  const { json: oos, ok: oosOk } = await api("/v1/sports/kantin/sales", {
+  const { json: oos, ok: oosOk } = await api(prefix + "/kantin/sales", {
     method: "POST",
     body: { method: "cash", items: [{ product_id: esTeh.id, qty: 999 }] },
   });
   ok("out-of-stock rejected", !oosOk && /out of stock|insufficient/i.test(oos.error ?? ""), oos.error ?? `status ok=${oosOk}`);
 
   // movements? proxy doesn't expose list, just check product still exists
-  const { json: prodAgain } = await api(`/v1/sports/kantin/products/${esTeh.id}`);
+  const { json: prodAgain } = await api(prefix + `/kantin/products/${esTeh.id}`);
   ok("product still active after OOS attempt", Boolean(prodAgain.id), `id=${prodAgain.id}`);
 
   // anon sale must be rejected (no token)
-  const anonRes = await fetch(`${proxyUrl}/v1/sports/kantin/sales`, {
+  const anonRes = await fetch(`${proxyUrl}${prefix}/kantin/sales`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ method: "cash", items: [{ product_id: esTeh.id, qty: 1 }] }),
@@ -140,14 +141,14 @@ if (esTeh?.id) {
 
   // void last sale via proxy (owner-only)
   if (sale2?.id) {
-    const { ok: voidOk } = await api(`/v1/sports/kantin/sales/${sale2.id}/void`, { method: "POST" });
-    const { json: restored } = await api(`/v1/sports/kantin/products/${esTeh.id}`);
+    const { ok: voidOk } = await api(prefix + `/kantin/sales/${sale2.id}/void`, { method: "POST" });
+    const { json: restored } = await api(prefix + `/kantin/products/${esTeh.id}`);
     ok("void restores stock", voidOk, `stock after void=${restored.stock}`);
     // restore stock back to original for idempotence
     const cur2 = Number(restored.stock ?? 0);
     const diff = (setupStock - cur2);
     if (diff !== 0) {
-      await api(`/v1/sports/kantin/products/${esTeh.id}/stock`, {
+      await api(prefix + `/kantin/products/${esTeh.id}/stock`, {
         method: "POST",
         body: { delta: diff, reason: "correction", note: "e2e reset" },
       });
@@ -173,10 +174,10 @@ ok("dashboard renders", dashRes.status === 200 && /Kantin|Dashboard|Centrum/.tes
 
 // cleanup first sale
 if (saleId) {
-  await api(`/v1/sports/kantin/sales/${saleId}/void`, { method: "POST" });
+  await api(prefix + `/kantin/sales/${saleId}/void`, { method: "POST" });
   // reset stock tracking for Es Teh
   if (esTeh?.id) {
-    await api(`/v1/sports/kantin/products/${esTeh.id}`, { method: "PATCH", body: { track_stock: false } });
+    await api(prefix + `/kantin/products/${esTeh.id}`, { method: "PATCH", body: { track_stock: false } });
   }
   results.push("CLEANUP done (test sale voided, Es Teh reset)");
 }

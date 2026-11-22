@@ -112,7 +112,6 @@ Setelah owner ada, akun pegawai dibuat dari **Pengaturan → Staf → Buat Akun 
 | `NEXT_PUBLIC_SITE_URL` | ya | production | Canonical URL untuk metadata, sitemap, OG |
 | `NEXT_PUBLIC_PROXY_URL` | ya | ya | Origin AgentsProxy, tanpa trailing slash |
 | `NEXT_PUBLIC_TENANT_ID` | ya | ya | Tenant slug (`centrum`) |
-| `NEXT_PUBLIC_PROXY_PREFIX` | ya | tidak | Prefix API tenant; default `/v1/p/centrum`. Isi `/v1/sports` hanya untuk rollback ke alias lama. |
 | `NEXT_PUBLIC_PROXY_EXPECTED_ORIGIN` | ya | production | Pin origin produksi; request gagal jika `NEXT_PUBLIC_PROXY_URL` tidak cocok (mencegah staging terpakai di produksi). |
 | `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | ya | opsional | Public key Web Push; private key ada di backend |
 | `GOOGLE_PLACES_API_KEY` | tidak | opsional | Rating Google live |
